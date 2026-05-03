@@ -1,0 +1,58 @@
+{
+  "name": "dcardenasl/ci4-api-crud-maker",
+  "description": "DTO-first CRUD scaffolding engine for CodeIgniter 4 APIs (extracted from ci4-api-starter)",
+  "type": "library",
+  "keywords": [
+    "codeigniter4",
+    "api",
+    "scaffolding",
+    "crud",
+    "dto",
+    "code-generation"
+  ],
+  "homepage": "https://github.com/dcardenasl/ci4-api-crud-maker",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "David Cárdenas L.",
+      "email": "code.dcl@gmail.com"
+    }
+  ],
+  "support": {
+    "issues": "https://github.com/dcardenasl/ci4-api-crud-maker/issues",
+    "source": "https://github.com/dcardenasl/ci4-api-crud-maker"
+  },
+  "require": {
+    "php": "^8.2",
+    "codeigniter4/framework": "^4.5"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5",
+    "phpstan/phpstan": "^1.10"
+  },
+  "bin": [
+    "bin/make-crud.sh",
+    "bin/validate-crud.sh"
+  ],
+  "autoload": {
+    "psr-4": {
+      "dcardenasl\\CI4ApiCrudMaker\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "analyse": "phpstan analyse src --level=5"
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "extra": {
+    "branch-alias": {
+      "dev-main": "0.1.x-dev"
+    }
+  }
+}
