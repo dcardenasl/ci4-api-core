@@ -2,7 +2,7 @@
 
 DTO-first CRUD scaffolding engine for CodeIgniter 4 APIs. Extracted from [`ci4-api-starter`](https://github.com/dcardenasl/ci4-api-starter) so multiple projects can share a single, versioned source of truth instead of copying the engine between codebases.
 
-> **Status:** `v0.1.0` — pre-release. APIs may change without notice until `1.0.0`. Distribution is path-based (Composer `path` repository); not yet published to Packagist.
+> **Status:** `v0.1.0` — initial release. APIs may change without notice until `1.0.0`. Not yet published to Packagist; install via VCS repository (see below).
 
 ## What it does
 
@@ -41,18 +41,17 @@ The engine was being copied between projects manually, leading to drift. Extract
 
 ## Installation
 
-Add the package as a path repository in your project's `composer.json`. Adjust the `url` to the relative path from your project to the `ci4-api-crud-maker` directory:
+Add the VCS repository to your project's `composer.json` and require the package:
 
 ```json
 "repositories": [
     {
-        "type": "path",
-        "url": "../../ci4-api-crud-maker",
-        "options": { "symlink": true }
+        "type": "vcs",
+        "url": "https://github.com/dcardenasl/ci4-api-crud-maker"
     }
 ],
 "require-dev": {
-    "dcardenasl/ci4-api-crud-maker": "*@dev"
+    "dcardenasl/ci4-api-crud-maker": "^0.1.0"
 }
 ```
 
@@ -60,12 +59,6 @@ Then install:
 
 ```bash
 composer update dcardenasl/ci4-api-crud-maker --no-interaction
-```
-
-Verify the symlink was created:
-
-```bash
-ls -la vendor/dcardenasl/ci4-api-crud-maker
 ```
 
 ## Configure

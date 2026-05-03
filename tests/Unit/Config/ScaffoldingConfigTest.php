@@ -1,0 +1,62 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Unit\Config;
+
+use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
+use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingPaths;
+use PHPUnit\Framework\TestCase;
+
+final class ScaffoldingConfigTest extends TestCase
+{
+    public function testDefaultsMatchTheStarterKitConvention(): void
+    {
+        $config = ScaffoldingConfig::defaults();
+
+        $this->assertSame('App', $config->appNamespace);
+        $this->assertSame('App\\Controllers\\ApiController', $config->controllerBaseClass);
+        $this->assertSame('App\\Services\\Core\\BaseCrudService', $config->serviceBaseClass);
+        $this->assertSame(['jwtauth', 'permission:iam.admin-access', 'throttle'], $config->protectedRouteFilters);
+    }
+
+    public function testNamespaceForConvertsSlashesToBackslashes(): void
+    {
+        $config = ScaffoldingConfig::defaults();
+
+        $this->assertSame('App\\DTO\\Request', $config->namespaceFor('DTO/Request'));
+        $this->assertSame('App\\Controllers\\Api\\V1', $config->namespaceFor('Controllers/Api/V1'));
+        $this->assertSame('App\\Services', $config->namespaceFor('Services'));
+    }
+
+    public function testNamespaceForRespectsCustomAppNamespace(): void
+    {
+        $config = new ScaffoldingConfig(
+            controllerBaseClass: 'Acme\\Http\\BaseController',
+            serviceBaseClass: 'Acme\\Services\\BaseService',
+            serviceContractInterface: 'Acme\\Services\\Contract',
+            modelBaseClass: 'Acme\\Models\\Base',
+            entityBaseClass: 'CodeIgniter\\Entity\\Entity',
+            migrationBaseClass: 'CodeIgniter\\Database\\Migration',
+            requestDtoBaseClass: 'Acme\\DTO\\BaseRequest',
+            responseDtoInterface: 'Acme\\DTO\\Contract',
+            repositoryInterface: 'Acme\\Repo\\Contract',
+            responseMapperInterface: 'Acme\\Mappers\\Contract',
+            repositoryImplementation: 'Acme\\Repo\\GenericRepository',
+            responseMapperImplementation: 'Acme\\Mappers\\DtoResponseMapper',
+            servicesFactoryClass: 'Config\\Services',
+            paths: new ScaffoldingPaths(),
+            protectedRouteFilters: ['session'],
+            appNamespace: 'Acme',
+        );
+
+        $this->assertSame('Acme\\DTO\\Request', $config->namespaceFor('DTO/Request'));
+    }
+
+    public function testNamespaceForStripsLeadingAndTrailingSlashes(): void
+    {
+        $config = ScaffoldingConfig::defaults();
+
+        $this->assertSame('App\\DTO\\Request', $config->namespaceFor('/DTO/Request/'));
+    }
+}

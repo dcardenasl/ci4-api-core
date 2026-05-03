@@ -1,0 +1,76 @@
+<?php
+
+declare(strict_types=1);
+
+namespace dcardenasl\CI4ApiCrudMaker\Validators;
+
+use dcardenasl\CI4ApiCrudMaker\Core\Field;
+
+/**
+ * Parses the `--fields` string accepted by `php spark make:crud` into typed Field objects.
+ *
+ * Syntax:
+ *   name:type:modifier1|modifier2|modifier3
+ *
+ * FK type uses a 4-segment form:
+ *   name:fk:target_table:modifier1|modifier2
+ *
+ * Multiple fields are comma-separated. The caller is responsible for shell-quoting.
+ */
+final class FieldStringParser
+{
+    /**
+     * @return list<Field>
+     */
+    public function parse(string $fieldsArg): array
+    {
+        $fields = [];
+        if (trim($fieldsArg) === '') {
+            return $fields;
+        }
+
+        foreach (explode(',', $fieldsArg) as $part) {
+            $segments = explode(':', trim($part));
+            if (count($segments) < 2) {
+                continue;
+            }
+
+            $name = $segments[0];
+            $type = $segments[1];
+
+            if ($type === 'fk') {
+                $fkTable = $segments[2] ?? null;
+                $options = explode('|', $segments[3] ?? '');
+            } else {
+                $fkTable = null;
+                $options = explode('|', $segments[2] ?? '');
+            }
+
+            // FK referential actions: cascade (default), restrict, setnull.
+            // Honored only when type === 'fk'; ignored otherwise.
+            $fkOnDelete = 'CASCADE';
+            if ($type === 'fk') {
+                if (in_array('restrict', $options, true)) {
+                    $fkOnDelete = 'RESTRICT';
+                } elseif (in_array('setnull', $options, true)) {
+                    $fkOnDelete = 'SET NULL';
+                }
+            }
+
+            $fields[] = new Field(
+                name: $name,
+                type: $type,
+                required: in_array('required', $options, true),
+                nullable: in_array('nullable', $options, true),
+                searchable: in_array('searchable', $options, true),
+                filterable: in_array('filterable', $options, true),
+                fkTable: $fkTable,
+                unique: in_array('unique', $options, true),
+                index: in_array('index', $options, true),
+                fkOnDelete: $fkOnDelete
+            );
+        }
+
+        return $fields;
+    }
+}
