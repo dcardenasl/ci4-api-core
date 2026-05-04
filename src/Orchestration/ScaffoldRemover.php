@@ -31,7 +31,7 @@ class ScaffoldRemover
     }
 
     /**
-     * @return array{deleted: list<string>, not_found: list<string>, routes_cleaned: ?string, trait_cleaned: ?string, trait_removed: ?string, services_cleaned: bool, migration: ?string}
+     * @return array{deleted: list<string>, not_found: list<string>, routes_cleaned: ?string, trait_cleaned: ?string, trait_removed: ?string, services_cleaned: bool, migration: ?string, warnings: list<string>}
      */
     public function plan(ResourceSchema $schema): array
     {
@@ -39,7 +39,7 @@ class ScaffoldRemover
     }
 
     /**
-     * @return array{deleted: list<string>, not_found: list<string>, routes_cleaned: ?string, trait_cleaned: ?string, trait_removed: ?string, services_cleaned: bool, migration: ?string}
+     * @return array{deleted: list<string>, not_found: list<string>, routes_cleaned: ?string, trait_cleaned: ?string, trait_removed: ?string, services_cleaned: bool, migration: ?string, warnings: list<string>}
      */
     public function remove(ResourceSchema $schema): array
     {
@@ -47,7 +47,7 @@ class ScaffoldRemover
     }
 
     /**
-     * @return array{deleted: list<string>, not_found: list<string>, routes_cleaned: ?string, trait_cleaned: ?string, trait_removed: ?string, services_cleaned: bool, migration: ?string}
+     * @return array{deleted: list<string>, not_found: list<string>, routes_cleaned: ?string, trait_cleaned: ?string, trait_removed: ?string, services_cleaned: bool, migration: ?string, warnings: list<string>}
      */
     private function execute(ResourceSchema $schema, bool $dryRun): array
     {
@@ -59,6 +59,7 @@ class ScaffoldRemover
             'trait_removed' => null,
             'services_cleaned' => false,
             'migration' => null,
+            'warnings' => [],
         ];
 
         // 1. Delete fixed-name files
@@ -87,8 +88,24 @@ class ScaffoldRemover
         $domainKebab = $schema->toKebab($schema->domain);
         $routesPath = APPPATH . $this->config->paths->routes . "/{$domainKebab}.php";
         if (file_exists($routesPath)) {
-            $cleaned = $this->stripRouteBlock((string) file_get_contents($routesPath), $schema);
+            $original    = (string) file_get_contents($routesPath);
+            $beforeCount = $this->countControllerReferences($original, $schema->resource);
+            $cleaned     = $this->stripRouteBlock($original, $schema);
             if ($cleaned !== null) {
+                $afterCount = $this->countControllerReferences($cleaned, $schema->resource);
+                if ($afterCount > 0) {
+                    // The regex matched and removed *something*, but the controller
+                    // still appears in the file. The user likely added custom
+                    // routes for the same controller; flag it so they can clean
+                    // up by hand instead of leaving orphan references.
+                    $report['warnings'][] = sprintf(
+                        '%s still contains %d reference(s) to %sController after stripping the standard CRUD block — likely custom routes were appended manually. Remove them by hand.',
+                        $routesPath,
+                        $afterCount,
+                        $schema->resource,
+                    );
+                }
+
                 if ($this->isEmptyDomainRoute($cleaned)) {
                     if (!$dryRun) {
                         @unlink($routesPath);
@@ -100,6 +117,16 @@ class ScaffoldRemover
                     }
                     $report['routes_cleaned'] = $routesPath;
                 }
+            } elseif ($beforeCount > 0) {
+                // The strip regex didn't match anything, but the controller
+                // IS referenced in the file — the route block was hand-edited
+                // to a non-standard shape and we can't remove it safely.
+                $report['warnings'][] = sprintf(
+                    'Could not auto-remove %d %sController reference(s) from %s — the routes block does not match the expected layout. Edit the file manually.',
+                    $beforeCount,
+                    $schema->resource,
+                    $routesPath,
+                );
             }
         }
 
@@ -173,6 +200,19 @@ class ScaffoldRemover
     {
         // No remaining controller refs for this domain → file is empty of resources.
         return preg_match('/[A-Za-z0-9_]+Controller::(?:index|show|create|update|delete)/', $content) !== 1;
+    }
+
+    /**
+     * Count how many times a controller's CRUD method handlers appear in the
+     * routes file. Used to detect orphaned references after stripRouteBlock()
+     * runs against a hand-edited routes file.
+     */
+    private function countControllerReferences(string $content, string $resource): int
+    {
+        return preg_match_all(
+            '/' . preg_quote($resource, '/') . 'Controller::(?:index|show|create|update|delete)/',
+            $content
+        ) ?: 0;
     }
 
     private function stripServiceMethods(string $content, ResourceSchema $schema): ?string

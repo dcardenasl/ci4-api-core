@@ -107,6 +107,17 @@ class MakeCrudRemove extends BaseCommand
             CLI::write(($dryRun ? 'Would un-register' : 'Un-registered') . ' domain trait from app/Config/Services.php', 'green');
         }
 
+        // Surface any orphan-route warnings the remover detected — the user
+        // hand-edited the routes file and the regex-based stripper couldn't
+        // safely remove all references on its own.
+        if (!empty($report['warnings'])) {
+            CLI::newLine();
+            CLI::write('⚠ Manual cleanup required:', 'yellow');
+            foreach ($report['warnings'] as $warning) {
+                CLI::write('  - ' . $warning, 'yellow');
+            }
+        }
+
         CLI::newLine();
         if ($report['migration'] !== null) {
             CLI::write("⚠ Migration file deleted: {$report['migration']}", 'yellow');

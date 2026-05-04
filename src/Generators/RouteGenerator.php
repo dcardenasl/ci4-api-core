@@ -79,13 +79,46 @@ PHP;
         // Try to inject inside the protected group
         $filtersList = $this->renderFilterList();
         $search = "['filter' => {$filtersList}], function (\$routes) {";
+        $injected = null;
         if (str_contains($content, $search)) {
-            $pos = strpos($content, $search) + strlen($search);
-            return substr($content, 0, $pos) . "\n" . $routeBlock . substr($content, $pos);
+            $pos      = strpos($content, $search) + strlen($search);
+            $injected = substr($content, 0, $pos) . "\n" . $routeBlock . substr($content, $pos);
+        } else {
+            // Fallback: append to end
+            $injected = $content . "\n" . $routeBlock;
         }
 
-        // Fallback: append to end
-        return $content . "\n" . $routeBlock;
+        $this->assertAllRoutesPresent($injected, $controller);
+
+        return $injected;
+    }
+
+    /**
+     * Confirm that the injected content actually contains all five CRUD route
+     * lines for this controller. Defends against template regressions where
+     * the heredoc gets accidentally truncated, or where the injection target
+     * pattern matches but the resulting concatenation drops part of the block.
+     */
+    private function assertAllRoutesPresent(string $content, string $controller): void
+    {
+        $requiredVerbs = ['index', 'show', 'create', 'update', 'delete'];
+        $missing       = [];
+
+        foreach ($requiredVerbs as $verb) {
+            if (!str_contains($content, "{$controller}::{$verb}")) {
+                $missing[] = $verb;
+            }
+        }
+
+        if ($missing !== []) {
+            throw new \RuntimeException(sprintf(
+                'Route generator failed to emit all CRUD routes for %s — missing: %s. '
+                . 'This usually means the route file already had a non-standard layout. '
+                . 'Inspect the generated route file and add the missing routes manually.',
+                $controller,
+                implode(', ', $missing),
+            ));
+        }
     }
 
     /**
