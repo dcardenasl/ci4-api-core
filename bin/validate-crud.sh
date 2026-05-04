@@ -50,7 +50,25 @@ cd "$PROJECT_ROOT"
 
 # Compute domain in kebab-case: TestDomain → test-domain
 DOMAIN_KEBAB=$(echo "$DOMAIN" | sed 's/\([A-Z]\)/-\1/g' | sed 's/^-//' | tr '[:upper:]' '[:lower:]')
-RESOURCE_STEM="${RESOURCE%y}"
+
+# Compute the canonical plural class name the scaffolder would emit
+# (e.g. User → Users, Category → Categories, Person → People). We delegate to
+# the same StringHelper PHP class used by the generators so the bash script
+# stays in sync with the PHP source of truth — no more naive `${RESOURCE%y}`.
+RESOURCE_PLURAL=""
+if [[ -f vendor/autoload.php ]]; then
+    RESOURCE_PLURAL=$(php -r '
+        require "vendor/autoload.php";
+        if (class_exists(\dcardenasl\CI4ApiCrudMaker\Core\StringHelper::class)) {
+            echo \dcardenasl\CI4ApiCrudMaker\Core\StringHelper::pluralize($argv[1]);
+        }
+    ' "$RESOURCE" 2>/dev/null || true)
+fi
+# Fallback to the unmodified resource name if the PHP call failed —
+# the migration glob below uses both forms so it still has a chance to match.
+if [[ -z "$RESOURCE_PLURAL" ]]; then
+    RESOURCE_PLURAL="$RESOURCE"
+fi
 
 echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
 echo -e "${BLUE}CRUD Validation: $RESOURCE ($DOMAIN)${NC}"
@@ -61,12 +79,17 @@ PASSED=0
 FAILED=0
 
 echo -e "${YELLOW}[1/6] Checking migration exists...${NC}"
-MIGRATION=$(find app/Database/Migrations -name "*_Create${RESOURCE_STEM}*Table.php" 2>/dev/null | head -1)
+# Search for both the singular (defensive) and the canonical plural the
+# scaffolder produces. First match wins; either form is acceptable.
+MIGRATION=$(find app/Database/Migrations \
+    \( -name "*_Create${RESOURCE_PLURAL}Table.php" \
+    -o -name "*_Create${RESOURCE}Table.php" \) \
+    2>/dev/null | head -1)
 if [[ -n "$MIGRATION" ]]; then
     echo -e "${GREEN}✓${NC} Found: $MIGRATION"
     ((PASSED++))
 else
-    echo -e "${RED}✗${NC} Migration not found for $RESOURCE"
+    echo -e "${RED}✗${NC} Migration not found for $RESOURCE (looked for *_Create${RESOURCE_PLURAL}Table.php)"
     ((FAILED++))
 fi
 
