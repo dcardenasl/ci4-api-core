@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Validators;
 
 use dcardenasl\CI4ApiCrudMaker\Validators\FieldStringParser;
+use dcardenasl\CI4ApiCrudMaker\Validators\UnknownFieldTypeException;
 use PHPUnit\Framework\TestCase;
 
 final class FieldStringParserTest extends TestCase
@@ -123,5 +124,38 @@ final class FieldStringParserTest extends TestCase
     {
         $fields = $this->parser->parse('name:string:required|restrict');
         $this->assertSame('CASCADE', $fields[0]->fkOnDelete, 'Non-FK fields should not honor restrict/setnull');
+    }
+
+    public function testUnknownTypeRaisesExplicitException(): void
+    {
+        // Without strict validation, TypeMapper::get() falls back to 'string'
+        // for unknown type codes — meaning a typo like `intenger` would
+        // silently produce a VARCHAR column with string validation rules.
+        // The parser must catch this upfront with an actionable error.
+        try {
+            $this->parser->parse('age:intenger:required');
+            $this->fail('Expected UnknownFieldTypeException for typo "intenger".');
+        } catch (UnknownFieldTypeException $e) {
+            $this->assertSame('age', $e->fieldName);
+            $this->assertSame('intenger', $e->declaredType);
+            $this->assertContains('int', $e->knownTypes);
+            $this->assertStringContainsString('intenger', $e->getMessage());
+            $this->assertStringContainsString('int', $e->getMessage());
+        }
+    }
+
+    public function testUnknownTypeMessageListsAllKnownTypesSorted(): void
+    {
+        try {
+            $this->parser->parse('foo:nope');
+            $this->fail('Expected UnknownFieldTypeException.');
+        } catch (UnknownFieldTypeException $e) {
+            // Sanity-check that the suggested types include the expected vocabulary.
+            $expected = ['bool', 'date', 'datetime', 'decimal', 'email', 'fk', 'int', 'integer', 'json', 'string', 'text'];
+            foreach ($expected as $known) {
+                $this->assertContains($known, $e->knownTypes, "Missing known type: {$known}");
+            }
+            $this->assertSame($e->knownTypes, array_values(array_unique($e->knownTypes)));
+        }
     }
 }

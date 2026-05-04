@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace dcardenasl\CI4ApiCrudMaker\Validators;
 
 use dcardenasl\CI4ApiCrudMaker\Core\Field;
+use dcardenasl\CI4ApiCrudMaker\Core\TypeMapper;
 
 /**
  * Parses the `--fields` string accepted by `php spark make:crud` into typed Field objects.
@@ -37,6 +38,17 @@ final class FieldStringParser
 
             $name = $segments[0];
             $type = $segments[1];
+
+            // Reject unknown type codes upfront. TypeMapper::get() falls back
+            // to 'string' silently for unknown types, which would otherwise
+            // produce a DTO with the wrong column type and validation rules.
+            if (!TypeMapper::isKnown($type)) {
+                throw new UnknownFieldTypeException(
+                    fieldName: $name,
+                    declaredType: $type,
+                    knownTypes: TypeMapper::knownTypes(),
+                );
+            }
 
             if ($type === 'fk') {
                 $fkTable = $segments[2] ?? null;

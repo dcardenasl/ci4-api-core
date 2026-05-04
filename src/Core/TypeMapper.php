@@ -106,6 +106,27 @@ class TypeMapper
         return self::$map[$type] ?? self::$map['string'];
     }
 
+    /**
+     * Whether the given type code is recognized by the mapper. Used by the
+     * input parsers so a typo like `intenger` fails fast instead of silently
+     * mapping to `string`.
+     */
+    public static function isKnown(string $type): bool
+    {
+        return isset(self::$map[$type]);
+    }
+
+    /**
+     * @return list<string> All registered type codes, sorted alphabetically.
+     */
+    public static function knownTypes(): array
+    {
+        $types = array_keys(self::$map);
+        sort($types);
+
+        return array_values($types);
+    }
+
     public static function getPhpType(string $type, bool $nullable): string
     {
         $phpType = self::get($type)['php'];
