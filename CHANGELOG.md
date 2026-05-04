@@ -4,6 +4,20 @@ All notable changes to `dcardenasl/ci4-api-crud-maker` will be documented here. 
 
 ## [Unreleased]
 
+### Changed
+- **`ScaffoldingConfig::defaults()` default permission** changed from `permission:iam.admin-access` (deprecated and actively deleted by `RbacBootstrapSeeder` in ci4-api-starter) to `permission:iam.superadmin-access`. New scaffolds are reachable by superadmins only by default — secure-by-default. Loosen per-resource by editing the generated route file or by overriding `protectedRouteFilters` in the consumer's `App\Config\Scaffolding`.
+- **`ConfigWireman::wire()`** verifies after each injection step (require_once + use trait + service factory) and throws `WiringFailedException` carrying the manual recovery snippet via `describe()`. The spark command catches this and prints the snippet — consumers no longer end up with half-wired modules when their `Services.php` layout doesn't match the expected pattern.
+- **`ForeignKeyValidator::validate()`** is **strict by default** when the database is unreachable AND the schema declares FK fields. Set `skipOnDbUnreachable: true` (or pass `make:crud --skip-fk-validation`) to fall back to the historical "warn and continue" behavior.
+- **`bin/validate-crud.sh`** derives the table name from `StringHelper::pluralize()` (PHP) instead of the naive `${RESOURCE%y}` bash trick. Resources with irregular plurals (`Person → People`, `Goose → Geese`) and same-prefix neighbors (`User` vs `UserRole`) now resolve to the correct migration file on the first match.
+- **`RouteGenerator::injectRoute()`** asserts all 5 CRUD route lines (`index`, `show`, `create`, `update`, `delete`) appear in the output and throws otherwise — catches template regressions or cases where the injection target pattern matched but the resulting concatenation truncated the block.
+- **`ScaffoldRemover`** now reports orphan controller references in the `warnings` key of its return shape. When the user hand-edited the routes file with custom routes for the same controller, the standard regex strip can't safely remove them; the remover surfaces "manual cleanup required" guidance instead of leaving the file in an undefined state.
+
+### Added
+- **`Wiring\WiringFailedException`** — carries the manual recovery snippet plus `describe()` helper for nice CLI rendering.
+- **`Validators\UnknownFieldTypeException`** — thrown by `FieldStringParser::parse()` when a field declares an unknown type code (e.g. typo `intenger` instead of `int`). Lists known types in the exception message; previously `TypeMapper::get()` silently fell back to `string`, generating a wrong-type column.
+- **`TypeMapper::isKnown()` / `TypeMapper::knownTypes()`** — public helpers used by the parser; surface the type whitelist for tooling.
+- **`make:crud --skip-fk-validation`** flag — opts out of the new strict FK check when running on a dev machine without Docker / DB up.
+
 ## [0.1.0] - 2026-05-03
 
 ### Added
