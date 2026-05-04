@@ -17,7 +17,11 @@ final class ScaffoldingConfigTest extends TestCase
         $this->assertSame('App', $config->appNamespace);
         $this->assertSame('App\\Controllers\\ApiController', $config->controllerBaseClass);
         $this->assertSame('App\\Services\\Core\\BaseCrudService', $config->serviceBaseClass);
-        $this->assertSame(['jwtauth', 'permission:iam.admin-access', 'throttle'], $config->protectedRouteFilters);
+        // Default protects new routes with iam.superadmin-access, the most
+        // restrictive permission seeded by RbacBootstrapSeeder. iam.admin-access
+        // was deprecated and is no longer seeded; consumers loosen this per
+        // resource as needed.
+        $this->assertSame(['jwtauth', 'permission:iam.superadmin-access', 'throttle'], $config->protectedRouteFilters);
     }
 
     public function testNamespaceForConvertsSlashesToBackslashes(): void

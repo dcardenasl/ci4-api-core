@@ -13,7 +13,15 @@ namespace dcardenasl\CI4ApiCrudMaker\Config;
  * Each consumer publishes one of these (typically as a CI4 Config class
  * `App\Config\Scaffolding`) and the spark commands inject it into the
  * generators. Nothing in the engine is hardcoded to `\App\Controllers\…`
- * or to `permission:iam.admin-access` anymore.
+ * — every base class, path, and filter is configurable.
+ *
+ * **Permission default:** the shipped `defaults()` factory protects new
+ * routes with `permission:iam.superadmin-access` (the most-restrictive
+ * permission seeded by `ci4-api-starter`'s `RbacBootstrapSeeder`). New
+ * resources are reachable only by superadmins until you explicitly loosen
+ * the filter to something like `permission:my-resource.read` — secure by
+ * default. Consumers with a different IAM model should override
+ * `protectedRouteFilters` in their `App\Config\Scaffolding`.
  *
  * All FQCNs are written without leading backslash — generators add
  * the leading `\\` only where the rendered template needs it.
@@ -49,7 +57,11 @@ final readonly class ScaffoldingConfig
         // Where artifacts land.
         public ScaffoldingPaths $paths,
 
-        // Route group filters (e.g. ['jwtauth', 'permission:iam.admin-access', 'throttle']).
+        // Route group filters applied to the "protected" group emitted by RouteGenerator.
+        // First filter is typically auth (e.g. 'jwtauth'), the rest gate authorization.
+        // The default in defaults() locks new routes behind the most-restrictive
+        // seeded permission ('iam.superadmin-access') so resources are unreachable
+        // until you intentionally loosen the filter — see the docblock above.
         public array $protectedRouteFilters,
 
         // Top-level namespace of the consumer app (e.g. 'App').
@@ -94,7 +106,7 @@ final readonly class ScaffoldingConfig
             responseMapperImplementation: 'App\\Services\\Core\\Mappers\\DtoResponseMapper',
             servicesFactoryClass: 'Config\\Services',
             paths: new ScaffoldingPaths(),
-            protectedRouteFilters: ['jwtauth', 'permission:iam.admin-access', 'throttle'],
+            protectedRouteFilters: ['jwtauth', 'permission:iam.superadmin-access', 'throttle'],
             appNamespace: 'App',
         );
     }

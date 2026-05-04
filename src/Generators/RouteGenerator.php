@@ -13,8 +13,9 @@ use dcardenasl\CI4ApiCrudMaker\Core\ResourceSchema;
  * configured in ScaffoldingPaths::$routes.
  *
  * The "protected" group's filter list is taken from
- * ScaffoldingConfig::$protectedRouteFilters — no longer hardcoded to
- * iam.admin-access. Consumers can ship their own filter convention.
+ * ScaffoldingConfig::$protectedRouteFilters — no longer hardcoded to a
+ * specific permission. Consumers can ship their own filter convention
+ * via App\Config\Scaffolding.
  */
 class RouteGenerator
 {

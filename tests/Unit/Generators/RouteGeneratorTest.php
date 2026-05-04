@@ -14,9 +14,9 @@ use PHPUnit\Framework\TestCase;
 /**
  * Pins the second main promise of Phase 2: the route file's protected
  * group filter list comes from ScaffoldingConfig, not from a hardcoded
- * `permission:iam.admin-access`. Consumers using a different authz model
- * (session-based, OAuth scopes, anything) can swap the filter without
- * touching the package.
+ * permission. Consumers using a different authz model (session-based,
+ * OAuth scopes, anything) can swap the filter without touching the
+ * package.
  */
 final class RouteGeneratorTest extends TestCase
 {
@@ -34,7 +34,7 @@ final class RouteGeneratorTest extends TestCase
         $content = reset($artifacts);
 
         $this->assertStringContainsString(
-            "['filter' => ['jwtauth', 'permission:iam.admin-access', 'throttle']]",
+            "['filter' => ['jwtauth', 'permission:iam.superadmin-access', 'throttle']]",
             $content
         );
         $this->assertStringContainsString(
@@ -90,7 +90,7 @@ final class RouteGeneratorTest extends TestCase
             "['namespace' => '\\Acme\\Http\\Controllers\\Api\\Catalog']",
             $content
         );
-        $this->assertStringNotContainsString('iam.admin-access', $content);
+        $this->assertStringNotContainsString('iam.superadmin-access', $content);
         $this->assertStringNotContainsString('jwtauth', $content);
     }
 }
