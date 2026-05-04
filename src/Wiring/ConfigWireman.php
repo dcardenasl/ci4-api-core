@@ -45,20 +45,35 @@ class ConfigWireman
     /**
      * Inject the trait + service factory in-place. Used by the default
      * (write-through) make:crud invocation.
+     *
+     * Each injection step is verified after writing — if the regex or write
+     * failed silently (e.g. the consumer's Services.php has a non-standard
+     * layout), this method throws a WiringFailedException carrying the
+     * manual snippet so the user can recover instead of being left with a
+     * half-wired module.
      */
     public function wire(ResourceSchema $schema): void
     {
-        $domain = $schema->domain;
+        $domain          = $schema->domain;
         $domainTraitFile = $this->domainTraitFile($domain);
 
-        // 1. If domain trait file doesn't exist, create it and register in main Services.php
+        // 1. Domain trait file
         if (!file_exists($domainTraitFile)) {
             $this->createDomainTrait($domain, $domainTraitFile);
+            if (!file_exists($domainTraitFile)) {
+                throw new WiringFailedException(
+                    sprintf('Failed to create domain trait file: %s', $domainTraitFile),
+                    $this->previewWiring($schema)
+                );
+            }
+
             $this->registerDomainInMainServices($domain);
+            $this->verifyMainServicesRegistration($domain, $schema);
         }
 
-        // 2. Inject the Service and Mapper into the domain trait
+        // 2. Service factory inside the trait
         $this->injectServiceAndMapper($schema, $domainTraitFile);
+        $this->verifyServiceFactoryInjection($schema, $domainTraitFile);
     }
 
     /**
@@ -208,5 +223,73 @@ PHP;
             . "require_once __DIR__ . '/{$domain}DomainServices.php';\n\n"
             . "// Inside the Services class body (alongside other 'use ...DomainServices;' lines):\n"
             . "    use {$domain}DomainServices;";
+    }
+
+    /**
+     * Re-read Services.php and confirm both the require_once and use-trait
+     * lines for the new domain are present. The injection regex falls back
+     * silently when the consumer's Services.php layout doesn't match the
+     * expected pattern, which used to leave wiring half-done — this guard
+     * surfaces the problem with an actionable error message.
+     */
+    private function verifyMainServicesRegistration(string $domain, ResourceSchema $schema): void
+    {
+        $servicesFile = $this->servicesFile();
+        if (!file_exists($servicesFile)) {
+            // Acceptable for fresh consumers that haven't booted Services.php yet.
+            return;
+        }
+
+        $content     = (string) file_get_contents($servicesFile);
+        $requireLine = "require_once __DIR__ . '/{$domain}DomainServices.php';";
+        $useLine     = "use {$domain}DomainServices;";
+
+        $missing = [];
+        if (!str_contains($content, $requireLine)) {
+            $missing[] = $requireLine;
+        }
+        if (!str_contains($content, $useLine)) {
+            $missing[] = $useLine;
+        }
+
+        if ($missing !== []) {
+            throw new WiringFailedException(
+                sprintf(
+                    "Could not auto-register the %s domain trait in Config/Services.php — the file's layout did not match the expected pattern. Missing lines:\n  %s",
+                    $domain,
+                    implode("\n  ", $missing)
+                ),
+                $this->previewWiring($schema)
+            );
+        }
+    }
+
+    /**
+     * Re-read the domain trait file and confirm the new factory method was
+     * injected. Defends against unusual trait layouts (e.g. a leading comment
+     * pulling `strrpos` astray) that would silently drop the snippet.
+     */
+    private function verifyServiceFactoryInjection(ResourceSchema $schema, string $traitFile): void
+    {
+        if (!file_exists($traitFile)) {
+            throw new WiringFailedException(
+                sprintf('Domain trait file vanished after writing: %s', $traitFile),
+                $this->previewWiring($schema)
+            );
+        }
+
+        $content     = (string) file_get_contents($traitFile);
+        $serviceName = $schema->getResourceLower() . 'Service';
+
+        if (!str_contains($content, "function {$serviceName}")) {
+            throw new WiringFailedException(
+                sprintf(
+                    'Failed to inject %s() into %s — the trait file did not contain the expected closing brace pattern.',
+                    $serviceName,
+                    $traitFile
+                ),
+                $this->previewWiring($schema)
+            );
+        }
     }
 }

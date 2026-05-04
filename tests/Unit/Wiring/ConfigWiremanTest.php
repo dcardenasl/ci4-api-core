@@ -8,6 +8,7 @@ use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
 use dcardenasl\CI4ApiCrudMaker\Core\Field;
 use dcardenasl\CI4ApiCrudMaker\Core\ResourceSchema;
 use dcardenasl\CI4ApiCrudMaker\Wiring\ConfigWireman;
+use dcardenasl\CI4ApiCrudMaker\Wiring\WiringFailedException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -97,6 +98,47 @@ final class ConfigWiremanTest extends TestCase
 
         // Zero leakage from the App\... defaults.
         $this->assertStringNotContainsString('\\App\\', $snippet);
+    }
+
+    public function testWireThrowsWhenServicesFileLayoutIsUnrecognized(): void
+    {
+        // Set up a Services.php whose layout doesn't match the regex
+        // (no `require_once __DIR__ . '/...Services.php';` lines, no
+        // `use ...DomainServices;` traits). The regex falls through silently,
+        // and the post-injection guard must convert that into a clear error.
+        $configDir = APPPATH . 'Config';
+        if (!is_dir($configDir)) {
+            mkdir($configDir, 0o777, true);
+        }
+
+        $servicesFile = $configDir . '/Services.php';
+        file_put_contents($servicesFile, "<?php\nnamespace Config;\nclass Services\n{\n}\n");
+
+        // Ensure this domain trait file does NOT exist yet — that triggers
+        // the createDomainTrait + registerDomainInMainServices path.
+        $traitFile = $configDir . '/MisalignedDomainServices.php';
+        @unlink($traitFile);
+
+        $wireman = new ConfigWireman(ScaffoldingConfig::defaults());
+        $schema = new ResourceSchema(
+            resource: 'Widget',
+            domain: 'Misaligned',
+            route: 'widgets',
+            fields: [new Field(name: 'name', type: 'string')],
+        );
+
+        try {
+            $wireman->wire($schema);
+            $this->fail('Expected WiringFailedException to be thrown for a non-conforming Services.php.');
+        } catch (WiringFailedException $e) {
+            $this->assertStringContainsString('Misaligned', $e->getMessage());
+            $description = $e->describe();
+            $this->assertStringContainsString('Services.php', $description);
+            $this->assertStringContainsString('use MisalignedDomainServices;', $description);
+        } finally {
+            @unlink($traitFile);
+            @unlink($servicesFile);
+        }
     }
 
     public function testServiceFactoryWithDefaultsMatchesHistoricalShape(): void

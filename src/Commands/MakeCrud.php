@@ -49,6 +49,7 @@ class MakeCrud extends BaseCommand
         '--soft-delete' => 'Enable soft deletes yes|no (default: yes)',
         '--dry-run' => 'Show planned files and wiring without writing anything',
         '--no-wire' => 'Generate files but skip Services.php injection. Print snippets to paste manually instead.',
+        '--skip-fk-validation' => 'Skip the FK target check when the database is unreachable. Use only when you know the targets exist.',
     ];
 
     public function run(array $params)
@@ -68,6 +69,7 @@ class MakeCrud extends BaseCommand
         $softDelete = $this->yesNoOption('soft-delete', true);
         $dryRun = CLI::getOption('dry-run') !== null;
         $noWire = CLI::getOption('no-wire') !== null;
+        $skipFkValidation = CLI::getOption('skip-fk-validation') !== null;
 
         if (StringHelper::hasAcronymRun($resource)) {
             CLI::write("⚠ Resource '{$resource}' contains a run of consecutive uppercase letters.", 'yellow');
@@ -103,8 +105,10 @@ class MakeCrud extends BaseCommand
                 softDelete: $softDelete
             );
 
-            // 2b. Verify FK targets exist (skipped if DB unreachable).
-            $fkWarnings = (new ForeignKeyValidator())->validate($schema);
+            // 2b. Verify FK targets exist. By default, abort if the DB is
+            // unreachable while FKs are declared (audit M2). The user can
+            // opt out with --skip-fk-validation when they know the targets exist.
+            $fkWarnings = (new ForeignKeyValidator())->validate($schema, skipOnDbUnreachable: $skipFkValidation);
             foreach ($fkWarnings as $warning) {
                 CLI::write("⚠ {$warning}", 'yellow');
             }
@@ -149,8 +153,18 @@ class MakeCrud extends BaseCommand
                 CLI::write('Service factory snippet (paste inside the trait):', 'yellow');
                 CLI::write($preview['service_method'], 'white');
             } else {
-                $wireman->wire($schema);
-                CLI::write("WIRING: Services and Mappers registered successfully.", 'green');
+                try {
+                    $wireman->wire($schema);
+                    CLI::write("WIRING: Services and Mappers registered successfully.", 'green');
+                } catch (\dcardenasl\CI4ApiCrudMaker\Wiring\WiringFailedException $e) {
+                    CLI::newLine();
+                    CLI::write('WIRING FAILED — module files were generated but Services.php could not be auto-wired.', 'red');
+                    CLI::newLine();
+                    CLI::write($e->describe(), 'yellow');
+                    CLI::newLine();
+
+                    return EXIT_ERROR;
+                }
             }
 
             CLI::newLine();
