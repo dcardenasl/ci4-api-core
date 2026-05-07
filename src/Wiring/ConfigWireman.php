@@ -130,12 +130,13 @@ PHP;
         // Inject require_once if not present. Character class accepts alphanumerics
         // so domains like `Upa2Events` or `V2Reports` don't silently fall through.
         if (!str_contains($content, $requireLine)) {
+            // preg_replace returns null on regex error; keep original content in that case.
             $content = preg_replace(
                 '/(require_once __DIR__ \. \'\/[A-Za-z0-9]+Services\.php\';)/',
                 "$0\n" . $requireLine,
                 $content,
                 1
-            );
+            ) ?? $content;
         }
 
         // Inject use trait if not present
@@ -145,7 +146,7 @@ PHP;
                 "$0\n" . $useLine,
                 $content,
                 1
-            );
+            ) ?? $content;
         }
 
         file_put_contents($servicesFile, $content);

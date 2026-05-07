@@ -65,6 +65,11 @@ class ForeignKeyValidator
 
         $missing = [];
         foreach ($fkFields as $field) {
+            // The filter above already excludes null/empty fkTable, but PHPStan
+            // can't narrow through the closure — guard explicitly so level 8 stays clean.
+            if ($field->fkTable === null) {
+                continue;
+            }
             if (!in_array(strtolower($field->fkTable), $existing, true)) {
                 $missing[] = "Field '{$field->name}': foreign key references nonexistent table '{$field->fkTable}'.";
             }
