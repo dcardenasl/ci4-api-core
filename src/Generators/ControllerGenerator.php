@@ -118,7 +118,7 @@ PHP;
      */
     private function resolveConditionalTraits(ResourceSchema $schema): array
     {
-        $fieldNames = array_map(fn($f) => $f->name, $schema->fields);
+        $fieldNames = array_map(fn ($f) => $f->name, $schema->fields);
         $imports = '';
         $uses = '';
 

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Unit\Generators;
 
 use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingPaths;
 use dcardenasl\CI4ApiCrudMaker\Core\Field;
 use dcardenasl\CI4ApiCrudMaker\Core\ResourceSchema;
 use dcardenasl\CI4ApiCrudMaker\Generators\ControllerGenerator;
