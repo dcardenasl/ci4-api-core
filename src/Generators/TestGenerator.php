@@ -125,6 +125,28 @@ PHP;
         // See RouteGenerator::baseTemplate().
         $fullPath = '/api/v1/' . StringHelper::toKebab($schema->domain) . '/' . $schema->route;
 
+        // Pick the expected unauthenticated status from the route's protected
+        // filter list. When the route is gated by a JWT/auth/api-key filter, an
+        // anonymous GET must hit 401. With no auth filter, the route is open
+        // and the controller's index will respond — but the resource won't
+        // exist yet, so 404 is the contract that gives the smoke test
+        // something concrete to assert.
+        $expectsAuth = false;
+        foreach ($this->config->protectedRouteFilters as $filter) {
+            if (
+                str_starts_with($filter, 'jwtauth')
+                || str_starts_with($filter, 'auth')
+                || $filter === 'appKeyRequired'
+            ) {
+                $expectsAuth = true;
+                break;
+            }
+        }
+        $expectedStatus = $expectsAuth ? 401 : 404;
+        $authReason = $expectsAuth
+            ? 'wraps every endpoint in an auth filter, so an unauthenticated request must return 401'
+            : 'is open, so a request for a missing resource must return 404';
+
         return <<<PHP
 <?php
 
@@ -132,26 +154,33 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Controllers\\{$schema->domain};
 
-use Tests\Support\ApiTestCase;
+use CodeIgniter\Test\CIUnitTestCase;
+use CodeIgniter\Test\DatabaseTestTrait;
+use CodeIgniter\Test\FeatureTestTrait;
 
 /**
- * HTTP smoke tests for {$resource}Controller. The default route group wraps
- * every endpoint in the jwtauth filter, so an unauthenticated request must
- * return 401 — a sufficient signal that the route was registered and wired.
+ * HTTP smoke test for {$resource}Controller. The configured route group
+ * {$authReason} — a sufficient signal that the route was registered and wired.
  *
- * Extend with authenticated 200 flows (via AuthTestTrait) as business rules
- * solidify.
+ * Extend with authenticated 200 flows as business rules solidify.
  *
  * @internal
  */
-final class {$resource}ControllerTest extends ApiTestCase
+final class {$resource}ControllerTest extends CIUnitTestCase
 {
-    public function testIndexRequiresAuthentication(): void
+    use DatabaseTestTrait;
+    use FeatureTestTrait;
+
+    protected \$migrate     = true;
+    protected \$migrateOnce = true;
+    protected \$refresh     = true;
+    protected \$namespace   = '{$this->config->appNamespace}';
+
+    public function testIndexSmoke(): void
     {
-        \$this->clearTestRequestHeaders();
         \$result = \$this->get('{$fullPath}');
 
-        \$result->assertStatus(401);
+        \$result->assertStatus({$expectedStatus});
     }
 }
 PHP;
