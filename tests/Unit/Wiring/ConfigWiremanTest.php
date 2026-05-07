@@ -100,22 +100,71 @@ final class ConfigWiremanTest extends TestCase
         $this->assertStringNotContainsString('\\App\\', $snippet);
     }
 
-    public function testWireThrowsWhenServicesFileLayoutIsUnrecognized(): void
+    public function testWireSucceedsAgainstVanillaCi4ServicesFile(): void
     {
-        // Set up a Services.php whose layout doesn't match the regex
-        // (no `require_once __DIR__ . '/...Services.php';` lines, no
-        // `use ...DomainServices;` traits). The regex falls through silently,
-        // and the post-injection guard must convert that into a clear error.
+        // Regression: G1 — a fresh CI4 install ships Config/Services.php with the
+        // shape `class Services extends BaseService { ... }`, no prior
+        // require_once for sibling domain traits, no prior `use ...DomainServices;`.
+        // Pre-fix this layout fell through both injection regexes and tripped
+        // verifyMainServicesRegistration. The fallback anchors must now make
+        // wire() succeed on this layout.
         $configDir = APPPATH . 'Config';
         if (!is_dir($configDir)) {
             mkdir($configDir, 0o777, true);
         }
 
         $servicesFile = $configDir . '/Services.php';
-        file_put_contents($servicesFile, "<?php\nnamespace Config;\nclass Services\n{\n}\n");
+        file_put_contents(
+            $servicesFile,
+            "<?php\n\nnamespace Config;\n\nuse CodeIgniter\\Config\\BaseService;\n\nclass Services extends BaseService\n{\n    // intentionally empty\n}\n",
+        );
 
-        // Ensure this domain trait file does NOT exist yet — that triggers
-        // the createDomainTrait + registerDomainInMainServices path.
+        $traitFile = $configDir . '/VanillaDomainServices.php';
+        @unlink($traitFile);
+
+        $wireman = new ConfigWireman(ScaffoldingConfig::defaults());
+        $schema = new ResourceSchema(
+            resource: 'Widget',
+            domain: 'Vanilla',
+            route: 'widgets',
+            fields: [new Field(name: 'name', type: 'string')],
+        );
+
+        try {
+            $wireman->wire($schema);
+            $updated = (string) file_get_contents($servicesFile);
+
+            $this->assertStringContainsString(
+                "require_once __DIR__ . '/VanillaDomainServices.php';",
+                $updated,
+                'Fallback must inject require_once before class Services',
+            );
+            $this->assertStringContainsString(
+                'use VanillaDomainServices;',
+                $updated,
+                'Fallback must inject the trait inside the class body',
+            );
+            $this->assertFileExists($traitFile, 'Domain trait file must be created on disk');
+        } finally {
+            @unlink($traitFile);
+            @unlink($servicesFile);
+        }
+    }
+
+    public function testWireThrowsWhenServicesFileHasNoServicesClass(): void
+    {
+        // A truly malformed Services.php (no `class Services extends X` declaration
+        // at all) is still a hard failure: the fallback anchor cannot guess where
+        // to inject. verifyMainServicesRegistration must surface the problem with
+        // the manual snippet so the consumer can recover.
+        $configDir = APPPATH . 'Config';
+        if (!is_dir($configDir)) {
+            mkdir($configDir, 0o777, true);
+        }
+
+        $servicesFile = $configDir . '/Services.php';
+        file_put_contents($servicesFile, "<?php\nnamespace Config;\n// the file lost its Services class somehow\n");
+
         $traitFile = $configDir . '/MisalignedDomainServices.php';
         @unlink($traitFile);
 

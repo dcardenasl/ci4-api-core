@@ -127,26 +127,49 @@ PHP;
         $requireLine = "require_once __DIR__ . '/{$domain}DomainServices.php';";
         $useLine = "    use {$domain}DomainServices;";
 
-        // Inject require_once if not present. Character class accepts alphanumerics
-        // so domains like `Upa2Events` or `V2Reports` don't silently fall through.
+        // 1. Inject require_once if not present.
+        // Primary: append after a sibling `require_once __DIR__ . '/...Services.php';`.
+        // Fallback (G1): vanilla CI4 Services.php has no prior trait file — inject
+        // immediately before `class Services extends ...`. The fallback path is
+        // what makes the package usable from a clean CI4 install without the
+        // consumer having to seed a dummy trait first.
         if (!str_contains($content, $requireLine)) {
-            // preg_replace returns null on regex error; keep original content in that case.
-            $content = preg_replace(
+            $injected = preg_replace(
                 '/(require_once __DIR__ \. \'\/[A-Za-z0-9]+Services\.php\';)/',
                 "$0\n" . $requireLine,
                 $content,
                 1
-            ) ?? $content;
+            );
+            if ($injected === null || $injected === $content) {
+                $injected = preg_replace(
+                    '/^(class\s+Services\s+extends\s+\w+)/m',
+                    $requireLine . "\n\n" . '$1',
+                    $content,
+                    1
+                );
+            }
+            $content = $injected ?? $content;
         }
 
-        // Inject use trait if not present
+        // 2. Inject `use ...DomainServices;` inside the class body.
+        // Primary: alongside an existing `use ...DomainServices;` line.
+        // Fallback (G1): no prior trait — insert just after the class opening `{`.
         if (!str_contains($content, $useLine)) {
-            $content = preg_replace(
+            $injected = preg_replace(
                 '/(    use [A-Za-z0-9]+DomainServices;)/',
                 "$0\n" . $useLine,
                 $content,
                 1
-            ) ?? $content;
+            );
+            if ($injected === null || $injected === $content) {
+                $injected = preg_replace(
+                    '/(class\s+Services\s+extends\s+\w+\s*\{[^\n]*\n)/m',
+                    '$1' . $useLine . "\n",
+                    $content,
+                    1
+                );
+            }
+            $content = $injected ?? $content;
         }
 
         file_put_contents($servicesFile, $content);
