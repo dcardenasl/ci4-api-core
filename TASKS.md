@@ -2,7 +2,7 @@
 
 > Fuente de verdad para trabajo en este repo.
 > Gestionado desde Cowork/VentureOS. Ejecutado desde Claude Code.
-> Última actualización: 2026-05-07 (CORE-003 completado)
+> Última actualización: 2026-05-07 (vanilla-consumer fixes B1/B2/B3/G1/G3 completados)
 
 ---
 
@@ -14,7 +14,7 @@
 
 ## 🟡 Próximo (ordenado por prioridad)
 
-*(vacío — bloque B6 completo. Próxima tarea desbloqueada por el milestone raíz.)*
+*(vacío — vanilla-consumer fixes completos. Próxima tarea: CORE-004 en ci4-api-starter, planificada por separado.)*
 
 ---
 
@@ -29,6 +29,8 @@
 ---
 
 ## ✅ Completadas recientes
+
+- **[FIX-VANILLA] Fixes derivados del reporte vanilla-consumer-test 2026-05-07** (2026-05-07) — 5 fixes en `ci4-api-core` para que el paquete sea consumible desde un CI4 vanilla sin los workarounds documentados en el reporte. **B1**: `src/DataCasts/DecimalCast.php` (string-backed, preserva precisión monetaria); `ModelEntityGenerator` emite `protected $castHandlers = ['decimal' => DecimalCast::class]` solo si hay ≥1 campo decimal. **B2**: indentación uniforme de la primera key del `$casts` array. **B3**: portados `Filterable`, `Searchable` (a `src/Models/Traits/`) y `FilterParser`, `FilterOperatorApplier`, `SearchQueryApplier`, `QueryBuilder` (a `src/Filters/`) desde `ci4-api-starter`; `ScaffoldingConfig` expone `filterableTraitFqcn`/`searchableTraitFqcn` con default a las core; `ModelEntityGenerator` usa los nuevos FQCN. **G1**: `ConfigWireman::registerDomainInMainServices()` con fallback a `class Services extends \w+` cuando no hay anchor previo (require_once + use trait). **G3**: `Generators\TestGenerator::featureTestTemplate()` extiende `CIUnitTestCase` + `DatabaseTestTrait` + `FeatureTestTrait` directamente (sin `Tests\Support\ApiTestCase`); status assertion condicional según `protectedRouteFilters` (jwtauth/auth/appKeyRequired → 401, sino → 404). **5º item del runtime contract** (`config('Api')` opcional con coalescencia a defaults: searchEnabled=true, searchMinLength=0, paginationDefaultLimit=20, paginationMaxLimit=100). **Tests**: 53 nuevos (DecimalCast 7, FilterParser 22, FilterOperatorApplier 10, SearchQueryApplier 4, ModelEntityGenerator 5 nuevos, TestGenerator 4 nuevos, ConfigWireman 1 nuevo, ScaffoldingConfig 1 nuevo). Suite total 138 tests / 407 asserts verde. PHPStan L8 limpio.
 
 - **[CORE-003] Apuntar `ScaffoldingConfig::defaults()` al paquete** (2026-05-07) — Reescritas 8 FQCNs en `src/Config/ScaffoldingConfig.php::defaults()`: `controllerBaseClass`, `serviceBaseClass`, `serviceContractInterface`, `modelBaseClass`, `requestDtoBaseClass`, `responseDtoInterface`, `repositoryInterface`, `responseMapperInterface` ahora apuntan a `dcardenasl\Ci4ApiCore\…`. Las dos implementaciones concretas (`repositoryImplementation`, `responseMapperImplementation`) siguen apuntando al consumer (`App\Repositories\GenericRepository`, `App\Services\Core\Mappers\DtoResponseMapper`) porque son del dominio del consumidor. Sincronizadas 4 assertions: `ScaffoldingConfigTest` (L18-19), `ServiceGeneratorTest` (L40), `ConfigWiremanTest` (L159). Los 8 generators no necesitaron cambios: todos leen FQCNs desde `$this->config->*`. PHPStan L8 limpio, 85 tests verdes (mismo conteo que CORE-002). Smoke test inline confirma que `make:crud` emite `use dcardenasl\Ci4ApiCore\Http\ApiController`, `…\Services\BaseCrudService`, `…\Dto\BaseRequestDTO`, `…\Models\BaseAuditableModel`, `…\Repositories\RepositoryInterface`, `…\Mappers\ResponseMapperInterface` en los archivos generados, mientras imports del consumer (`App\Traits\Filterable`, `App\DTO\…ResponseDTO`) permanecen intactos.
 
