@@ -170,6 +170,29 @@ Format: `name:type:modifier1|modifier2`
 
 Invalid or reserved field names are rejected upfront (PHP keywords, MySQL reserved words, `id`, `created_at`, `updated_at`, `deleted_at`).
 
+## Scope and limitations (v0.x)
+
+The generator is designed for **flat resources**: one resource = one table = one set of CRUD endpoints. This is intentional — most domain entities are flat, and "smart" relation handling tends to over-engineer the simple case.
+
+**What `fk:<table>` does today:**
+
+- Adds an `INT UNSIGNED` column with the right name (`{name}_id` if you write `category_id:fk:categories`).
+- Generates a `FOREIGN KEY` constraint in the migration.
+- Adds `is_not_unique[table.id]` validation to the Create DTO so non-existent IDs are rejected at the API boundary.
+- Optionally validates the target table exists at scaffold time (DB-reachability check; opt-out with `--skip-fk-validation`).
+
+**What it does NOT do — wire by hand if you need it:**
+
+- ❌ No `hasMany` / `belongsTo` accessor methods on the Entity.
+- ❌ No automatic eager-loading of the related resource in the Response DTO (the parent is returned as `category_id: int`, not `category: {...}`).
+- ❌ No nested route shapes (e.g. `GET /categories/{id}/products`).
+- ❌ No reverse-side scaffolding (creating a `Product` does not regenerate the `Category` Service to expose `getProducts()`).
+- ❌ No transactional cross-resource creation (e.g. POSTing a `Category` with embedded `Product[]` payloads).
+
+If your domain needs any of the above, scaffold both resources flat first, then hand-edit the Service / Response DTO of the parent to load and expose the child collection. This is rarely more than ~30 lines of code per relation, and keeps the generator's surface small enough to remain stable across versions.
+
+> **Roadmap:** relation-aware generators are tracked as a v0.3 candidate. See `TASKS.md` and the v0.3 design notes once they land in `docs/`. The pre-1.0 API may still change.
+
 ## Customization
 
 Override any convention by passing a customized `ScaffoldingConfig` from your `build()` method:
