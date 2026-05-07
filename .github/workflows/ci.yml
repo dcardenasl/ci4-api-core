@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+jobs:
+  test:
+    name: PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: ${{ matrix.php-version == '8.2' && 'xdebug' || 'none' }}
+          extensions: intl, mbstring, json, dom
+
+      - name: Validate composer.json
+        run: composer validate --strict --no-check-publish
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ matrix.php-version }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ matrix.php-version }}-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: PHP CS Fixer (dry-run)
+        run: |
+          if [ ! -f vendor/bin/php-cs-fixer ]; then
+            composer require --dev friendsofphp/php-cs-fixer:^3.95 --no-interaction --no-progress
+          fi
+          vendor/bin/php-cs-fixer fix --dry-run --diff --no-interaction
+
+      - name: PHPStan
+        run: composer analyse
+
+      - name: PHPUnit
+        run: composer test
+
+      - name: Security audit
+        # Soft-fail until v0.2 publishes a stable lock; advisories surface either way.
+        continue-on-error: true
+        run: composer audit
