@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# CodeIgniter 4 CRUD Scaffolding Helper (ci4-api-crud-maker package)
+# CodeIgniter 4 CRUD Scaffolding Helper (ci4-api-core package)
 # Wrapper around `php spark make:crud` with automatic escaping and validation.
 #
 # Distributed via Composer's `bin` config — symlinked into vendor/bin.
@@ -123,7 +123,7 @@ echo $v;
 fi
 
 echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}CRUD Scaffolding Helper (ci4-api-crud-maker)${NC}"
+echo -e "${BLUE}CRUD Scaffolding Helper (ci4-api-core)${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "${YELLOW}Configuration:${NC}"

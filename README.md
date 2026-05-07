@@ -1,6 +1,6 @@
-# ci4-api-crud-maker
+# ci4-api-core
 
-DTO-first CRUD scaffolding engine for CodeIgniter 4 APIs. Extracted from [`ci4-api-starter`](https://github.com/dcardenasl/ci4-api-starter) so multiple projects can share a single, versioned source of truth instead of copying the engine between codebases.
+DTO-first API foundation for CodeIgniter 4: base classes + CRUD scaffolding engine. Powers `ci4-api-starter` and `ci4-domain-starter` so multiple projects share a single, versioned source of truth instead of copying the engine between codebases.
 
 > **Status:** `v0.1.0` — initial release. APIs may change without notice until `1.0.0`. Not yet published to Packagist; install via VCS repository (see below).
 
@@ -69,18 +69,18 @@ Add the VCS repository to your project's `composer.json` and require the package
 "repositories": [
     {
         "type": "vcs",
-        "url": "https://github.com/dcardenasl/ci4-api-crud-maker"
+        "url": "https://github.com/dcardenasl/ci4-api-core"
     }
 ],
 "require-dev": {
-    "dcardenasl/ci4-api-crud-maker": "^0.1.0"
+    "dcardenasl/ci4-api-core": "^0.1.0"
 }
 ```
 
 Then install:
 
 ```bash
-composer update dcardenasl/ci4-api-crud-maker --no-interaction
+composer update dcardenasl/ci4-api-core --no-interaction
 ```
 
 ## Configure
@@ -94,8 +94,8 @@ declare(strict_types=1);
 
 namespace Config;
 
-use dcardenasl\CI4ApiCrudMaker\Config\BaseScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Config\BaseScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
 
 class Scaffolding extends BaseScaffoldingConfig
 {

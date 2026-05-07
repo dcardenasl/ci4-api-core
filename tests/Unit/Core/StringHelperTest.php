@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Core;
 
-use dcardenasl\CI4ApiCrudMaker\Core\StringHelper;
+use dcardenasl\Ci4ApiCore\Core\StringHelper;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

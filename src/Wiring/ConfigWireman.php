@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace dcardenasl\CI4ApiCrudMaker\Wiring;
+namespace dcardenasl\Ci4ApiCore\Wiring;
 
-use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Core\ResourceSchema;
+use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
 
 /**
  * ConfigWireman

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace dcardenasl\CI4ApiCrudMaker\Core;
+namespace dcardenasl\Ci4ApiCore\Core;
 
 /**
  * Single source of truth for the string transformations the scaffolding engine

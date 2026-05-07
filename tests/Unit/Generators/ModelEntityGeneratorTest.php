@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Generators;
 
-use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Core\Field;
-use dcardenasl\CI4ApiCrudMaker\Core\ResourceSchema;
-use dcardenasl\CI4ApiCrudMaker\Generators\ModelEntityGenerator;
+use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Core\Field;
+use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
+use dcardenasl\Ci4ApiCore\Generators\ModelEntityGenerator;
 use PHPUnit\Framework\TestCase;
 
 final class ModelEntityGeneratorTest extends TestCase

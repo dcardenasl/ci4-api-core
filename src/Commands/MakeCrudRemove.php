@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace dcardenasl\CI4ApiCrudMaker\Commands;
+namespace dcardenasl\Ci4ApiCore\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
-use dcardenasl\CI4ApiCrudMaker\Config\BaseScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Core\ResourceSchema;
-use dcardenasl\CI4ApiCrudMaker\Core\StringHelper;
-use dcardenasl\CI4ApiCrudMaker\Orchestration\ScaffoldRemover;
+use dcardenasl\Ci4ApiCore\Config\BaseScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
+use dcardenasl\Ci4ApiCore\Core\StringHelper;
+use dcardenasl\Ci4ApiCore\Orchestration\ScaffoldRemover;
 use Throwable;
 
 /**

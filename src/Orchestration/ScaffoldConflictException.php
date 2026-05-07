@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace dcardenasl\CI4ApiCrudMaker\Orchestration;
+namespace dcardenasl\Ci4ApiCore\Orchestration;
 
 use RuntimeException;
 

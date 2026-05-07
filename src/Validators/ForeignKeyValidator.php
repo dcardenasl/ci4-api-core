@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace dcardenasl\CI4ApiCrudMaker\Validators;
+namespace dcardenasl\Ci4ApiCore\Validators;
 
 use Config\Database;
-use dcardenasl\CI4ApiCrudMaker\Core\Field;
-use dcardenasl\CI4ApiCrudMaker\Core\ResourceSchema;
+use dcardenasl\Ci4ApiCore\Core\Field;
+use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
 use InvalidArgumentException;
 use Throwable;
 

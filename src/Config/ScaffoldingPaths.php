@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace dcardenasl\CI4ApiCrudMaker\Config;
+namespace dcardenasl\Ci4ApiCore\Config;
 
 /**
  * Directory layout where each generator drops its artifact, expressed

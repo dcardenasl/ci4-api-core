@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Config;
 
-use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingPaths;
+use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Config\ScaffoldingPaths;
 use PHPUnit\Framework\TestCase;
 
 final class ScaffoldingConfigTest extends TestCase

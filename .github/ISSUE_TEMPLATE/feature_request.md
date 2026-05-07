@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Propose a new capability for ci4-api-crud-maker
+about: Propose a new capability for ci4-api-core
 title: '[Feature] '
 labels: enhancement
 assignees: ''

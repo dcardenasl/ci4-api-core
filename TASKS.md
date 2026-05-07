@@ -1,8 +1,8 @@
-# TASKS — ci4-api-crud-maker
+# TASKS — ci4-api-core
 
 > Fuente de verdad para trabajo en este repo.
 > Gestionado desde Cowork/VentureOS. Ejecutado desde Claude Code.
-> Última actualización: 2026-05-06
+> Última actualización: 2026-05-07 (CORE-001 completado)
 
 ---
 
@@ -20,14 +20,17 @@
 
 ## ⚪ Backlog
 
-- [CRUD-001] Publicar en Packagist como `dcardenasl/ci4-api-crud-maker` v1.0.0 — actualmente consumido por VCS/path repo. Requiere estabilizar API pública antes de publicar.
-- [CRUD-002] Soporte para campo `json` en el generador de campos — tipo `json` en `--fields` que genere migration `json`, cast en Model, y DTO con `array` typehint
-- [CRUD-003] Soporte para relaciones `belongsTo` en scaffolding — generar FK en migration + campo `{name}_id` en DTOs con validación `is_natural_no_zero`
-- [CRUD-004] Comando `make:crud:list` — listar todos los módulos scaffoldeados en el proyecto con su estado (migración aplicada / pendiente)
+- [CORE-002–007] **Milestone ci4-api-core v1.0** 🟡 Próximo — ver detalle en `../TASKS.md`.
+  Resumen: mover base classes (ApiController, BaseCrudService, BaseAuditableModel, BaseRequestDTO…) bajo namespace `dcardenasl\Ci4ApiCore\`, apuntar `ScaffoldingConfig::defaults()` al paquete, refactorizar ci4-api-starter y ci4-domain-starter para consumirlo, publicar en Packagist como `dcardenasl/ci4-api-core` v1.0.0. Sin install step — solo `composer require`. Corte limpio, sin código legacy.
+- [CRUD-002] Soporte para campo `json` — tipo `json` en `--fields` que genere migration `json`, cast en Model, DTO con `array` typehint
+- [CRUD-003] Soporte para relaciones `belongsTo` — FK en migration + `{name}_id` en DTOs con validación `is_natural_no_zero`
+- [CRUD-004] Comando `make:crud:list` — listar módulos scaffoldeados con estado (migración aplicada / pendiente)
 
 ---
 
 ## ✅ Completadas recientes
+
+- **[CORE-001] Renombrar paquete a `dcardenasl/ci4-api-core`** (2026-05-07) — Renombrados `composer.json` (`name`, `homepage`, `support`) y migrado el namespace PSR-4 `dcardenasl\CI4ApiCrudMaker\` → `dcardenasl\Ci4ApiCore\` en todo `src/` y `tests/`. Actualizadas referencias al paquete en README, CONTRIBUTING, CLAUDE.md, `.github/ISSUE_TEMPLATE/*`, `bin/make-crud.sh`, `bin/validate-crud.sh`, `docs/ARCHITECTURE_CONTRACT.md`, `docs/CRUD_FROM_ZERO.md`, `docs/adr/0001-flat-crud-only-in-v0x.md`. Cambio BREAKING — los consumers deben actualizar `require`, `repositories.url` y todos los `use dcardenasl\CI4ApiCrudMaker\...`. Suite 64 tests verde post-rename; sin cambios funcionales en generadores, comandos ni shell wrappers.
 
 - **[B6.5] Integration test end-to-end** (2026-05-06) — `tests/Integration/EndToEndScaffoldTest.php` corre `ScaffoldingOrchestrator->orchestrate()` contra el temp APPPATH/ROOTPATH del bootstrap, asserts >= 13 artefactos creados, `php -l` sobre cada `.php` generado, paths convencionales presentes (DTOs/Service/Controller/Routes/Lang/Migration), e idempotencia (segundo `orchestrate()` lanza `ScaffoldConflictException`). 3 tests / 48 asserts. Suite total 64 tests verde. **Deferred a v0.3:** fixture CI4 completo con DB + HTTP (~1 día); el integration test lightweight cubre 80% de las regresiones de plantilla a 1% del costo.
 - **[B6.4] Doc limitación de relaciones** (2026-05-06) — Sección "Scope and limitations" en README explicita qué hace `fk:<table>` hoy (column + constraint + validación) vs. qué hay que cablear a mano (no hasMany/belongsTo accessors, no embedding en Response, no rutas anidadas). Sección "Scope: flat CRUD only" en CLAUDE.md. ADR `docs/adr/0001-flat-crud-only-in-v0x.md` documenta razones (acoplamiento con ORM, surface multiplicada, intención ambigua) y triggers que desbloquean v0.3.
@@ -45,7 +48,7 @@
 
 - **Este es un paquete Composer** — los cambios aquí afectan a todos los proyectos que lo consumen (ci4-api-starter y proyectos generados). Cambios breaking requieren bump de versión.
 - **Tests antes de tocar generadores**: `composer test` (PHPUnit Unit + Integration). `composer analyse` (PHPStan level 5).
-- **`ARCHITECTURE_CONTRACT.md` es la autoridad** — `ci4-api-crud-maker/docs/ARCHITECTURE_CONTRACT.md`. La copia en ci4-api-starter es solo referencia.
+- **`ARCHITECTURE_CONTRACT.md` es la autoridad** — `ci4-api-core/docs/ARCHITECTURE_CONTRACT.md`. La copia en ci4-api-starter es solo referencia.
 - **Cambios a templates de generadores**: verificar que los archivos generados siguen compilando y pasando PHPStan en ci4-api-starter antes de hacer merge.
 - **Nuevos tipos de campo** (`TypeMapper`): agregar en `src/Core/TypeMapper.php` + tests en `tests/Unit/TypeMapperTest.php`.
 - **No publicar en Packagist hasta v1.0.0** — la API de comandos puede cambiar. Consumir por VCS hasta entonces.

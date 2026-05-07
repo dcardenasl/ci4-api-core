@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace dcardenasl\CI4ApiCrudMaker\Commands;
+namespace dcardenasl\Ci4ApiCore\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
-use dcardenasl\CI4ApiCrudMaker\Config\BaseScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Core\Field;
-use dcardenasl\CI4ApiCrudMaker\Core\ResourceSchema;
-use dcardenasl\CI4ApiCrudMaker\Core\StringHelper;
-use dcardenasl\CI4ApiCrudMaker\Orchestration\ScaffoldConflictException;
-use dcardenasl\CI4ApiCrudMaker\Orchestration\ScaffoldingOrchestrator;
-use dcardenasl\CI4ApiCrudMaker\Validators\FieldNameValidator;
-use dcardenasl\CI4ApiCrudMaker\Validators\FieldStringParser;
-use dcardenasl\CI4ApiCrudMaker\Validators\ForeignKeyValidator;
-use dcardenasl\CI4ApiCrudMaker\Wiring\ConfigWireman;
+use dcardenasl\Ci4ApiCore\Config\BaseScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Core\Field;
+use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
+use dcardenasl\Ci4ApiCore\Core\StringHelper;
+use dcardenasl\Ci4ApiCore\Orchestration\ScaffoldConflictException;
+use dcardenasl\Ci4ApiCore\Orchestration\ScaffoldingOrchestrator;
+use dcardenasl\Ci4ApiCore\Validators\FieldNameValidator;
+use dcardenasl\Ci4ApiCore\Validators\FieldStringParser;
+use dcardenasl\Ci4ApiCore\Validators\ForeignKeyValidator;
+use dcardenasl\Ci4ApiCore\Wiring\ConfigWireman;
 use Exception;
 use InvalidArgumentException;
 use Throwable;
@@ -156,7 +156,7 @@ class MakeCrud extends BaseCommand
                 try {
                     $wireman->wire($schema);
                     CLI::write("WIRING: Services and Mappers registered successfully.", 'green');
-                } catch (\dcardenasl\CI4ApiCrudMaker\Wiring\WiringFailedException $e) {
+                } catch (\dcardenasl\Ci4ApiCore\Wiring\WiringFailedException $e) {
                     CLI::newLine();
                     CLI::write('WIRING FAILED — module files were generated but Services.php could not be auto-wired.', 'red');
                     CLI::newLine();
@@ -211,7 +211,7 @@ class MakeCrud extends BaseCommand
         CLI::write(
             "⚠ No Config\\Scaffolding found — using bundled defaults. "
             . "Create app/Config/Scaffolding.php extending "
-            . "dcardenasl\\CI4ApiCrudMaker\\Config\\BaseScaffoldingConfig "
+            . "dcardenasl\\Ci4ApiCore\\Config\\BaseScaffoldingConfig "
             . "to customize paths, base classes, and route filters.",
             'yellow'
         );

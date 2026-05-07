@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace dcardenasl\CI4ApiCrudMaker\Config;
+namespace dcardenasl\Ci4ApiCore\Config;
 
 /**
  * Single value object that captures every consumer-app convention the

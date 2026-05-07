@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# CRUD Validation Script (ci4-api-crud-maker package)
+# CRUD Validation Script (ci4-api-core package)
 # Validates a scaffolded CRUD against known issues — table naming,
 # soft-delete consistency, controller / model / route presence.
 #
@@ -59,8 +59,8 @@ RESOURCE_PLURAL=""
 if [[ -f vendor/autoload.php ]]; then
     RESOURCE_PLURAL=$(php -r '
         require "vendor/autoload.php";
-        if (class_exists(\dcardenasl\CI4ApiCrudMaker\Core\StringHelper::class)) {
-            echo \dcardenasl\CI4ApiCrudMaker\Core\StringHelper::pluralize($argv[1]);
+        if (class_exists(\dcardenasl\Ci4ApiCore\Core\StringHelper::class)) {
+            echo \dcardenasl\Ci4ApiCore\Core\StringHelper::pluralize($argv[1]);
         }
     ' "$RESOURCE" 2>/dev/null || true)
 fi

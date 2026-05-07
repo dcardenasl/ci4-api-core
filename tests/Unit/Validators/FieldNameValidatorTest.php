@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Validators;
 
-use dcardenasl\CI4ApiCrudMaker\Core\Field;
-use dcardenasl\CI4ApiCrudMaker\Validators\FieldNameValidator;
+use dcardenasl\Ci4ApiCore\Core\Field;
+use dcardenasl\Ci4ApiCore\Validators\FieldNameValidator;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 

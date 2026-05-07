@@ -17,7 +17,7 @@ The downside is that "smart" relation generation:
 
 ## Decision
 
-`ci4-api-crud-maker` v0.x scaffolds **only flat resources**. A single field type (`fk:<table>`) handles the database-level concerns (column, constraint, validation), and stops there.
+`ci4-api-core` v0.x scaffolds **only flat resources**. A single field type (`fk:<table>`) handles the database-level concerns (column, constraint, validation), and stops there.
 
 If the consumer wants embedded children, eager loading, nested routes, or transactional multi-resource creation, they hand-wire it in the generated Service / Response DTO. The generator deliberately does not try to anticipate these shapes.
 

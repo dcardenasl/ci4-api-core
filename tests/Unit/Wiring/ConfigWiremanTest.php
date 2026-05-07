@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Wiring;
 
-use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Core\Field;
-use dcardenasl\CI4ApiCrudMaker\Core\ResourceSchema;
-use dcardenasl\CI4ApiCrudMaker\Wiring\ConfigWireman;
-use dcardenasl\CI4ApiCrudMaker\Wiring\WiringFailedException;
+use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Core\Field;
+use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
+use dcardenasl\Ci4ApiCore\Wiring\ConfigWireman;
+use dcardenasl\Ci4ApiCore\Wiring\WiringFailedException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -71,7 +71,7 @@ final class ConfigWiremanTest extends TestCase
             repositoryImplementation: 'Acme\\Persistence\\GenericRepo',
             responseMapperImplementation: 'Acme\\Mappers\\DtoResponseMapper',
             servicesFactoryClass: 'Config\\Services',
-            paths: $config_default = (\dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig::defaults())->paths,
+            paths: $config_default = (\dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig::defaults())->paths,
             protectedRouteFilters: ['acme-auth'],
             appNamespace: 'Acme',
         );

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace dcardenasl\CI4ApiCrudMaker\Validators;
+namespace dcardenasl\Ci4ApiCore\Validators;
 
 use InvalidArgumentException;
 

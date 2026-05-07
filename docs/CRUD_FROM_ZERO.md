@@ -1,6 +1,6 @@
 # CRUD From Zero
 
-Canonical guide for creating a new CRUD resource using `dcardenasl/ci4-api-crud-maker`.
+Canonical guide for creating a new CRUD resource using `dcardenasl/ci4-api-core`.
 
 This flow is **recommended by default**:
 1. Scaffold first with `vendor/bin/make-crud.sh`

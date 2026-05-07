@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace dcardenasl\CI4ApiCrudMaker\Config;
+namespace dcardenasl\Ci4ApiCore\Config;
 
 use CodeIgniter\Config\BaseConfig;
 
@@ -22,8 +22,8 @@ use CodeIgniter\Config\BaseConfig;
  *
  *   namespace Config;
  *
- *   use dcardenasl\CI4ApiCrudMaker\Config\BaseScaffoldingConfig;
- *   use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
+ *   use dcardenasl\Ci4ApiCore\Config\BaseScaffoldingConfig;
+ *   use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
  *
  *   class Scaffolding extends BaseScaffoldingConfig
  *   {

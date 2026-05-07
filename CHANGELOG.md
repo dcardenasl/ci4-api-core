@@ -1,8 +1,11 @@
 # Changelog
 
-All notable changes to `dcardenasl/ci4-api-crud-maker` will be documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/spec/v2.0.0.html) with the caveat that pre-1.0 releases may break.
+All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-crud-maker`) will be documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/spec/v2.0.0.html) with the caveat that pre-1.0 releases may break.
 
 ## [Unreleased]
+
+### Changed
+- **BREAKING — package renamed** (CORE-001, 2026-05-07): `dcardenasl/ci4-api-crud-maker` → `dcardenasl/ci4-api-core`. PSR-4 namespace migrated from `dcardenasl\CI4ApiCrudMaker\` to `dcardenasl\Ci4ApiCore\`. Repository URL updated to `https://github.com/dcardenasl/ci4-api-core`. Consumers must update their `composer.json` `require` entry, `repositories` URL/path, and any `use dcardenasl\CI4ApiCrudMaker\...` imports.
 
 ### Added
 - **`.github/workflows/ci.yml`** (audit B5.4, 2026-05-06) — first CI/CD pipeline for the package. Matrix on PHP 8.2 / 8.3 with `composer validate --strict`, `composer install`, PHP CS-Fixer dry-run, PHPStan analyse, PHPUnit, and `composer audit` (soft-fail). Closes the "Composer package shipping without automated tests" CRITICAL gap from the May 2026 audit.

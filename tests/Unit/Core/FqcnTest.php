@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Core;
 
-use dcardenasl\CI4ApiCrudMaker\Core\Fqcn;
+use dcardenasl\Ci4ApiCore\Core\Fqcn;
 use PHPUnit\Framework\TestCase;
 
 final class FqcnTest extends TestCase

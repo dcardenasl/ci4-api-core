@@ -1,4 +1,4 @@
-# Contributing to ci4-api-crud-maker
+# Contributing to ci4-api-core
 
 ## Overview
 
@@ -9,8 +9,8 @@ This package is the **DTO-first CRUD scaffolding engine** consumed by `ci4-api-s
 ## Development Setup
 
 ```bash
-git clone https://github.com/dcardenasl/ci4-api-crud-maker.git
-cd ci4-api-crud-maker
+git clone https://github.com/dcardenasl/ci4-api-core.git
+cd ci4-api-core
 composer install                 # composer.lock is committed; reproducible
 composer test                    # PHPUnit (Unit + Integration)
 composer analyse                 # PHPStan level 8
@@ -107,7 +107,7 @@ Releases are cut from `main`. Tags belong on `main` after a merge — never on `
    git push origin vx.y.z
    ```
 
-4. **Update consumer projects** (ci4-api-starter and derivatives) by running `composer update dcardenasl/ci4-api-crud-maker`.
+4. **Update consumer projects** (ci4-api-starter and derivatives) by running `composer update dcardenasl/ci4-api-core`.
 
 > **Packagist:** the package is **not yet published** (currently consumed via path/VCS repository). It will be published once v1.0.0 cuts. Until then, downstream projects pin to a specific tag or to `dev-main`.
 
@@ -124,7 +124,7 @@ Releases are cut from `main`. Tags belong on `main` after a merge — never on `
 
 ## Reporting Issues
 
-Open an issue at https://github.com/dcardenasl/ci4-api-crud-maker/issues. Include:
+Open an issue at https://github.com/dcardenasl/ci4-api-core/issues. Include:
 
 - PHP version (`php --version`)
 - CodeIgniter 4 version (`composer show codeigniter4/framework | grep version`)

@@ -1,6 +1,6 @@
 # Architecture Contract
 
-Non-negotiable architecture rules for modules built with `dcardenasl/ci4-api-crud-maker`. These constraints are what the scaffolding engine assumes when generating code; deviating from them without updating `Config\Scaffolding` will produce code that does not compile or does not integrate.
+Non-negotiable architecture rules for modules built with `dcardenasl/ci4-api-core`. These constraints are what the scaffolding engine assumes when generating code; deviating from them without updating `Config\Scaffolding` will produce code that does not compile or does not integrate.
 
 ## 1. Layer Contracts
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Validators;
 
-use dcardenasl\CI4ApiCrudMaker\Validators\FieldStringParser;
-use dcardenasl\CI4ApiCrudMaker\Validators\UnknownFieldTypeException;
+use dcardenasl\Ci4ApiCore\Validators\FieldStringParser;
+use dcardenasl\Ci4ApiCore\Validators\UnknownFieldTypeException;
 use PHPUnit\Framework\TestCase;
 
 final class FieldStringParserTest extends TestCase

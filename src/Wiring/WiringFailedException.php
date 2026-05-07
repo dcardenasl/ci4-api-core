@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace dcardenasl\CI4ApiCrudMaker\Wiring;
+namespace dcardenasl\Ci4ApiCore\Wiring;
 
 use RuntimeException;
 

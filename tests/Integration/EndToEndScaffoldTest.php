@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
-use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Core\Field;
-use dcardenasl\CI4ApiCrudMaker\Core\ResourceSchema;
-use dcardenasl\CI4ApiCrudMaker\Orchestration\ScaffoldConflictException;
-use dcardenasl\CI4ApiCrudMaker\Orchestration\ScaffoldingOrchestrator;
+use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Core\Field;
+use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
+use dcardenasl\Ci4ApiCore\Orchestration\ScaffoldConflictException;
+use dcardenasl\Ci4ApiCore\Orchestration\ScaffoldingOrchestrator;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -1,5 +1,5 @@
 {
-  "name": "dcardenasl/ci4-api-crud-maker",
+  "name": "dcardenasl/ci4-api-core",
   "description": "DTO-first CRUD scaffolding engine for CodeIgniter 4 APIs (extracted from ci4-api-starter)",
   "type": "library",
   "keywords": [
@@ -10,7 +10,7 @@
     "dto",
     "code-generation"
   ],
-  "homepage": "https://github.com/dcardenasl/ci4-api-crud-maker",
+  "homepage": "https://github.com/dcardenasl/ci4-api-core",
   "license": "MIT",
   "authors": [
     {
@@ -19,8 +19,8 @@
     }
   ],
   "support": {
-    "issues": "https://github.com/dcardenasl/ci4-api-crud-maker/issues",
-    "source": "https://github.com/dcardenasl/ci4-api-crud-maker"
+    "issues": "https://github.com/dcardenasl/ci4-api-core/issues",
+    "source": "https://github.com/dcardenasl/ci4-api-core"
   },
   "require": {
     "php": "^8.2",
@@ -36,7 +36,7 @@
   ],
   "autoload": {
     "psr-4": {
-      "dcardenasl\\CI4ApiCrudMaker\\": "src/"
+      "dcardenasl\\Ci4ApiCore\\": "src/"
     }
   },
   "autoload-dev": {

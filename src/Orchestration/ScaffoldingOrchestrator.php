@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace dcardenasl\CI4ApiCrudMaker\Orchestration;
+namespace dcardenasl\Ci4ApiCore\Orchestration;
 
-use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Core\ResourceSchema;
-use dcardenasl\CI4ApiCrudMaker\Generators\ControllerGenerator;
-use dcardenasl\CI4ApiCrudMaker\Generators\DtoGenerator;
-use dcardenasl\CI4ApiCrudMaker\Generators\LanguageGenerator;
-use dcardenasl\CI4ApiCrudMaker\Generators\MigrationGenerator;
-use dcardenasl\CI4ApiCrudMaker\Generators\ModelEntityGenerator;
-use dcardenasl\CI4ApiCrudMaker\Generators\RouteGenerator;
-use dcardenasl\CI4ApiCrudMaker\Generators\ServiceGenerator;
-use dcardenasl\CI4ApiCrudMaker\Generators\TestGenerator;
+use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
+use dcardenasl\Ci4ApiCore\Generators\ControllerGenerator;
+use dcardenasl\Ci4ApiCore\Generators\DtoGenerator;
+use dcardenasl\Ci4ApiCore\Generators\LanguageGenerator;
+use dcardenasl\Ci4ApiCore\Generators\MigrationGenerator;
+use dcardenasl\Ci4ApiCore\Generators\ModelEntityGenerator;
+use dcardenasl\Ci4ApiCore\Generators\RouteGenerator;
+use dcardenasl\Ci4ApiCore\Generators\ServiceGenerator;
+use dcardenasl\Ci4ApiCore\Generators\TestGenerator;
 use RuntimeException;
 use Throwable;
 

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace dcardenasl\CI4ApiCrudMaker\Validators;
+namespace dcardenasl\Ci4ApiCore\Validators;
 
-use dcardenasl\CI4ApiCrudMaker\Core\Field;
-use dcardenasl\CI4ApiCrudMaker\Core\TypeMapper;
+use dcardenasl\Ci4ApiCore\Core\Field;
+use dcardenasl\Ci4ApiCore\Core\TypeMapper;
 
 /**
  * Parses the `--fields` string accepted by `php spark make:crud` into typed Field objects.

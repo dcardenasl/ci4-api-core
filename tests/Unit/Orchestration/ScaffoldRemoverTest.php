@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Orchestration;
 
-use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Core\ResourceSchema;
-use dcardenasl\CI4ApiCrudMaker\Orchestration\ScaffoldRemover;
+use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
+use dcardenasl\Ci4ApiCore\Orchestration\ScaffoldRemover;
 use PHPUnit\Framework\TestCase;
 
 final class ScaffoldRemoverTest extends TestCase

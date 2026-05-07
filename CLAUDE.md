@@ -16,7 +16,7 @@ For cross-repo context (current milestone, blocked tasks), read `../TASKS.md`.
 
 ## Repository Overview
 
-**ci4-api-crud-maker** is a Composer package that provides a DTO-first CRUD scaffolding engine for CodeIgniter 4 projects. It is consumed by `ci4-api-starter` (and projects generated from it) via a path/VCS repository reference.
+**ci4-api-core** is a Composer package that provides a DTO-first CRUD scaffolding engine for CodeIgniter 4 projects. It is consumed by `ci4-api-starter` (and projects generated from it) via a path/VCS repository reference.
 
 **Current version:** v0.1.0 (not yet published on Packagist — APIs may still change before 1.0.0)
 

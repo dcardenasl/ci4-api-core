@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a defect in ci4-api-crud-maker
+about: Report a defect in ci4-api-core
 title: '[Bug] '
 labels: bug
 assignees: ''
@@ -14,7 +14,7 @@ assignees: ''
 
 - PHP version: <!-- e.g. 8.2.30 -->
 - CodeIgniter version (consumer project): <!-- e.g. 4.7.x — check composer.lock in the consuming app -->
-- crud-maker version: <!-- composer show dcardenasl/ci4-api-crud-maker -->
+- crud-maker version: <!-- composer show dcardenasl/ci4-api-core -->
 - Consumer project: <!-- ci4-api-starter / a derivative — share its CLAUDE.md if non-public -->
 
 ## Reproduction
