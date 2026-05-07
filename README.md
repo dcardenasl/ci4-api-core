@@ -14,6 +14,28 @@ bash vendor/bin/make-crud.sh Product Catalog \
   yes
 ```
 
+```mermaid
+flowchart LR
+    Input["Field spec<br/>name:string:required|searchable,<br/>price:decimal:filterable,<br/>category_id:fk:categories"]
+    Schema["ResourceSchema<br/>(parsed Fields,<br/>typed via TypeMapper)"]
+
+    subgraph Generators["8 Generators"]
+        direction TB
+        DTO["DTO<br/>(Index/Create/Update/Response)"]
+        Service["Service<br/>(interface + impl)"]
+        Controller["Controller + OpenAPI doc"]
+        Migration["Migration<br/>(timestamped)"]
+        Model["Model + Entity"]
+        Routes["Routes<br/>(v1/{domain}.php)"]
+        Lang["Language files<br/>(en + es)"]
+        Tests["Tests<br/>(Unit + Integration + Feature)"]
+    end
+
+    Wiring["ConfigWireman<br/>(injects into<br/>Config/Services.php)"]
+
+    Input --> Schema --> Generators --> Wiring
+```
+
 Outputs:
 
 - 4 DTOs (Index/Create/Update request + Response) with validation and OpenAPI annotations
