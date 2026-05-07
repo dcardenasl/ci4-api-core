@@ -48,7 +48,11 @@
     "test": "phpunit",
     "analyse": "phpstan analyse",
     "cs-check": "@php -r \"if (!file_exists('vendor/bin/php-cs-fixer')) { fwrite(STDERR, 'php-cs-fixer not installed. Run: composer require --dev friendsofphp/php-cs-fixer\\n'); exit(1); }\" && vendor/bin/php-cs-fixer fix --dry-run --diff --no-interaction",
-    "cs-fix": "@php -r \"if (!file_exists('vendor/bin/php-cs-fixer')) { fwrite(STDERR, 'php-cs-fixer not installed. Run: composer require --dev friendsofphp/php-cs-fixer\\n'); exit(1); }\" && vendor/bin/php-cs-fixer fix --no-interaction"
+    "cs-fix": "@php -r \"if (!file_exists('vendor/bin/php-cs-fixer')) { fwrite(STDERR, 'php-cs-fixer not installed. Run: composer require --dev friendsofphp/php-cs-fixer\\n'); exit(1); }\" && vendor/bin/php-cs-fixer fix --no-interaction",
+    "quality": [
+      "@analyse",
+      "@test"
+    ]
   },
   "minimum-stability": "stable",
   "prefer-stable": true,
