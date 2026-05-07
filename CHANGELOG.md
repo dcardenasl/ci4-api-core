@@ -4,13 +4,36 @@ All notable changes to `dcardenasl/ci4-api-crud-maker` will be documented here. 
 
 ## [Unreleased]
 
+### Added
+- **`.github/workflows/ci.yml`** (audit B5.4, 2026-05-06) — first CI/CD pipeline for the package. Matrix on PHP 8.2 / 8.3 with `composer validate --strict`, `composer install`, PHP CS-Fixer dry-run, PHPStan analyse, PHPUnit, and `composer audit` (soft-fail). Closes the "Composer package shipping without automated tests" CRITICAL gap from the May 2026 audit.
+- **`.github/dependabot.yml`** (audit B5.4) — weekly Composer + GitHub Actions dependency updates with `chore(deps)` / `chore(ci)` commit prefixes.
+- **`.php-cs-fixer.dist.php`** (audit B5.4) — strict ruleset adopted from `ci4-admin-starter` (`@PSR12`, `declare_strict_types`, `strict_comparison`, `void_return`, `ordered_imports`, `array_syntax=short`).
+- **`CLAUDE.md`** + **`TASKS.md`** (audit B6.3) — onboarding and canonical task tracker.
+- **`CONTRIBUTING.md`** (audit B6.3) — branching, PR checklist, release flow, quality gates, architecture pointers.
+- **`composer.json` script aliases** — `cs-check`, `cs-fix`, `quality` (alias for `analyse + test`).
+- **`docs/adr/0001-flat-crud-only-in-v0x.md`** (audit B6.4) — first Architecture Decision Record. Documents why relation-aware generation (`hasMany`/`belongsTo` accessors, embedded Response DTOs, nested routes) is intentionally out of scope for v0.x and the triggers that would unlock a v0.3 redesign.
+- **README "Scope and limitations" section** + **CLAUDE.md "Scope: flat CRUD only"** (audit B6.4) — explicit list of what `fk:<table>` does today vs. what consumers must hand-wire.
+
 ### Changed
+- **PHPStan raised level 5 → level 8** (audit B6.1, 2026-05-06). Three legitimate type-safety issues fixed in flight (no baseline needed):
+  - `src/Validators/ForeignKeyValidator.php`: explicit null-guard inside the loop (the `array_filter` closure already excludes null `fkTable`, but PHPStan can't narrow through closures).
+  - `src/Wiring/ConfigWireman.php`: `preg_replace(...) ?? $content` to handle the documented `string|null` return on regex-engine errors. Behaviour unchanged in the happy path.
+- **`composer.lock`** is now **committed** (audit B6.2). Removes "lock not up to date" warnings from `composer validate --strict` and gives CI reproducible installs across the matrix.
+- **`composer.json`**: `analyse` script no longer hardcodes `--level=5` (level lives in `phpstan.neon`).
+- **`.gitignore`**: `composer.lock` removed; `.php-cs-fixer.cache` added.
 - **`ScaffoldingConfig::defaults()` default permission** changed from `permission:iam.admin-access` (deprecated and actively deleted by `RbacBootstrapSeeder` in ci4-api-starter) to `permission:iam.superadmin-access`. New scaffolds are reachable by superadmins only by default — secure-by-default. Loosen per-resource by editing the generated route file or by overriding `protectedRouteFilters` in the consumer's `App\Config\Scaffolding`.
 - **`ConfigWireman::wire()`** verifies after each injection step (require_once + use trait + service factory) and throws `WiringFailedException` carrying the manual recovery snippet via `describe()`. The spark command catches this and prints the snippet — consumers no longer end up with half-wired modules when their `Services.php` layout doesn't match the expected pattern.
 - **`ForeignKeyValidator::validate()`** is **strict by default** when the database is unreachable AND the schema declares FK fields. Set `skipOnDbUnreachable: true` (or pass `make:crud --skip-fk-validation`) to fall back to the historical "warn and continue" behavior.
 - **`bin/validate-crud.sh`** derives the table name from `StringHelper::pluralize()` (PHP) instead of the naive `${RESOURCE%y}` bash trick. Resources with irregular plurals (`Person → People`, `Goose → Geese`) and same-prefix neighbors (`User` vs `UserRole`) now resolve to the correct migration file on the first match.
 - **`RouteGenerator::injectRoute()`** asserts all 5 CRUD route lines (`index`, `show`, `create`, `update`, `delete`) appear in the output and throws otherwise — catches template regressions or cases where the injection target pattern matched but the resulting concatenation truncated the block.
 - **`ScaffoldRemover`** now reports orphan controller references in the `warnings` key of its return shape. When the user hand-edited the routes file with custom routes for the same controller, the standard regex strip can't safely remove them; the remover surfaces "manual cleanup required" guidance instead of leaving the file in an undefined state.
+
+- **`tests/Integration/EndToEndScaffoldTest.php`** (audit B6.5) — first end-to-end integration test for the package. Runs `ScaffoldingOrchestrator->orchestrate()` against the temp APPPATH/ROOTPATH from `tests/bootstrap.php`, asserts at least 13 artifacts produced, runs `php -l` syntax check on every generated `.php` file, validates conventional paths, and asserts the idempotency contract (re-running raises `ScaffoldConflictException`). 3 tests / 48 assertions. Catches cross-generator regressions (template forward references, namespace drift, missing imports) that single-generator unit tests miss. **Deferred to v0.3:** a richer fixture that boots a real CI4 app with DB+migrations+HTTP — the cheap version above catches most plantilla regressions at ~1% of the cost.
+
+### Fixed
+- **2 pre-existing style violations** auto-fixed when the strict CS-Fixer config was adopted (audit B5.4):
+  - `src/Generators/ControllerGenerator.php:118` — added space in `fn ($f) =>`.
+  - `tests/Unit/Generators/ControllerGeneratorTest.php:8` — removed unused `ScaffoldingPaths` import.
 
 ### Added
 - **`Wiring\WiringFailedException`** — carries the manual recovery snippet plus `describe()` helper for nice CLI rendering.
