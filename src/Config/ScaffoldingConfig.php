@@ -72,6 +72,13 @@ final readonly class ScaffoldingConfig
 
         // fieldName => traitFQCN map for conditional trait injection in generated controllers.
         public array $conditionalControllerTraits = [],
+
+        // FQCNs of the Filterable / Searchable traits emitted by ModelEntityGenerator.
+        // Default to the bundled traits in dcardenasl\Ci4ApiCore\Models\Traits\, but
+        // consumers may override (e.g. the legacy ci4-api-starter copies under
+        // App\Traits\ before CORE-004 lands).
+        public string $filterableTraitFqcn = 'dcardenasl\\Ci4ApiCore\\Models\\Traits\\Filterable',
+        public string $searchableTraitFqcn = 'dcardenasl\\Ci4ApiCore\\Models\\Traits\\Searchable',
     ) {
     }
 

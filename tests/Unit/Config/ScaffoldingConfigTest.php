@@ -24,6 +24,20 @@ final class ScaffoldingConfigTest extends TestCase
         $this->assertSame(['jwtauth', 'permission:iam.superadmin-access', 'throttle'], $config->protectedRouteFilters);
     }
 
+    public function testDefaultsPointFilterableSearchableTraitsAtTheCorePackage(): void
+    {
+        $config = ScaffoldingConfig::defaults();
+
+        $this->assertSame(
+            'dcardenasl\\Ci4ApiCore\\Models\\Traits\\Filterable',
+            $config->filterableTraitFqcn,
+        );
+        $this->assertSame(
+            'dcardenasl\\Ci4ApiCore\\Models\\Traits\\Searchable',
+            $config->searchableTraitFqcn,
+        );
+    }
+
     public function testNamespaceForConvertsSlashesToBackslashes(): void
     {
         $config = ScaffoldingConfig::defaults();
