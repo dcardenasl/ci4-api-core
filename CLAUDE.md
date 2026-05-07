@@ -16,7 +16,7 @@ For cross-repo context (current milestone, blocked tasks), read `../TASKS.md`.
 
 ## Repository Overview
 
-**ci4-api-core** is a Composer package that provides a DTO-first CRUD scaffolding engine for CodeIgniter 4 projects. It is consumed by `ci4-api-starter` (and projects generated from it) via a path/VCS repository reference.
+**ci4-api-core** is a Composer package that provides DTO-first API foundations (base classes + CRUD scaffolding engine) for CodeIgniter 4 projects. It is consumed by `ci4-api-starter` and `ci4-domain-starter` (and projects generated from them) via a path/VCS repository reference.
 
 **Current version:** v0.1.0 (not yet published on Packagist — APIs may still change before 1.0.0)
 
@@ -52,7 +52,28 @@ bin/validate-crud.sh {Resource} {Domain}   # 6-step post-scaffold checklist
 | `src/Config/` | ScaffoldingConfig (all conventions) |
 | `src/Validators/` | Field parsing, name/FK validation |
 | `src/Wiring/` | ConfigWireman (Services.php injection) |
+| `src/Http/` | `ApiController`, `ApiResponse`, `ApiRequest`, `ContextHolder` (HTTP boundary base classes) |
+| `src/Services/` | `BaseCrudService`, `CrudServiceContract`, `HandlesTransactions` trait, `AuditServiceInterface` |
+| `src/Models/` | `BaseAuditableModel` + `Auditable` trait (audit hooks for CI4 models) |
+| `src/Dto/` | `DataTransferObjectInterface`, `BaseRequestDTO`, `PaginatedResponseDTO`, `SecurityContext` |
+| `src/Repositories/` | `RepositoryInterface` (persistence contract) |
+| `src/Mappers/` | `ResponseMapperInterface` (entity → DTO contract) |
+| `src/Exceptions/` | `ApiException` + concrete (`NotFoundException`, `ValidationException`, `BadRequestException`) + `HasStatusCode` |
+| `src/Support/` | `ApiResult`, `OperationResult`, `ExceptionFormatter` (value objects + utilities) |
 | `docs/` | ARCHITECTURE_CONTRACT.md (authoritative copy) |
+
+### Consumer requirements (runtime contract)
+
+Classes under `src/Http/`, `src/Models/`, and `src/Services/` rely on a few CI4-host symbols that this package cannot bundle. Any consumer (e.g. ci4-api-starter) must provide the following in its own `app/Config/Services.php`:
+
+- `Services::auditService()` → instance of `dcardenasl\Ci4ApiCore\Services\AuditServiceInterface` (used by `BaseAuditableModel::initialize()`)
+- `Services::requestAuditContextFactory()` → object with `buildMetadata(ApiRequest): array` (used by `ApiController::buildRequestMetadata()`)
+- `Services::requestDtoFactory()` → object with `make(class-string, array): BaseRequestDTO` (used by `ApiController::executeTarget()`)
+- `Services::requestDataCollector()` → object with `collect(ApiRequest, ?array): array` (used by `ApiController::collectRequestData()`)
+
+Plus standard CI4 globals: `lang()`, `service('validation')`, `Config\Database`, `ENVIRONMENT` constant.
+
+These are not enforced at install time — a missing factory will surface as a `BadMethodCallException` on the first request that hits the corresponding code path.
 
 ## Key rules
 

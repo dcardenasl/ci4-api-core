@@ -1,3 +1,6 @@
+includes:
+    - phpstan-baseline.neon
+
 parameters:
     level: 8
     paths:
@@ -5,12 +8,32 @@ parameters:
     excludePaths:
         - vendor
     ignoreErrors:
-        # Config\Database lives in each consumer app's app/Config/, not in the
-        # CI4 framework. PHPStan can't resolve it from the package side, but
-        # the symbol is guaranteed at runtime in any CI4 host.
+        # Config\Database / Config\Services / Config\App live in each consumer
+        # app's app/Config/, not in the CI4 framework. PHPStan can't resolve
+        # them from the package side, but the symbols are guaranteed at
+        # runtime in any CI4 host.
         -
-            message: '#unknown class Config\\Database#'
-            path: src/Validators/ForeignKeyValidator.php
+            message: '#unknown class Config\\(Database|Services|App)#'
+            paths:
+                - src/Validators/ForeignKeyValidator.php
+                - src/Http/*
+                - src/Models/*
+                - src/Services/*
+
+        # CI4 global helpers (lang, service, log_message, config) are loaded
+        # by the framework's system/Common.php. PHPStan does not see them
+        # when analyzing the package in isolation.
+        -
+            message: '#Function (lang|service|log_message|config) not found#'
+            paths:
+                - src/*
+
+        # ENVIRONMENT is a CI4 framework runtime constant. Always defined
+        # in any CI4 host (and bootstrapped in tests).
+        -
+            message: '#Constant ENVIRONMENT not found#'
+            paths:
+                - src/Support/ExceptionFormatter.php
 
         # APPPATH and ROOTPATH are CI4 framework runtime constants. PHPStan
         # doesn't see them when analyzing the package in isolation; in any
@@ -27,14 +50,6 @@ parameters:
         # defined by CI4 when commands run.
         -
             message: '#Constant EXIT_(SUCCESS|ERROR) not found#'
-            paths:
-                - src/Commands/*
-
-        # config() is a CI4 global helper (system/Common.php). It's loaded by
-        # the framework on every request/command but PHPStan doesn't see it
-        # without bootstrapping the full framework.
-        -
-            message: '#Function config not found#'
             paths:
                 - src/Commands/*
 

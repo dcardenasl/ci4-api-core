@@ -1,6 +1,6 @@
 {
   "name": "dcardenasl/ci4-api-core",
-  "description": "DTO-first CRUD scaffolding engine for CodeIgniter 4 APIs (extracted from ci4-api-starter)",
+  "description": "DTO-first API foundation for CodeIgniter 4: base classes + CRUD scaffolding engine. Powers ci4-api-starter and ci4-domain-starter.",
   "type": "library",
   "keywords": [
     "codeigniter4",
@@ -24,7 +24,8 @@
   },
   "require": {
     "php": "^8.2",
-    "codeigniter4/framework": "^4.5"
+    "codeigniter4/framework": "^4.5",
+    "zircote/swagger-php": "^4.10 || ^5.0 || ^6.0"
   },
   "require-dev": {
     "phpunit/phpunit": "^10.5",
