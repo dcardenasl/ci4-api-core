@@ -34,7 +34,8 @@ class ModelEntityGenerator
 
     private function entityTemplate(ResourceSchema $schema): string
     {
-        $casts = "'id' => 'integer',\n";
+        $casts = "        'id' => 'integer',\n";
+        $hasDecimal = false;
         foreach ($schema->fields as $field) {
             $mapping = TypeMapper::get($field->type);
             $phpType = $mapping['php'];
@@ -42,6 +43,9 @@ class ModelEntityGenerator
             $castType = $phpType === 'float' ? 'decimal' : $phpType;
             if ($castType === 'array') {
                 $castType = 'json';
+            }
+            if ($castType === 'decimal') {
+                $hasDecimal = true;
             }
 
             $casts .= "        '{$field->name}' => '{$castType}',\n";
@@ -55,6 +59,19 @@ class ModelEntityGenerator
         $entityBaseFqcn = $this->config->entityBaseClass;
         $entityBaseShort = Fqcn::shortName($entityBaseFqcn);
 
+        // CI4 doesn't ship a 'decimal' cast handler natively. When the resource
+        // has a DECIMAL column we register Ci4ApiCore's DecimalCast (string-backed,
+        // preserves monetary precision). Skipped otherwise to keep generated
+        // Entities minimal.
+        $castHandlersBlock = '';
+        $decimalCastUse = '';
+        if ($hasDecimal) {
+            $decimalCastUse = "use dcardenasl\\Ci4ApiCore\\DataCasts\\DecimalCast;\n";
+            $castHandlersBlock = "    protected \$castHandlers = [\n"
+                . "        'decimal' => DecimalCast::class,\n"
+                . "    ];\n\n";
+        }
+
         return <<<PHP
 <?php
 
@@ -63,10 +80,10 @@ declare(strict_types=1);
 namespace {$ns};
 
 use {$entityBaseFqcn};
-
+{$decimalCastUse}
 class {$schema->resource}Entity extends {$entityBaseShort}
 {
-    protected \$casts = [
+{$castHandlersBlock}    protected \$casts = [
 {$casts}    ];
 
     protected \$dates = {$dates};
@@ -110,6 +127,10 @@ PHP;
         $entityNs = $this->config->namespaceFor($this->config->paths->entities);
         $modelBaseFqcn = $this->config->modelBaseClass;
         $modelBaseShort = Fqcn::shortName($modelBaseFqcn);
+        $filterableFqcn = ltrim($this->config->filterableTraitFqcn, '\\');
+        $searchableFqcn = ltrim($this->config->searchableTraitFqcn, '\\');
+        $filterableShort = Fqcn::shortName($filterableFqcn);
+        $searchableShort = Fqcn::shortName($searchableFqcn);
 
         return <<<PHP
 <?php
@@ -120,13 +141,13 @@ namespace {$ns};
 
 use {$entityNs}\\{$schema->resource}Entity;
 use {$modelBaseFqcn};
-use {$this->config->appNamespace}\\Traits\\Filterable;
-use {$this->config->appNamespace}\\Traits\\Searchable;
+use {$filterableFqcn};
+use {$searchableFqcn};
 
 class {$schema->resource}Model extends {$modelBaseShort}
 {
-    use Filterable;
-    use Searchable;
+    use {$filterableShort};
+    use {$searchableShort};
 
     protected \$table = '{$table}';
     protected \$primaryKey = 'id';
