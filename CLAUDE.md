@@ -55,6 +55,9 @@ bin/validate-crud.sh {Resource} {Domain}   # 6-step post-scaffold checklist
 | `src/Http/` | `ApiController`, `ApiResponse`, `ApiRequest`, `ContextHolder` (HTTP boundary base classes) |
 | `src/Services/` | `BaseCrudService`, `CrudServiceContract`, `HandlesTransactions` trait, `AuditServiceInterface` |
 | `src/Models/` | `BaseAuditableModel` + `Auditable` trait (audit hooks for CI4 models) |
+| `src/Models/Traits/` | `Filterable`, `Searchable` (model-level whitelisted query helpers) |
+| `src/Filters/` | `FilterParser`, `FilterOperatorApplier`, `SearchQueryApplier`, `QueryBuilder` (the request → query plumbing the traits delegate to) |
+| `src/DataCasts/` | `DecimalCast` (string-backed CI4 Entity cast preserving DECIMAL precision) |
 | `src/Dto/` | `DataTransferObjectInterface`, `BaseRequestDTO`, `PaginatedResponseDTO`, `SecurityContext` |
 | `src/Repositories/` | `RepositoryInterface` (persistence contract) |
 | `src/Mappers/` | `ResponseMapperInterface` (entity → DTO contract) |
@@ -64,16 +67,17 @@ bin/validate-crud.sh {Resource} {Domain}   # 6-step post-scaffold checklist
 
 ### Consumer requirements (runtime contract)
 
-Classes under `src/Http/`, `src/Models/`, and `src/Services/` rely on a few CI4-host symbols that this package cannot bundle. Any consumer (e.g. ci4-api-starter) must provide the following in its own `app/Config/Services.php`:
+Classes under `src/Http/`, `src/Models/`, `src/Services/`, and `src/Filters/` rely on a few CI4-host symbols that this package cannot bundle. Any consumer (e.g. ci4-api-starter) must provide the following in its own `app/Config/Services.php`:
 
 - `Services::auditService()` → instance of `dcardenasl\Ci4ApiCore\Services\AuditServiceInterface` (used by `BaseAuditableModel::initialize()`)
 - `Services::requestAuditContextFactory()` → object with `buildMetadata(ApiRequest): array` (used by `ApiController::buildRequestMetadata()`)
 - `Services::requestDtoFactory()` → object with `make(class-string, array): BaseRequestDTO` (used by `ApiController::executeTarget()`)
 - `Services::requestDataCollector()` → object with `collect(ApiRequest, ?array): array` (used by `ApiController::collectRequestData()`)
+- **`config('Api')`** *(optional)* → CI4 Config object exposing `searchEnabled: bool`, `searchUseFulltext: bool`, `searchMinLength: int`, `paginationDefaultLimit: int`, `paginationMaxLimit: int`. Read by `Filters\SearchQueryApplier` and `Filters\QueryBuilder`. **Each knob defaults safely** when the config or property is absent (`searchEnabled=true`, `searchUseFulltext=true`, `searchMinLength=0`, `paginationDefaultLimit=20`, `paginationMaxLimit=100`), so vanilla consumers without a `Config\Api` class still get a working search and pagination out of the box.
 
 Plus standard CI4 globals: `lang()`, `service('validation')`, `Config\Database`, `ENVIRONMENT` constant.
 
-These are not enforced at install time — a missing factory will surface as a `BadMethodCallException` on the first request that hits the corresponding code path.
+These are not enforced at install time — a missing factory (factories 1–4) will surface as a `BadMethodCallException` on the first request that hits the corresponding code path. The optional `config('Api')` (5) silently coalesces to defaults.
 
 ## Key rules
 
