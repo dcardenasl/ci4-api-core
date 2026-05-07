@@ -2,7 +2,7 @@
 
 > Fuente de verdad para trabajo en este repo.
 > Gestionado desde Cowork/VentureOS. Ejecutado desde Claude Code.
-> Última actualización: 2026-05-07 (CORE-001 completado)
+> Última actualización: 2026-05-07 (CORE-003 completado)
 
 ---
 
@@ -20,8 +20,8 @@
 
 ## ⚪ Backlog
 
-- [CORE-002–007] **Milestone ci4-api-core v1.0** 🟡 Próximo — ver detalle en `../TASKS.md`.
-  Resumen: mover base classes (ApiController, BaseCrudService, BaseAuditableModel, BaseRequestDTO…) bajo namespace `dcardenasl\Ci4ApiCore\`, apuntar `ScaffoldingConfig::defaults()` al paquete, refactorizar ci4-api-starter y ci4-domain-starter para consumirlo, publicar en Packagist como `dcardenasl/ci4-api-core` v1.0.0. Sin install step — solo `composer require`. Corte limpio, sin código legacy.
+- [CORE-004–007] **Milestone ci4-api-core v1.0** 🟡 Próximo — ver detalle en `../TASKS.md`.
+  Resumen: refactorizar ci4-api-starter y ci4-domain-starter para consumir las base classes desde el paquete (eliminar duplicados en `app/`), publicar en Packagist como `dcardenasl/ci4-api-core` v1.0.0. Sin install step — solo `composer require`. Corte limpio, sin código legacy.
 - [CRUD-002] Soporte para campo `json` — tipo `json` en `--fields` que genere migration `json`, cast en Model, DTO con `array` typehint
 - [CRUD-003] Soporte para relaciones `belongsTo` — FK en migration + `{name}_id` en DTOs con validación `is_natural_no_zero`
 - [CRUD-004] Comando `make:crud:list` — listar módulos scaffoldeados con estado (migración aplicada / pendiente)
@@ -29,6 +29,10 @@
 ---
 
 ## ✅ Completadas recientes
+
+- **[CORE-003] Apuntar `ScaffoldingConfig::defaults()` al paquete** (2026-05-07) — Reescritas 8 FQCNs en `src/Config/ScaffoldingConfig.php::defaults()`: `controllerBaseClass`, `serviceBaseClass`, `serviceContractInterface`, `modelBaseClass`, `requestDtoBaseClass`, `responseDtoInterface`, `repositoryInterface`, `responseMapperInterface` ahora apuntan a `dcardenasl\Ci4ApiCore\…`. Las dos implementaciones concretas (`repositoryImplementation`, `responseMapperImplementation`) siguen apuntando al consumer (`App\Repositories\GenericRepository`, `App\Services\Core\Mappers\DtoResponseMapper`) porque son del dominio del consumidor. Sincronizadas 4 assertions: `ScaffoldingConfigTest` (L18-19), `ServiceGeneratorTest` (L40), `ConfigWiremanTest` (L159). Los 8 generators no necesitaron cambios: todos leen FQCNs desde `$this->config->*`. PHPStan L8 limpio, 85 tests verdes (mismo conteo que CORE-002). Smoke test inline confirma que `make:crud` emite `use dcardenasl\Ci4ApiCore\Http\ApiController`, `…\Services\BaseCrudService`, `…\Dto\BaseRequestDTO`, `…\Models\BaseAuditableModel`, `…\Repositories\RepositoryInterface`, `…\Mappers\ResponseMapperInterface` en los archivos generados, mientras imports del consumer (`App\Traits\Filterable`, `App\DTO\…ResponseDTO`) permanecen intactos.
+
+- **[CORE-002] Mover base classes a `ci4-api-core`** (2026-05-07) — 22 archivos PHP trasladados desde `ci4-api-starter/app/` a `ci4-api-core/src/` bajo namespace `dcardenasl\Ci4ApiCore\` distribuido en 8 subcarpetas (`Http/`, `Services/`, `Models/`, `Dto/`, `Exceptions/`, `Mappers/`, `Repositories/`, `Support/`). Inventario: las 6 clases listadas en el milestone (`ApiController`, `ApiResponse`, `BaseCrudService`, `BaseAuditableModel`, `BaseRequestDTO`, `DataTransferObjectInterface`) + 16 dependencias transitivas (`CrudServiceContract`, `RepositoryInterface`, `ResponseMapperInterface`, `HandlesTransactions`, `Auditable`, `SecurityContext`, `PaginatedResponseDTO`, `ApiRequest`, `ContextHolder`, `ApiResult`, `OperationResult`, `NotFoundException`, `ApiException`, `HasStatusCode`, `ValidationException`, `BadRequestException`, `AuditServiceInterface`, `ExceptionFormatter`). `composer.json` añade `zircote/swagger-php` (PaginatedResponseDTO usa atributos OpenAPI). 21 tests nuevos en `tests/Unit/{Http,Dto,Support}/` (ApiResponse, SecurityContext, OperationResult). PHPStan L8 limpio (52 archivos, baseline regenerado para los 76 errores `missingType.iterableValue` heredados); PHPUnit 85 tests / 331 asserts verdes. `phpstan.neon` extendido para ignorar símbolos de framework CI4 (`lang`, `service`, `log_message`, `Config\Database`, `Config\Services`, `Config\App`, `ENVIRONMENT`) en los nuevos paths. `CLAUDE.md` actualizado con la nueva tabla de directorios y el contrato runtime que el consumer debe cumplir (cuatro factories en `Config\Services`: `auditService`, `requestAuditContextFactory`, `requestDtoFactory`, `requestDataCollector`). **No** se tocaron las clases originales en `ci4-api-starter/app/` (eso es CORE-004) ni `ScaffoldingConfig::defaults()` (eso es CORE-003) — el integration test sigue verde porque sus FQCNs apuntan al starter.
 
 - **[CORE-001] Renombrar paquete a `dcardenasl/ci4-api-core`** (2026-05-07) — Renombrados `composer.json` (`name`, `homepage`, `support`) y migrado el namespace PSR-4 `dcardenasl\CI4ApiCrudMaker\` → `dcardenasl\Ci4ApiCore\` en todo `src/` y `tests/`. Actualizadas referencias al paquete en README, CONTRIBUTING, CLAUDE.md, `.github/ISSUE_TEMPLATE/*`, `bin/make-crud.sh`, `bin/validate-crud.sh`, `docs/ARCHITECTURE_CONTRACT.md`, `docs/CRUD_FROM_ZERO.md`, `docs/adr/0001-flat-crud-only-in-v0x.md`. Cambio BREAKING — los consumers deben actualizar `require`, `repositories.url` y todos los `use dcardenasl\CI4ApiCrudMaker\...`. Suite 64 tests verde post-rename; sin cambios funcionales en generadores, comandos ni shell wrappers.
 

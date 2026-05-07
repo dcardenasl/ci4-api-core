@@ -15,8 +15,8 @@ final class ScaffoldingConfigTest extends TestCase
         $config = ScaffoldingConfig::defaults();
 
         $this->assertSame('App', $config->appNamespace);
-        $this->assertSame('App\\Controllers\\ApiController', $config->controllerBaseClass);
-        $this->assertSame('App\\Services\\Core\\BaseCrudService', $config->serviceBaseClass);
+        $this->assertSame('dcardenasl\\Ci4ApiCore\\Http\\ApiController', $config->controllerBaseClass);
+        $this->assertSame('dcardenasl\\Ci4ApiCore\\Services\\BaseCrudService', $config->serviceBaseClass);
         // Default protects new routes with iam.superadmin-access, the most
         // restrictive permission seeded by RbacBootstrapSeeder. iam.admin-access
         // was deprecated and is no longer seeded; consumers loosen this per

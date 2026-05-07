@@ -156,7 +156,7 @@ final class ConfigWiremanTest extends TestCase
         $this->assertStringContainsString('public static function productService(', $snippet);
         $this->assertStringContainsString('public static function productResponseMapper(', $snippet);
         $this->assertStringContainsString(': \\App\\Interfaces\\Catalog\\ProductServiceInterface', $snippet);
-        $this->assertStringContainsString(': \\App\\Interfaces\\Mappers\\ResponseMapperInterface', $snippet);
+        $this->assertStringContainsString(': \\dcardenasl\\Ci4ApiCore\\Mappers\\ResponseMapperInterface', $snippet);
         $this->assertStringContainsString('new \\App\\Repositories\\GenericRepository(model(\\App\\Models\\ProductModel::class))', $snippet);
         $this->assertStringContainsString('return new \\App\\Services\\Core\\Mappers\\DtoResponseMapper(', $snippet);
         $this->assertStringContainsString('\\App\\DTO\\Response\\Catalog\\ProductResponseDTO::class', $snippet);

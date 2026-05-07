@@ -37,7 +37,7 @@ final class ServiceGeneratorTest extends TestCase
 
         $service = $artifacts[$servicePath];
         $this->assertStringContainsString('namespace App\\Services\\Catalog;', $service);
-        $this->assertStringContainsString('use App\\Services\\Core\\BaseCrudService;', $service);
+        $this->assertStringContainsString('use dcardenasl\\Ci4ApiCore\\Services\\BaseCrudService;', $service);
         $this->assertStringContainsString('extends BaseCrudService', $service);
     }
 
