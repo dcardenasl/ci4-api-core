@@ -24,13 +24,18 @@
   },
   "require": {
     "php": "^8.2",
-    "codeigniter4/framework": "^4.5",
-    "monolog/monolog": "^3.5",
-    "zircote/swagger-php": "^4.10 || ^5.0 || ^6.0"
+    "codeigniter4/framework": "^4.5"
   },
   "require-dev": {
     "phpunit/phpunit": "^10.5",
-    "phpstan/phpstan": "^2.0"
+    "phpstan/phpstan": "^2.0",
+    "friendsofphp/php-cs-fixer": "^3.95",
+    "monolog/monolog": "^3.5",
+    "zircote/swagger-php": "^4.10 || ^5.0 || ^6.0"
+  },
+  "suggest": {
+    "monolog/monolog": "Required for JSON structured logging via JsonFormatter / MonologHandler (^3.5)",
+    "zircote/swagger-php": "Required to auto-generate OpenAPI specs from DTO/Controller annotations (^4.10 || ^5.0 || ^6.0)"
   },
   "bin": [
     "bin/make-crud.sh",
@@ -53,11 +58,14 @@
   },
   "scripts": {
     "test": "phpunit",
-    "analyse": "phpstan analyse",
-    "cs-check": "@php -r \"if (!file_exists('vendor/bin/php-cs-fixer')) { fwrite(STDERR, 'php-cs-fixer not installed. Run: composer require --dev friendsofphp/php-cs-fixer\\n'); exit(1); }\" && vendor/bin/php-cs-fixer fix --dry-run --diff --no-interaction",
-    "cs-fix": "@php -r \"if (!file_exists('vendor/bin/php-cs-fixer')) { fwrite(STDERR, 'php-cs-fixer not installed. Run: composer require --dev friendsofphp/php-cs-fixer\\n'); exit(1); }\" && vendor/bin/php-cs-fixer fix --no-interaction",
+    "analyse": "phpstan analyse --level=8 --memory-limit=1G",
+    "cs-check": "vendor/bin/php-cs-fixer fix --dry-run --diff --no-interaction",
+    "cs-fix": "vendor/bin/php-cs-fixer fix --no-interaction",
+    "security": "composer audit --no-dev --locked",
     "quality": [
       "@analyse",
+      "@cs-check",
+      "@security",
       "@test"
     ]
   },
