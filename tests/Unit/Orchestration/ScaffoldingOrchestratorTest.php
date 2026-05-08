@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit\Orchestration;
 
 use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
+use dcardenasl\Ci4ApiCore\Generators\CrudGeneratorInterface;
 use dcardenasl\Ci4ApiCore\Orchestration\ScaffoldConflictException;
 use dcardenasl\Ci4ApiCore\Orchestration\ScaffoldingOrchestrator;
 use PHPUnit\Framework\TestCase;
@@ -135,5 +137,68 @@ final class ScaffoldingOrchestratorTest extends TestCase
 
         $this->assertFileDoesNotExist($file);
         rmdir($dir);
+    }
+
+    public function testDefaultGeneratorsReturnsEightBuiltins(): void
+    {
+        $config = ScaffoldingConfig::defaults();
+        $generators = ScaffoldingOrchestrator::defaultGenerators($config);
+
+        $this->assertCount(8, $generators);
+
+        $names = array_map(fn (CrudGeneratorInterface $g) => $g->name(), $generators);
+        foreach (['dto', 'migration', 'model', 'service', 'controller', 'route', 'language', 'tests'] as $expected) {
+            $this->assertContains($expected, $names, "Built-in generator '{$expected}' is missing");
+        }
+    }
+
+    public function testCustomGeneratorSetIsRespected(): void
+    {
+        $config = ScaffoldingConfig::defaults();
+
+        $spy = new class () implements CrudGeneratorInterface {
+            public bool $called = false;
+            public function name(): string
+            {
+                return 'spy';
+            }
+            public function generate(ResourceSchema $schema): array
+            {
+                $this->called = true;
+                return [];
+            }
+        };
+
+        $orchestrator = new ScaffoldingOrchestrator($config, generators: [$spy]);
+        $orchestrator->plan(new ResourceSchema(
+            resource: 'Foo',
+            domain: 'Bar',
+            route: 'foos',
+            fields: [],
+        ));
+
+        $this->assertTrue($spy->called, 'Custom generator must be invoked by orchestrator');
+    }
+
+    public function testExcludingGeneratorByNameOmitsItsArtifacts(): void
+    {
+        $config = ScaffoldingConfig::defaults();
+        $gens = ScaffoldingOrchestrator::defaultGenerators($config);
+
+        // Remove the 'tests' generator.
+        $filtered = array_values(array_filter($gens, fn ($g) => $g->name() !== 'tests'));
+        $this->assertCount(7, $filtered);
+
+        $orchestrator = new ScaffoldingOrchestrator($config, generators: $filtered);
+        $plan = $orchestrator->plan(new ResourceSchema(
+            resource: 'Widget',
+            domain: 'Store',
+            route: 'widgets',
+            fields: [],
+        ));
+
+        foreach (array_keys($plan) as $path) {
+            $this->assertStringNotContainsString('Test', basename($path), 'Test artifacts must be absent when tests generator is excluded');
+        }
     }
 }
