@@ -67,8 +67,18 @@ class SearchQueryApplier
 
         $fields = implode(', ', $searchableFields);
         $db = $builder instanceof Model ? $builder->db : $builder->db();
-        $escapedQuery = $db->escape($query);
+        $escapedQuery = $db->escape(self::sanitizeFulltextQuery($query));
         $actualBuilder->where("MATCH({$fields}) AGAINST({$escapedQuery} IN BOOLEAN MODE)", null, false);
+    }
+
+    /**
+     * Strip MySQL Boolean Mode operators so user input does not alter query semantics.
+     * Operators +  -  *  "  (  )  ~  <  > are replaced with a space.
+     * Exposed publicly so consumers can pre-sanitize queries before other uses.
+     */
+    public static function sanitizeFulltextQuery(string $query): string
+    {
+        return preg_replace('/[+\-*"()~<>]/', ' ', $query) ?? $query;
     }
 
     /**

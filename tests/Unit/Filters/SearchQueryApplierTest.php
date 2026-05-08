@@ -58,4 +58,29 @@ final class SearchQueryApplierTest extends TestCase
 
         SearchQueryApplier::applyLike($builder, 'bar', ['name']);
     }
+
+    /**
+     * @dataProvider booleanModeOperatorProvider
+     */
+    public function testSanitizeFulltextQueryStripsOperators(string $input, string $expected): void
+    {
+        $this->assertSame($expected, SearchQueryApplier::sanitizeFulltextQuery($input));
+    }
+
+    /** @return array<string, array{string, string}> */
+    public static function booleanModeOperatorProvider(): array
+    {
+        return [
+            'plus operator'          => ['+word', ' word'],
+            'minus operator'         => ['-word', ' word'],
+            'wildcard star'          => ['word*', 'word '],
+            'phrase quotes'          => ['"exact phrase"', ' exact phrase '],
+            'parentheses'            => ['(a OR b)', ' a OR b '],
+            'tilde operator'         => ['~noise', ' noise'],
+            'greater than'           => ['>important', ' important'],
+            'less than'              => ['<less', ' less'],
+            'combined operators'     => ['+best -worst', ' best  worst'],
+            'plain query unchanged'  => ['hello world', 'hello world'],
+        ];
+    }
 }
