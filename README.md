@@ -1,8 +1,25 @@
-# ci4-api-crud-maker
+# ci4-api-core
 
-DTO-first CRUD scaffolding engine for CodeIgniter 4 APIs. Extracted from [`ci4-api-starter`](https://github.com/dcardenasl/ci4-api-starter) so multiple projects can share a single, versioned source of truth instead of copying the engine between codebases.
+[![CI](https://github.com/dcardenasl/ci4-api-core/actions/workflows/ci.yml/badge.svg)](https://github.com/dcardenasl/ci4-api-core/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/dcardenasl/ci4-api-core/branch/main/graph/badge.svg)](https://codecov.io/gh/dcardenasl/ci4-api-core)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> **Status:** `v0.1.0` — initial release. APIs may change without notice until `1.0.0`. Not yet published to Packagist; install via VCS repository (see below).
+DTO-first API foundation for CodeIgniter 4: base classes + CRUD scaffolding engine. Powers `ci4-api-starter` and `ci4-domain-starter` so multiple projects share a single, versioned source of truth instead of copying the engine between codebases.
+
+> **Status:** `v0.3.0` — published on Packagist. APIs may change without notice until `1.0.0`.
+
+## Quick Start
+
+```bash
+composer require dcardenasl/ci4-api-core:^0.3
+
+# Scaffold a CRUD module
+bash vendor/bin/make-crud.sh Product Catalog \
+  'name:string:required|searchable,price:decimal:required|filterable' yes
+
+# Validate wiring
+php spark module:check Product --domain Catalog
+```
 
 ## What it does
 
@@ -12,6 +29,28 @@ Generates a complete, production-ready CRUD module from a single command:
 bash vendor/bin/make-crud.sh Product Catalog \
   'name:string:required|searchable,price:decimal:required|filterable,category_id:fk:categories:required' \
   yes
+```
+
+```mermaid
+flowchart LR
+    Input["Field spec<br/>name:string:required|searchable,<br/>price:decimal:filterable,<br/>category_id:fk:categories"]
+    Schema["ResourceSchema<br/>(parsed Fields,<br/>typed via TypeMapper)"]
+
+    subgraph Generators["8 Generators"]
+        direction TB
+        DTO["DTO<br/>(Index/Create/Update/Response)"]
+        Service["Service<br/>(interface + impl)"]
+        Controller["Controller + OpenAPI doc"]
+        Migration["Migration<br/>(timestamped)"]
+        Model["Model + Entity"]
+        Routes["Routes<br/>(v1/{domain}.php)"]
+        Lang["Language files<br/>(en + es)"]
+        Tests["Tests<br/>(Unit + Integration + Feature)"]
+    end
+
+    Wiring["ConfigWireman<br/>(injects into<br/>Config/Services.php)"]
+
+    Input --> Schema --> Generators --> Wiring
 ```
 
 Outputs:
@@ -41,24 +80,8 @@ The engine was being copied between projects manually, leading to drift. Extract
 
 ## Installation
 
-Add the VCS repository to your project's `composer.json` and require the package:
-
-```json
-"repositories": [
-    {
-        "type": "vcs",
-        "url": "https://github.com/dcardenasl/ci4-api-crud-maker"
-    }
-],
-"require-dev": {
-    "dcardenasl/ci4-api-crud-maker": "^0.1.0"
-}
-```
-
-Then install:
-
 ```bash
-composer update dcardenasl/ci4-api-crud-maker --no-interaction
+composer require dcardenasl/ci4-api-core:^0.3
 ```
 
 ## Configure
@@ -72,8 +95,8 @@ declare(strict_types=1);
 
 namespace Config;
 
-use dcardenasl\CI4ApiCrudMaker\Config\BaseScaffoldingConfig;
-use dcardenasl\CI4ApiCrudMaker\Config\ScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Config\BaseScaffoldingConfig;
+use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
 
 class Scaffolding extends BaseScaffoldingConfig
 {
@@ -169,6 +192,29 @@ Format: `name:type:modifier1|modifier2`
 | `fk:table` | Foreign key to `table.id` + `is_not_unique[table.id]` validation |
 
 Invalid or reserved field names are rejected upfront (PHP keywords, MySQL reserved words, `id`, `created_at`, `updated_at`, `deleted_at`).
+
+## Scope and limitations (v0.x)
+
+The generator is designed for **flat resources**: one resource = one table = one set of CRUD endpoints. This is intentional — most domain entities are flat, and "smart" relation handling tends to over-engineer the simple case.
+
+**What `fk:<table>` does today:**
+
+- Adds an `INT UNSIGNED` column with the right name (`{name}_id` if you write `category_id:fk:categories`).
+- Generates a `FOREIGN KEY` constraint in the migration.
+- Adds `is_not_unique[table.id]` validation to the Create DTO so non-existent IDs are rejected at the API boundary.
+- Optionally validates the target table exists at scaffold time (DB-reachability check; opt-out with `--skip-fk-validation`).
+
+**What it does NOT do — wire by hand if you need it:**
+
+- ❌ No `hasMany` / `belongsTo` accessor methods on the Entity.
+- ❌ No automatic eager-loading of the related resource in the Response DTO (the parent is returned as `category_id: int`, not `category: {...}`).
+- ❌ No nested route shapes (e.g. `GET /categories/{id}/products`).
+- ❌ No reverse-side scaffolding (creating a `Product` does not regenerate the `Category` Service to expose `getProducts()`).
+- ❌ No transactional cross-resource creation (e.g. POSTing a `Category` with embedded `Product[]` payloads).
+
+If your domain needs any of the above, scaffold both resources flat first, then hand-edit the Service / Response DTO of the parent to load and expose the child collection. This is rarely more than ~30 lines of code per relation, and keeps the generator's surface small enough to remain stable across versions.
+
+> **Roadmap:** relation-aware generators are tracked as a v0.3 candidate. See `TASKS.md` and the v0.3 design notes once they land in `docs/`. The pre-1.0 API may still change.
 
 ## Customization
 

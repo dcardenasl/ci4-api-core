@@ -1,0 +1,143 @@
+# TASKS_ARCHIVE — ci4-api-core
+
+> Historial de tareas completadas. Movido desde TASKS.md para mantener el tracker activo liviano.
+> Última actualización: 2026-05-07 (v0.2.0 + runtime decoupling)
+
+---
+
+## ✅ Milestone CORE v1.0 — tareas del paquete (2026-05-07)
+
+| ID | Descripción | Estado |
+|---|---|---|
+| CORE-001 | Renombrar paquete a `dcardenasl/ci4-api-core`. Namespace PSR-4 `dcardenasl\CI4ApiCrudMaker\` → `dcardenasl\Ci4ApiCore\` en todo `src/` y `tests/`. Referencias actualizadas en README, CONTRIBUTING, CLAUDE.md, docs, bin scripts. | ✅ |
+| CORE-002 | Mover 22 base classes a `ci4-api-core/src/` bajo `dcardenasl\Ci4ApiCore\`: `ApiController`, `BaseCrudService`, `BaseAuditableModel`, `BaseRequestDTO`, `DataTransferObjectInterface`, `ApiResponse` + 16 dependencias transitivas. `zircote/swagger-php` añadido. PHPStan L8 + 85 tests verdes. | ✅ |
+| CORE-003 | Apuntar `ScaffoldingConfig::defaults()` al paquete — 8 FQCNs actualizadas. Los 8 generators no requirieron cambios (ya leían FQCNs desde la config). Smoke test confirma imports correctos. | ✅ |
+
+---
+
+## ✅ Fixes y mejoras post-CORE-002 (2026-05-07)
+
+| ID | Descripción | Estado |
+|---|---|---|
+| FIX-VANILLA | 5 fixes para consumo desde CI4 vanilla: `DecimalCast`, indentación `$casts`, portados `Filterable`/`Searchable`/`FilterParser` a `src/`, `ConfigWireman` fallback sin anchor, `TestGenerator` sin `ApiTestCase`. 53 tests nuevos. | ✅ |
+| CORE-010 | Eliminar `phpstan-baseline.neon` — 71 entradas eliminadas con PHPDoc en 13 archivos. Convención `array<string, mixed>` adoptada. 4 supresiones residuales documentadas en `phpstan.neon`. | ✅ |
+| CORE-011 | Upgrade PHPStan 1.x → 2.x. Arreglos: `array_values()` redundantes, `property_exists()` muertos en `Auditable`, supresión `trait.unused` para `Filterable`/`Searchable` (public API, consumers fuera de `src/`). | ✅ |
+
+---
+
+## ✅ Enterprise hardening (B5–B6, 2026-05-06)
+
+| ID | Descripción | Estado |
+|---|---|---|
+| B5.4 | `.github/workflows/ci.yml` (PHP 8.2/8.3) + `dependabot.yml` + `.php-cs-fixer.dist.php` estricto. | ✅ |
+| B6.1 | PHPStan level 5 → 8. 3 errores de type-safety arreglados in-flight. | ✅ |
+| B6.2 | `composer.lock` commiteado (quitado de `.gitignore`). | ✅ |
+| B6.3 | `CONTRIBUTING.md` + `CHANGELOG.md` con branching, Conventional Commits, release process. | ✅ |
+| B6.4 | Doc limitación relaciones en README + CLAUDE.md + ADR `0001-flat-crud-only-in-v0x.md`. | ✅ |
+| B6.5 | `EndToEndScaffoldTest` con `php -l` por archivo + idempotencia. 3 tests / 48 asserts. | ✅ |
+
+---
+
+## ✅ v0.1.0 — Motor inicial (~2026-04)
+
+Comandos `make:crud`, `make:crud:remove`, `module:check`. 8 generadores modulares. Shell wrapper `make-crud.sh`. Validación `validate-crud.sh`.
+
+---
+
+## ✅ CORE-008 / CORE-009 — Contratos de repositorios y mappers (2026-05-07)
+
+| ID | Descripción | Estado |
+|---|---|---|
+| CORE-008 | `findByIds(array $ids): list<object>` en `RepositoryInterface`. `PivotRepositoryInterface` con `findByParent()` y `maxSortOrder()`. Desbloquea API-016. | ✅ |
+| CORE-009 | `ResponseMapperInterface::map(object\|array)` — acepta array directamente. Habilita borrado de `DataBag` en consumers. | ✅ |
+
+---
+
+## ✅ v0.2.0 — Runtime decoupling (2026-05-07)
+
+Work adicional realizado tras CORE-003, fuera del scope original de CORE-001/005 pero necesario para que ci4-api-core sea consumible sin dependencias del starter:
+
+| Componente | Descripción |
+|---|---|
+| `ApiConfigFacade` | Punto único para leer `config('Api')` con defaults seguros. Reemplaza 3 métodos `apiConfig()` duplicados en `SearchQueryApplier`, `QueryBuilder`, `Searchable`. |
+| `OperationState` enum | PHP 8.1 backed enum reemplazando las constantes string `SUCCESS`/`ACCEPTED`/`ERROR` en `OperationResult`. |
+| `AuditableModelInterface` | Contrato formal para modelos auditables. `BaseRepository::setEntityContext()` usa `instanceof` en vez de duck-typing con `method_exists`. |
+| `RequestHelper` | Utilidad para acceso seguro a datos del request. |
+| `Hasher`, `Mask`, `Token` | Utilidades de seguridad centralizadas. |
+| `DateHelper` | Helper de fechas centralizado. |
+| `ValidationInterface` inyectable | DTOs (`BaseRequestDTO`) permiten inyectar `ValidationInterface` para testabilidad (sin depender de `\Config\Services::validation()`). |
+| Helpers procedurales deprecados | Wrappers delegando a clases con namespace. Marcados deprecated para remoción en v1.0. |
+| Filtros centralizados | `ApiConfigFacade` centraliza lectura de config en filtros. |
+| Tests | Unit tests para `ApiConfigFacade` y `OperationState`. |
+| CI | Codecov upload, cs-fixer step simplificado, security audit endurecido. |
+
+---
+
+## ✅ AST-based wiring + rollback seguro (2026-05-07)
+
+Sin ID de tarea — mejoras al motor de scaffolding post-v0.2.0:
+
+| Componente | Descripción |
+|---|---|
+| `PhpAstEditor` | Editor AST format-preserving usando `nikic/php-parser ^5.0`. Declarado como dependencia explícita. |
+| `ConfigWireman` refactor | Reemplaza inyección por regex con manipulación AST. Más robusto ante layouts no estándar de `Services.php`. |
+| Rollback en fallo de wiring | Si el wiring falla tras generar los archivos, se hace rollback de todos los artefactos generados. `rollbackLastRun()` expuesto públicamente. |
+| Auditoría v0.2.0 | Reporte de auditoría deep agregado a `docs/`. |
+
+---
+
+## ✅ v0.3.0 — Architectural hardening (2026-05-08)
+
+Cambios estructurales de visión 1.0 completados antes de publicar:
+
+| Hallazgo | Componente | Descripción | Estado |
+|---|---|---|---|
+| S-03 / V-4.5 | `CrudGeneratorInterface` + `TemplateRenderer` + 8 generators refactorizados | Templates extraídos a archivos `.php.tpl` en `src/Generators/Templates/{controller,dto,language,migration,model,route,service,tests}/`. Todos los generators implementan `CrudGeneratorInterface`. Heredocs eliminados. | ✅ |
+| S-11 / V-4.4 | `ScaffoldingOrchestrator` pluggable | Acepta `?array $generators` en constructor. Consumers pueden sustituir, añadir o quitar generators. Plugin architecture sin breaking change. | ✅ |
+| R-01 | `BaseRequestDTO` sin service locator | `service('validation')` fallback eliminado completamente. Injection explícita obligatoria. | ✅ |
+| R-02 | `BaseAuditableModel` lazy-resolve | `auditService` resuelto lazy vía `service()` con warning explícito. `setAuditService()` para DI limpio. | ✅ |
+| R-05 | Helpers procedurales eliminados | `src/Helpers/request.php` y `security.php` removidos (214 líneas de globals). Clases namespacadas `Hasher`/`Mask`/`Token` son la API definitiva. | ✅ |
+| R-06 | `SearchQueryApplier` Boolean Mode | Operadores MySQL FULLTEXT Boolean Mode (`+`, `-`, `*`, `"`) sanitizados antes del MATCH...AGAINST. | ✅ |
+| R-10 | `SecurityContext` deep immutability | Valores no-scalar en `$metadata` rechazados en construcción. `readonly` ya no es superficial. | ✅ |
+| R-16 / R-17 | Audit chain: N+1 warning + coverage | N+1 implícito documentado con warning. `AuditWriterTest` añadido (78 líneas). | ✅ |
+| R-20 / V-4.10 | `SyncQueueManager` | Queue adapter real (in-process síncrono). `SyncQueueManager` con 101 líneas de tests. Ya no es solo un esqueleto de interfaz. | ✅ |
+| S-04 / V-4.6 | Snapshot tests + E2E AST | `SnapshotTest` (225 líneas) para output de generators. `EndToEndScaffoldTest` ampliado con assertions AST. `spatie/phpunit-snapshot-assertions` en require-dev. | ✅ |
+| P-04 / V-4.6 | CI4 compatibility matrix | Job dedicado `[php: 8.2, 8.3] × [ci4: 4.5.*, 4.6.*, 4.7.*]` — 6 combinaciones validadas. Clover coverage report habilitado. | ✅ |
+| bf09541 | `WiringFailedException` explícita | AST wiring lanza excepción tipada en lugar de silent fallback al `strrpos`. | ✅ |
+
+---
+
+## ✅ Medium findings — audit v0.2.0 (2026-05-08)
+
+Todos los hallazgos 🟡 medios del audit resueltos en una sola sesión:
+
+| Hallazgo | Descripción | Estado |
+|---|---|---|
+| R-11 | `CorsFilter`: patrones wildcard compilados cacheados por proceso en lugar de re-compilarse por request. | ✅ |
+| R-12 | `AuditPayloadSanitizer`: constante `DEFAULTS` extraída, constructor acepta `additionalSensitiveFields[]`. Configurable sin subclase. | ✅ |
+| R-13 | `ExceptionFormatter`: debug info expuesto solo en `development` (whitelist) en lugar de blacklist `!== production`. | ✅ |
+| R-15 | `PaginatableResponse` marker interface — `ApiResponse` detecta paginación por `instanceof` en lugar de heurística de claves. `PaginatedResponseDTO` la implementa. | ✅ |
+| S-05 | `MigrationGenerator`: FK constraints nombradas + `dropForeignKey()` explícito en `down()`. 128 líneas de tests nuevos. | ✅ |
+| S-07 | `ModuleCheck`: checks de wiring migrados de `str_contains` a `preg_match` con `\s*` — robusto ante cs-fixer. | ✅ |
+| S-09 | `ScaffoldRemover` (`make:crud:remove`): solicita confirmación antes de borrar archivos. | ✅ |
+| S-10 | `LanguageGenerator`: valida paridad de keys `en`/`es` tras generación. | ✅ |
+| P-09 | `EndToEndScaffoldTest` movido a suite `E2E` separada en `phpunit.xml.dist`. CI corre Unit+Integration por defecto; E2E separado. | ✅ |
+| P-11 | Quick Start (<30s) añadido al README. | ✅ |
+| P-12 | `shellcheck` en CI sobre `bin/make-crud.sh` y `bin/validate-crud.sh`. | ✅ |
+
+---
+
+## ✅ Packaging hardening pre-Packagist (2026-05-08)
+
+| Hallazgo | Descripción | Estado |
+|---|---|---|
+| P-02 | `.gitattributes` con `export-ignore` completo — excluye `tests/`, `docs/`, `.github/`, `TASKS*.md`, `phpunit.xml.dist`, etc. del tarball de Packagist. | ✅ |
+| P-03 | `SECURITY.md` (política de disclosure + contacto email, versiones soportadas). `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1). | ✅ |
+| P-04 | Matriz CI ampliada a PHP 8.2 / 8.3 / 8.4. Coverage con xdebug solo en 8.2. | ✅ |
+| P-05 | `monolog/monolog` y `zircote/swagger-php` movidos de `require` a `suggest`. `nikic/php-parser` es la única dep runtime añadida explícitamente. | ✅ |
+| P-06 | `friendsofphp/php-cs-fixer` añadido a `require-dev`. Scripts `cs-check`/`cs-fix` funcionales en clean install. | ✅ |
+| R-04 | Logging de excepciones estructurado y production-aware: mensaje + file + line en producción; trace completo solo en desarrollo. `ApiController` actualizado. | ✅ |
+
+---
+
+*TASKS_ARCHIVE · ci4-api-core · 2026-05-08*

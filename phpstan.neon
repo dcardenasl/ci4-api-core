@@ -1,47 +1,128 @@
 parameters:
-    level: 5
+    level: 8
     paths:
         - src
     excludePaths:
         - vendor
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
-        # Config\Database lives in each consumer app's app/Config/, not in the
-        # CI4 framework. PHPStan can't resolve it from the package side, but
-        # the symbol is guaranteed at runtime in any CI4 host.
+        # Config\Database / Config\Services / Config\App live in each consumer
+        # app/Config/, not in the CI4 framework. PHPStan can't resolve them
+        # from the package side, but the symbols are guaranteed at runtime.
         -
-            message: '#unknown class Config\\Database#'
-            path: src/Validators/ForeignKeyValidator.php
-
-        # APPPATH and ROOTPATH are CI4 framework runtime constants. PHPStan
-        # doesn't see them when analyzing the package in isolation; in any
-        # CI4 host (and in tests/bootstrap.php) they're always defined.
-        -
-            message: '#Constant (APPPATH|ROOTPATH) not found#'
+            message: '#(unknown class|Class) Config\\(Database|Services|App|Cors|Api|FeatureFlags|Queue|Audit)( not found\.)?#'
             paths:
-                - src/Generators/*
-                - src/Orchestration/*
-                - src/Wiring/*
-                - src/Commands/*
+                - src/Http/*
+                - src/Models/*
+                - src/Services/*
+                - src/Support/*
+                - src/Logging/*
+                - src/Monitoring/*
+                - src/Queue/*
+                - src/Dto/*
 
-        # EXIT_SUCCESS and EXIT_ERROR are spark command convention constants
-        # defined by CI4 when commands run.
+        # Config\* method/property access on unknown classes.
         -
-            message: '#Constant EXIT_(SUCCESS|ERROR) not found#'
+            message: '#(method|property|Access to property) [^ ]+ on an unknown class Config\\(Cors|Api|FeatureFlags|App|Queue|Audit)#'
             paths:
-                - src/Commands/*
+                - src/Http/*
+                - src/Logging/*
+                - src/Monitoring/*
+                - src/Queue/*
+                - src/Services/Audit/*
 
-        # config() is a CI4 global helper (system/Common.php). It's loaded by
-        # the framework on every request/command but PHPStan doesn't see it
-        # without bootstrapping the full framework.
+        # has invalid type Config\X parameter type-hints.
         -
-            message: '#Function config not found#'
+            message: '#has invalid type Config\\(Cors|Api|FeatureFlags|App|Queue|Audit)#'
             paths:
-                - src/Commands/*
+                - src/Http/*
+                - src/Logging/*
+                - src/Monitoring/*
+                - src/Queue/*
+                - src/Services/Audit/*
 
-        # CLI::prompt() returns string|bool (bool when stdin is not a TTY).
-        # The `=== null` defensive check is intentional, inherited from the
-        # original ci4-api-starter implementation. PHPStan reads only the
-        # string return type and complains.
+        # QueueManager works with stdClass-shaped DB rows — columns exist at
+        # runtime in the consumer's `jobs` table migration.
         -
-            message: '#Strict comparison using === between string and null will always evaluate to false#'
-            path: src/Commands/MakeCrud.php
+            identifier: property.notFound
+            path: src/Queue/QueueManager.php
+
+        # CI4 FilterInterface ships untyped `array $arguments`.
+        -
+            identifier: missingType.iterableValue
+            paths:
+                - src/Http/Filters/*
+
+        # Procedural date helper accepts generic `array` parameters.
+        -
+            identifier: missingType.iterableValue
+            paths:
+                - src/Helpers/*
+
+        # Sentry is an optional integration in MonologHandler.
+        -
+            message: '#(class|Function) Sentry\\#'
+            path: src/Logging/MonologHandler.php
+        -
+            message: '#Instantiated class Sentry\\Monolog\\Handler not found#'
+            path: src/Logging/MonologHandler.php
+        -
+            message: '#expects Monolog\\Handler\\HandlerInterface, Sentry\\Monolog\\Handler given#'
+            path: src/Logging/MonologHandler.php
+
+        # ApiRequest extends IncomingRequest which requires Config\App.
+        -
+            message: '#Parameter \$config of method dcardenasl\\Ci4ApiCore\\Http\\ApiRequest\:\:__construct\(\) has invalid type Config\\App#'
+            path: src/Http/ApiRequest.php
+
+        # ApiController instanceof guards are intentional defensive checks.
+        -
+            identifier: instanceof.alwaysTrue
+            path: src/Http/ApiController.php
+
+        # Public-API traits consumed by models/services in consumer projects.
+        -
+            identifier: trait.unused
+            paths:
+                - src/Models/Traits/Filterable.php
+                - src/Models/Traits/Searchable.php
+                - src/Models/Traits/AppliesQueryOptions.php
+                - src/Support/ResolvesWebAppLinks.php
+
+        # DtoResponseMapper does defensive instanceof checks on reflection results.
+        -
+            identifier: instanceof.alwaysTrue
+            path: src/Mappers/DtoResponseMapper.php
+
+        # RelationLabelLoader queries opaque CI4 row objects — properties exist
+        # at runtime but PHPStan cannot infer them statically.
+        -
+            identifier: property.notFound
+            path: src/Support/RelationLabelLoader.php
+
+        # CI4 global helpers (lang, service, log_message, config, env).
+        -
+            message: '#Function (lang|service|log_message|config) not found#'
+            paths:
+                - src/*
+        -
+            message: '#Function env not found#'
+            paths:
+                - src/*
+
+        # ENVIRONMENT is a CI4 framework runtime constant.
+        -
+            message: '#Constant ENVIRONMENT not found#'
+            paths:
+                - src/Support/ExceptionFormatter.php
+                - src/Http/ApiController.php
+                - src/Logging/*
+                - src/Monitoring/*
+                - src/Http/Filters/*
+
+        # WRITEPATH is a CI4 framework runtime path constant.
+        -
+            message: '#Constant WRITEPATH not found#'
+            paths:
+                - src/Logging/*
+                - src/Monitoring/*
