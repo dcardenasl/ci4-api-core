@@ -2,204 +2,99 @@
 
 declare(strict_types=1);
 
+use dcardenasl\Ci4ApiCore\Support\DateHelper;
+
 /**
  * Date Helper Functions
  *
- * Provides consistent date/time formatting across the application.
+ * @deprecated Use \dcardenasl\Ci4ApiCore\Support\DateHelper instead.
+ * These procedural wrappers will be removed in v1.0.0.
  */
 
-use CodeIgniter\I18n\Time;
-
 if (!function_exists('datetime_to_timestamp')) {
-    /**
-     * Normalize a datetime value into a unix timestamp
-     *
-     * @param mixed $datetime Time|string|int|null
-     * @return int|null Unix timestamp or null if invalid
-     */
-    function datetime_to_timestamp($datetime): ?int
+    /** @deprecated Use \dcardenasl\Ci4ApiCore\Support\DateHelper::toTimestamp() */
+    function datetime_to_timestamp(mixed $datetime): ?int
     {
-        if ($datetime === null || $datetime === '') {
-            return null;
-        }
-
-        if ($datetime instanceof Time) {
-            return $datetime->getTimestamp();
-        }
-
-        if (is_int($datetime)) {
-            return $datetime;
-        }
-
-        if (is_string($datetime)) {
-            $timestamp = strtotime($datetime);
-            return $timestamp !== false ? $timestamp : null;
-        }
-
-        return null;
+        return DateHelper::toTimestamp($datetime);
     }
 }
 
 if (!function_exists('datetime_now')) {
-    /**
-     * Get current datetime string in MySQL format
-     *
-     * @return string Y-m-d H:i:s format
-     */
+    /** @deprecated Use \dcardenasl\Ci4ApiCore\Support\DateHelper::now() */
     function datetime_now(): string
     {
-        return date('Y-m-d H:i:s');
+        return DateHelper::now();
     }
 }
 
 if (!function_exists('date_now')) {
-    /**
-     * Get current date string
-     *
-     * @return string Y-m-d format
-     */
+    /** @deprecated Use \dcardenasl\Ci4ApiCore\Support\DateHelper::dateNow() */
     function date_now(): string
     {
-        return date('Y-m-d');
+        return DateHelper::dateNow();
     }
 }
 
 if (!function_exists('add_minutes')) {
-    /**
-     * Add minutes to a datetime
-     *
-     * @param string|null $datetime Base datetime (default: now)
-     * @param int         $minutes  Minutes to add
-     * @return string Resulting datetime string
-     */
-    function add_minutes($datetime = null, int $minutes = 0): string
+    /** @deprecated Use \dcardenasl\Ci4ApiCore\Support\DateHelper::addMinutes() */
+    function add_minutes(mixed $datetime = null, int $minutes = 0): string
     {
-        $time = datetime_to_timestamp($datetime) ?? time();
-        return date('Y-m-d H:i:s', $time + ($minutes * 60));
+        return DateHelper::addMinutes($datetime, $minutes);
     }
 }
 
 if (!function_exists('add_hours')) {
-    /**
-     * Add hours to a datetime
-     *
-     * @param string|null $datetime Base datetime (default: now)
-     * @param int         $hours    Hours to add
-     * @return string Resulting datetime string
-     */
-    function add_hours($datetime = null, int $hours = 0): string
+    /** @deprecated Use \dcardenasl\Ci4ApiCore\Support\DateHelper::addHours() */
+    function add_hours(mixed $datetime = null, int $hours = 0): string
     {
-        return add_minutes($datetime, $hours * 60);
+        return DateHelper::addHours($datetime, $hours);
     }
 }
 
 if (!function_exists('add_days')) {
-    /**
-     * Add days to a datetime
-     *
-     * @param string|null $datetime Base datetime (default: now)
-     * @param int         $days     Days to add
-     * @return string Resulting datetime string
-     */
-    function add_days($datetime = null, int $days = 0): string
+    /** @deprecated Use \dcardenasl\Ci4ApiCore\Support\DateHelper::addDays() */
+    function add_days(mixed $datetime = null, int $days = 0): string
     {
-        return add_minutes($datetime, $days * 24 * 60);
+        return DateHelper::addDays($datetime, $days);
     }
 }
 
 if (!function_exists('is_expired')) {
-    /**
-     * Check if a datetime has passed
-     *
-     * @param string|null $datetime Datetime to check
-     * @return bool True if expired (datetime is in the past)
-     */
-    function is_expired($datetime): bool
+    /** @deprecated Use \dcardenasl\Ci4ApiCore\Support\DateHelper::isExpired() */
+    function is_expired(mixed $datetime): bool
     {
-        if ($datetime === null || $datetime === '') {
-            return true;
-        }
-
-        $timestamp = datetime_to_timestamp($datetime);
-        if ($timestamp === null) {
-            return true;
-        }
-
-        return $timestamp < time();
+        return DateHelper::isExpired($datetime);
     }
 }
 
 if (!function_exists('datetime_diff_minutes')) {
-    /**
-     * Get difference in minutes between two datetimes
-     *
-     * @param string      $from Start datetime
-     * @param string|null $to   End datetime (default: now)
-     * @return int Minutes difference
-     */
-    function datetime_diff_minutes($from, $to = null): int
+    /** @deprecated Use \dcardenasl\Ci4ApiCore\Support\DateHelper::diffMinutes() */
+    function datetime_diff_minutes(mixed $from, mixed $to = null): int
     {
-        $fromTime = datetime_to_timestamp($from);
-        $toTime = datetime_to_timestamp($to) ?? time();
-
-        if ($fromTime === null) {
-            return 0;
-        }
-
-        return (int) round(($toTime - $fromTime) / 60);
+        return DateHelper::diffMinutes($from, $to);
     }
 }
 
 if (!function_exists('format_datetime')) {
-    /**
-     * Format a datetime string to a specific format
-     *
-     * @param string|null $datetime Datetime to format
-     * @param string      $format   PHP date format
-     * @return string|null Formatted datetime or null if input is null
-     */
-    function format_datetime($datetime, string $format = 'Y-m-d H:i:s'): ?string
+    /** @deprecated Use \dcardenasl\Ci4ApiCore\Support\DateHelper::format() */
+    function format_datetime(mixed $datetime, string $format = 'Y-m-d H:i:s'): ?string
     {
-        if ($datetime === null || $datetime === '') {
-            return null;
-        }
-
-        $timestamp = datetime_to_timestamp($datetime);
-        return $timestamp !== null ? date($format, $timestamp) : null;
+        return DateHelper::format($datetime, $format);
     }
 }
 
 if (!function_exists('to_iso8601')) {
-    /**
-     * Convert datetime to ISO 8601 format
-     *
-     * @param string|null $datetime Datetime to convert
-     * @return string|null ISO 8601 formatted datetime
-     */
-    function to_iso8601($datetime): ?string
+    /** @deprecated Use \dcardenasl\Ci4ApiCore\Support\DateHelper::toIso8601() */
+    function to_iso8601(mixed $datetime): ?string
     {
-        if ($datetime === null || $datetime === '') {
-            return null;
-        }
-
-        $timestamp = datetime_to_timestamp($datetime);
-        return $timestamp !== null ? date('c', $timestamp) : null;
+        return DateHelper::toIso8601($datetime);
     }
 }
 
 if (!function_exists('human_time_diff')) {
-    /**
-     * Get human-readable time difference (e.g., "2 hours ago")
-     *
-     * @param string      $datetime Datetime to compare
-     * @param string|null $compare  Compare against (default: now)
-     * @return string Human-readable difference
-     */
+    /** @deprecated Use \dcardenasl\Ci4ApiCore\Support\DateHelper::humanDiff() */
     function human_time_diff(string $datetime, ?string $compare = null): string
     {
-        $from = Time::parse($datetime);
-        $to = $compare ? Time::parse($compare) : Time::now();
-
-        return $from->humanize();
+        return DateHelper::humanDiff($datetime, $compare);
     }
 }
