@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Http;
 
+use dcardenasl\Ci4ApiCore\Contracts\PaginatableResponse;
 use dcardenasl\Ci4ApiCore\Dto\DataTransferObjectInterface;
 use dcardenasl\Ci4ApiCore\Http\ApiResponse;
 use dcardenasl\Ci4ApiCore\Support\ApiResult;
@@ -101,9 +102,9 @@ final class ApiResponseTest extends TestCase
         $this->assertSame(202, $result->status);
     }
 
-    public function testFromResultDetectsPaginatedDtoShape(): void
+    public function testFromResultDetectsPaginatedDtoViaMarkerInterface(): void
     {
-        $dto = new class () implements DataTransferObjectInterface {
+        $dto = new class () implements DataTransferObjectInterface, PaginatableResponse {
             public function toArray(): array
             {
                 return ['data' => [['id' => 1]], 'total' => 1, 'page' => 1, 'per_page' => 10];
@@ -114,6 +115,22 @@ final class ApiResponseTest extends TestCase
 
         $this->assertSame(1, $result->body['meta']['total']);
         $this->assertSame(10, $result->body['meta']['per_page']);
+    }
+
+    public function testFromResultDoesNotDetectPaginatedShapeWithoutMarkerInterface(): void
+    {
+        $dto = new class () implements DataTransferObjectInterface {
+            public function toArray(): array
+            {
+                return ['data' => [['id' => 1]], 'total' => 1, 'page' => 1, 'per_page' => 10];
+            }
+        };
+
+        $result = ApiResponse::fromResult($dto);
+
+        // Without PaginatableResponse interface, the DTO goes through the success() path
+        $this->assertSame('success', $result->body['status']);
+        $this->assertArrayNotHasKey('meta', $result->body);
     }
 
     public function testFromResultBoolTrueOnNonDeleteWrapsAsSuccess(): void

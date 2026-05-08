@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace dcardenasl\Ci4ApiCore\Dto;
 
+use dcardenasl\Ci4ApiCore\Contracts\PaginatableResponse;
 use OpenApi\Attributes as OA;
 
 /**
@@ -15,7 +16,7 @@ use OpenApi\Attributes as OA;
     description: 'Generic pagination payload',
     required: ['data', 'total', 'page', 'per_page']
 )]
-readonly class PaginatedResponseDTO implements DataTransferObjectInterface
+readonly class PaginatedResponseDTO implements DataTransferObjectInterface, PaginatableResponse
 {
     /**
      * @param array<int, mixed> $data

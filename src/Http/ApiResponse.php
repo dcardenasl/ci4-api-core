@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace dcardenasl\Ci4ApiCore\Http;
 
+use dcardenasl\Ci4ApiCore\Contracts\PaginatableResponse;
 use dcardenasl\Ci4ApiCore\Dto\DataTransferObjectInterface;
 use dcardenasl\Ci4ApiCore\Support\ApiResult;
 use dcardenasl\Ci4ApiCore\Support\OperationResult;
@@ -115,17 +116,16 @@ class ApiResponse
 
     private static function handleDto(DataTransferObjectInterface $result, int $status): ApiResult
     {
-        $dtoData = $result->toArray();
-
-        if (isset($dtoData['data'], $dtoData['total'], $dtoData['page'], $dtoData['per_page'])) {
+        if ($result instanceof PaginatableResponse) {
+            $dtoData = $result->toArray();
             $body = self::paginated(
-                (array) $dtoData['data'],
-                (int) $dtoData['total'],
-                (int) $dtoData['page'],
-                (int) $dtoData['per_page']
+                (array) ($dtoData['data'] ?? []),
+                (int) ($dtoData['total'] ?? 0),
+                (int) ($dtoData['page'] ?? 1),
+                (int) ($dtoData['per_page'] ?? 20)
             );
         } else {
-            $body = self::success($dtoData);
+            $body = self::success($result->toArray());
         }
 
         return new ApiResult($body, $status);
