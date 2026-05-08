@@ -93,7 +93,7 @@ interface RepositoryInterface
      * @param int   $page     Current page
      * @param int   $perPage  Items per page
      * @param callable|null $baseCriteria Optional callback to apply security/base constraints
-     * @return array{data: list<object>, total: int, page: int, per_page: int}
+     * @return array{data: list<mixed>, total: int, page: int, per_page: int, last_page: int, from: int, to: int}
      */
     public function paginateCriteria(array $criteria, int $page = 1, int $perPage = 20, ?callable $baseCriteria = null): array;
 }

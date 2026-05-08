@@ -110,7 +110,7 @@ class QueryBuilder
     }
 
     /**
-     * @return array{data:array<int,mixed>, total:int, page:int, per_page:int, last_page:int, from:int, to:int}
+     * @return array{data:list<mixed>, total:int, page:int, per_page:int, last_page:int, from:int, to:int}
      */
     public function paginate(int $page = 1, int $limit = 20): array
     {
