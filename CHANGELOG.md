@@ -4,6 +4,23 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+### Added
+- **`src/Support/ApiConfigFacade`** — single point of truth for reading `config('Api')` with safe defaults. Replaces three duplicated `apiConfig()` private methods in `SearchQueryApplier`, `QueryBuilder`, and `Searchable`.
+- **`src/Support/OperationState` enum** — PHP 8.1 backed enum replacing the `SUCCESS`/`ACCEPTED`/`ERROR` string constants on `OperationResult`. Eliminates silent typo bugs.
+- **`src/Contracts/AuditableModelInterface`** — formal contract for auditable models. `BaseRepository::setEntityContext()` now uses `instanceof` instead of `method_exists` duck-typing.
+- **`src/Security/Hasher`**, **`src/Security/Token`**, **`src/Security/Mask`** — namespaced replacements for the procedural helpers in `security.php`.
+- **`src/Request/RequestHelper`** — namespaced replacement for the procedural helpers in `request.php`.
+- **`src/Support/DateHelper`** — namespaced replacement for the procedural helpers in `date.php`.
+- **`BaseRequestDTO` accepts `?ValidationInterface $validation`** as optional second constructor parameter. Falls back to `service('validation')` when `null` — backward compatible; enables unit-testing DTOs without a CI4 bootstrap.
+- **`RequestDtoFactory::make()` accepts `?ValidationInterface`** as optional third parameter, forwarded to the DTO.
+
+### Changed
+- **`OperationResult::$state` type changed from `string` to `OperationState`** — **BC break**. Consumers comparing `$result->state === 'success'` must migrate to `$result->state === OperationState::SUCCESS` (or `$result->state->value === 'success'` as a transitional form). Named factory methods (`success()`, `accepted()`, `error()`) and `isError()`/`isAccepted()` are unaffected.
+- **Procedural helpers in `src/Helpers/*.php` are now thin wrappers tagged `@deprecated`**. They delegate to the new namespaced classes and remain backward compatible. They will be removed in v1.0.0.
+- **`Auditable::getAuditService()` throws a descriptive `RuntimeException`** (including class name and wiring instructions) instead of the previous language-key lookup when `AuditServiceInterface` is not set.
+- **`src/Http/Filters/RequestLoggingFilter`** now reads `requestLoggingEnabled` and `slowQueryThreshold` via `ApiConfigFacade` — fixes a null crash when `Config\Api` is absent.
+- **`src/Helpers/security.php` `is_email_verification_required()`** now reads via `ApiConfigFacade` — fixes the same null crash (R-03).
+
 ## [0.2.0] - 2026-05-07
 
 ### Added
