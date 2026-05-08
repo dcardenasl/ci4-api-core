@@ -33,7 +33,7 @@ class ApiRequest extends IncomingRequest
     public function setAuthContext(?int $user_id, array $permissions = []): void
     {
         $this->authUserId = $user_id;
-        $this->authPermissions = array_values($permissions);
+        $this->authPermissions = $permissions;
     }
 
     public function getAuthUserId(): ?int

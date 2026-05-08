@@ -124,7 +124,7 @@ class TypeMapper
         $types = array_keys(self::$map);
         sort($types);
 
-        return array_values($types);
+        return $types;
     }
 
     public static function getPhpType(string $type, bool $nullable): string
