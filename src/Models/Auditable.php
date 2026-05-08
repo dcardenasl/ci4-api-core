@@ -87,8 +87,17 @@ trait Auditable
         if (isset($data['id'])) {
             $id = is_array($data['id']) ? (int) $data['id'][0] : (int) $data['id'];
 
-            // Only query if not already injected by service layer
             if (!isset($this->auditOldValues[$id])) {
+                // Fallback: query old values when service layer did not inject them.
+                // This causes an extra SELECT (N+1). Call setAuditOldValues() from
+                // the service before update to avoid it.
+                if (defined('ENVIRONMENT') && ENVIRONMENT !== 'production' && function_exists('log_message')) {
+                    log_message(
+                        'warning',
+                        static::class . '::auditBeforeUpdate — setAuditOldValues() was not called before update ' .
+                        "(id={$id}). Falling back to a redundant SELECT. Call setAuditOldValues() from the service layer."
+                    );
+                }
                 $old = $this->find($id);
                 if ($old) {
                     $this->setAuditOldValues($id, $old);
@@ -110,8 +119,17 @@ trait Auditable
         if (isset($data['id'])) {
             $id = is_array($data['id']) ? (int) $data['id'][0] : (int) $data['id'];
 
-            // Only query if not already injected by service layer
             if (!isset($this->auditOldValues[$id])) {
+                // Fallback: query entity data when service layer did not inject them.
+                // This causes an extra SELECT (N+1). Call setAuditOldValues() from
+                // the service before delete to avoid it.
+                if (defined('ENVIRONMENT') && ENVIRONMENT !== 'production' && function_exists('log_message')) {
+                    log_message(
+                        'warning',
+                        static::class . '::auditBeforeDelete — setAuditOldValues() was not called before delete ' .
+                        "(id={$id}). Falling back to a redundant SELECT. Call setAuditOldValues() from the service layer."
+                    );
+                }
                 $entity = $this->find($id);
                 if ($entity) {
                     $this->setAuditOldValues($id, $entity);
@@ -216,6 +234,13 @@ trait Auditable
 
     protected function getAuditService(): AuditServiceInterface
     {
+        if ($this->auditService === null && function_exists('service')) {
+            $resolved = service('auditService', false);
+            if ($resolved instanceof AuditServiceInterface) {
+                $this->auditService = $resolved;
+            }
+        }
+
         if ($this->auditService === null) {
             throw new \RuntimeException(
                 static::class . ' requires an AuditServiceInterface. ' .
