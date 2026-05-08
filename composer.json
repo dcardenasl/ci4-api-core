@@ -32,7 +32,8 @@
     "phpstan/phpstan": "^2.0",
     "friendsofphp/php-cs-fixer": "^3.95",
     "monolog/monolog": "^3.5",
-    "zircote/swagger-php": "^4.10 || ^5.0 || ^6.0"
+    "zircote/swagger-php": "^4.10 || ^5.0 || ^6.0",
+    "spatie/phpunit-snapshot-assertions": "^5.0"
   },
   "suggest": {
     "monolog/monolog": "Required for JSON structured logging via JsonFormatter / MonologHandler (^3.5)",
@@ -47,9 +48,7 @@
       "dcardenasl\\Ci4ApiCore\\": "src/"
     },
     "files": [
-      "src/Helpers/date.php",
-      "src/Helpers/request.php",
-      "src/Helpers/security.php"
+      "src/Helpers/date.php"
     ]
   },
   "autoload-dev": {
