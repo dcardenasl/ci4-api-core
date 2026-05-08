@@ -42,6 +42,7 @@ class MigrationGenerator
         $fieldsContent = $this->generateFields($schema);
         $indexes = $this->generateIndexes($schema);
         $foreignKeys = $this->generateForeignKeys($schema);
+        $dropForeignKeys = $this->generateDropForeignKeys($schema);
         $deletedAtField = $schema->softDelete ? $this->getDeletedAtField() : '';
 
         $ns = $this->config->namespaceFor($this->config->paths->migrations);
@@ -84,7 +85,7 @@ class Create{$resourcePlural}Table extends {$migrationShort}
 
     public function down()
     {
-        \$this->forge->dropTable('{$table}');
+{$dropForeignKeys}        \$this->forge->dropTable('{$table}');
     }
 }
 PHP;
@@ -152,6 +153,7 @@ PHP;
     private function generateForeignKeys(ResourceSchema $schema): string
     {
         $output = "";
+        $table = $schema->getResourcePluralSnakeCase();
         foreach ($schema->fields as $field) {
             if (!$field->fkTable) {
                 continue;
@@ -165,9 +167,22 @@ PHP;
                 ? $field->fkOnDelete
                 : ($field->nullable ? 'SET NULL' : 'CASCADE');
 
-            $output .= "        \$this->forge->addForeignKey('{$field->name}', '{$field->fkTable}', 'id', '{$field->fkOnUpdate}', '{$onDelete}');\n";
+            $output .= "        \$this->forge->addForeignKey('{$field->name}', '{$field->fkTable}', 'id', '{$field->fkOnUpdate}', '{$onDelete}', 'fk_{$table}_{$field->name}');\n";
         }
         return $output;
+    }
+
+    private function generateDropForeignKeys(ResourceSchema $schema): string
+    {
+        $table = $schema->getResourcePluralSnakeCase();
+        $lines = [];
+        foreach ($schema->fields as $field) {
+            if (!$field->fkTable) {
+                continue;
+            }
+            $lines[] = "        \$this->forge->dropForeignKey('{$table}', 'fk_{$table}_{$field->name}');\n";
+        }
+        return $lines === [] ? '' : implode('', $lines) . "\n";
     }
 
     private function getDeletedAtField(): string
