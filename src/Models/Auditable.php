@@ -62,21 +62,39 @@ trait Auditable
 
     /**
      * Temporary storage for old values before update/delete
+     *
+     * @var array<int|string, array<string, mixed>>
      */
     protected array $auditOldValues = [];
 
     /**
      * Inject old values from service layer to avoid redundant DB queries.
+     *
+     * Keys are coerced to strings because CI4's Model::find() return type is
+     * loose (array<int|string, ...>) but the underlying data is always
+     * column-name-keyed at runtime.
+     *
+     * @param array<int|string, mixed>|object $values
      */
     public function setAuditOldValues(int $id, array|object $values): void
     {
-        $this->auditOldValues[$id] = is_object($values)
+        $source = is_object($values)
             ? (method_exists($values, 'toArray') ? $values->toArray() : (array) $values)
             : $values;
+
+        $normalized = [];
+        foreach ($source as $key => $value) {
+            $normalized[(string) $key] = $value;
+        }
+
+        $this->auditOldValues[$id] = $normalized;
     }
 
     /**
      * Capture old values before update (fallback if not injected)
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      */
     protected function auditBeforeUpdate(array $data): array
     {
@@ -97,6 +115,9 @@ trait Auditable
 
     /**
      * Capture entity data before delete (fallback if not injected)
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      */
     protected function auditBeforeDelete(array $data): array
     {
@@ -118,8 +139,7 @@ trait Auditable
     /**
      * Audit insert operations
      *
-     * @param array $data
-     * @return void
+     * @param array<string, mixed> $data
      */
     protected function auditInsert(array $data): void
     {
@@ -141,8 +161,7 @@ trait Auditable
     /**
      * Audit update operations
      *
-     * @param array $data
-     * @return void
+     * @param array<string, mixed> $data
      */
     protected function auditUpdate(array $data): void
     {
@@ -178,8 +197,7 @@ trait Auditable
     /**
      * Audit delete operations
      *
-     * @param array $data
-     * @return void
+     * @param array<string, mixed> $data
      */
     protected function auditDelete(array $data): void
     {
