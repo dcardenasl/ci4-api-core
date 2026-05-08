@@ -18,7 +18,7 @@ class ValidationException extends ApiException
      * Constructor
      *
      * @param string|null $message Error message (default: lang('Exceptions.validationFailed'))
-     * @param array $errors Validation error details
+     * @param array<string, string|list<string>> $errors Validation error details
      */
     public function __construct(?string $message = null, array $errors = [])
     {

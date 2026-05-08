@@ -11,6 +11,9 @@ namespace dcardenasl\Ci4ApiCore\Support;
  */
 readonly class ApiResult
 {
+    /**
+     * @param array<string, mixed> $body
+     */
     public function __construct(
         public array $body,
         public int $status = 200

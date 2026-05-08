@@ -45,6 +45,9 @@ readonly class PaginatedResponseDTO implements DataTransferObjectInterface
         );
     }
 
+    /**
+     * @return array{data: array<int, mixed>, total: int, page: int, per_page: int}
+     */
     public function toArray(): array
     {
         return [

@@ -13,6 +13,9 @@ readonly class OperationResult
     public const ACCEPTED = 'accepted';
     public const ERROR = 'error';
 
+    /**
+     * @param array<string, string|list<string>>|string $errors
+     */
     private function __construct(
         public string $state,
         public mixed $data = null,
@@ -32,6 +35,9 @@ readonly class OperationResult
         return new self(self::ACCEPTED, $data, $message, [], $httpStatus ?? 202);
     }
 
+    /**
+     * @param array<string, string|list<string>>|string $errors
+     */
     public static function error(array|string $errors, ?string $message = null, ?int $httpStatus = null): self
     {
         return new self(self::ERROR, null, $message, $errors, $httpStatus);

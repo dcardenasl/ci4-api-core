@@ -25,7 +25,7 @@ abstract class ApiException extends Exception implements HasStatusCode
     /**
      * Structured error details
      *
-     * @var array
+     * @var array<string, string|list<string>>
      */
     protected array $errors = [];
 
@@ -33,7 +33,7 @@ abstract class ApiException extends Exception implements HasStatusCode
      * Constructor
      *
      * @param string $message Error message
-     * @param array $errors Structured error details
+     * @param array<string, string|list<string>> $errors Structured error details
      * @param Throwable|null $previous Previous exception for chaining
      */
     public function __construct(string $message = '', array $errors = [], ?Throwable $previous = null)
@@ -55,7 +55,7 @@ abstract class ApiException extends Exception implements HasStatusCode
     /**
      * Get structured error details
      *
-     * @return array
+     * @return array<string, string|list<string>>
      */
     public function getErrors(): array
     {
@@ -65,7 +65,7 @@ abstract class ApiException extends Exception implements HasStatusCode
     /**
      * Convert exception to array format for JSON response
      *
-     * @return array
+     * @return array{status: string, code: int, message: string, errors: array<string, string|list<string>>}
      */
     public function toArray(): array
     {

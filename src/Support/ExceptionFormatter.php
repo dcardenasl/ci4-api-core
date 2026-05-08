@@ -66,6 +66,8 @@ class ExceptionFormatter
 
     /**
      * Provide detailed debugging information in non-production environments.
+     *
+     * @return array{}|array{class: string, file: string, line: int, trace: list<string>}
      */
     private static function resolveDebugInfo(Exception $e): array
     {

@@ -18,7 +18,7 @@ class BadRequestException extends ApiException
      * Constructor
      *
      * @param string|null $message Error message (default: lang('Exceptions.badRequest'))
-     * @param array $errors Additional error details
+     * @param array<string, string|list<string>> $errors Additional error details
      */
     public function __construct(?string $message = null, array $errors = [])
     {

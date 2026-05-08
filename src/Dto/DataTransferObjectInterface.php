@@ -14,6 +14,8 @@ interface DataTransferObjectInterface
     /**
      * Convert the DTO to an associative array.
      * Useful for persistence or standard API responses.
+     *
+     * @return array<string, mixed>
      */
     public function toArray(): array;
 }

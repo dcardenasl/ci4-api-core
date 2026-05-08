@@ -15,6 +15,9 @@ use dcardenasl\Ci4ApiCore\Exceptions\ValidationException;
  */
 abstract readonly class BaseRequestDTO implements DataTransferObjectInterface
 {
+    /**
+     * @param array<string, mixed> $data
+     */
     public function __construct(array $data)
     {
         $this->validate($data);
@@ -24,17 +27,24 @@ abstract readonly class BaseRequestDTO implements DataTransferObjectInterface
     /**
      * Define validation rules for this DTO.
      * Used by RequestDtoFactory to validate data BEFORE instantiation.
+     *
+     * @return array<string, string>
      */
     abstract public function rules(): array;
 
     /**
      * Define custom validation messages (optional)
+     *
+     * @return array<string, string>
      */
     public function messages(): array
     {
         return [];
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     protected function validate(array $data): void
     {
         $rules = $this->rules();
@@ -59,6 +69,8 @@ abstract readonly class BaseRequestDTO implements DataTransferObjectInterface
 
     /**
      * Map data to DTO properties
+     *
+     * @param array<string, mixed> $data
      */
     abstract protected function map(array $data): void;
 }
