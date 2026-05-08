@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Support;
 
 use dcardenasl\Ci4ApiCore\Support\OperationResult;
+use dcardenasl\Ci4ApiCore\Support\OperationState;
 use PHPUnit\Framework\TestCase;
 
 final class OperationResultTest extends TestCase
@@ -13,7 +14,7 @@ final class OperationResultTest extends TestCase
     {
         $r = OperationResult::success(['id' => 1], 'Created');
 
-        $this->assertSame(OperationResult::SUCCESS, $r->state);
+        $this->assertSame(OperationState::SUCCESS, $r->state);
         $this->assertSame(['id' => 1], $r->data);
         $this->assertSame('Created', $r->message);
         $this->assertFalse($r->isError());

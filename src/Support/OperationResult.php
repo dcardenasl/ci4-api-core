@@ -9,15 +9,11 @@ namespace dcardenasl\Ci4ApiCore\Support;
  */
 readonly class OperationResult
 {
-    public const SUCCESS = 'success';
-    public const ACCEPTED = 'accepted';
-    public const ERROR = 'error';
-
     /**
      * @param array<string, string|list<string>>|string $errors
      */
     private function __construct(
-        public string $state,
+        public OperationState $state,
         public mixed $data = null,
         public ?string $message = null,
         public array|string $errors = [],
@@ -27,12 +23,12 @@ readonly class OperationResult
 
     public static function success(mixed $data = null, ?string $message = null, ?int $httpStatus = null): self
     {
-        return new self(self::SUCCESS, $data, $message, [], $httpStatus);
+        return new self(OperationState::SUCCESS, $data, $message, [], $httpStatus);
     }
 
     public static function accepted(mixed $data = null, ?string $message = null, ?int $httpStatus = null): self
     {
-        return new self(self::ACCEPTED, $data, $message, [], $httpStatus ?? 202);
+        return new self(OperationState::ACCEPTED, $data, $message, [], $httpStatus ?? 202);
     }
 
     /**
@@ -40,16 +36,16 @@ readonly class OperationResult
      */
     public static function error(array|string $errors, ?string $message = null, ?int $httpStatus = null): self
     {
-        return new self(self::ERROR, null, $message, $errors, $httpStatus);
+        return new self(OperationState::ERROR, null, $message, $errors, $httpStatus);
     }
 
     public function isError(): bool
     {
-        return $this->state === self::ERROR;
+        return $this->state === OperationState::ERROR;
     }
 
     public function isAccepted(): bool
     {
-        return $this->state === self::ACCEPTED;
+        return $this->state === OperationState::ACCEPTED;
     }
 }
