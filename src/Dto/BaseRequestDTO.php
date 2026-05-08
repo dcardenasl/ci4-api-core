@@ -17,7 +17,8 @@ abstract readonly class BaseRequestDTO implements DataTransferObjectInterface
 {
     /**
      * @param array<string, mixed> $data
-     * @param ValidationInterface|null $validation Optional injection; falls back to service('validation') when null.
+     * @param ValidationInterface|null $validation Must be provided explicitly when rules() is non-empty.
+     *                                             Consumer: inject via RequestDtoFactory or constructor.
      */
     public function __construct(array $data, private ?ValidationInterface $validation = null)
     {
@@ -53,12 +54,12 @@ abstract readonly class BaseRequestDTO implements DataTransferObjectInterface
             return;
         }
 
-        $validation = $this->validation
-            ?? (function_exists('service') ? service('validation') : null);
+        $validation = $this->validation;
 
         if (! $validation instanceof ValidationInterface) {
             throw new \RuntimeException(
-                'No ValidationInterface available. Pass one to the constructor or ensure service(\'validation\') is bootstrapped.'
+                static::class . ' has validation rules but no ValidationInterface was injected. ' .
+                'Pass a ValidationInterface as the second constructor argument, or use RequestDtoFactory.'
             );
         }
 
