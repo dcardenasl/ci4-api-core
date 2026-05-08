@@ -40,11 +40,7 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: PHP CS Fixer (dry-run)
-        run: |
-          if [ ! -f vendor/bin/php-cs-fixer ]; then
-            composer require --dev friendsofphp/php-cs-fixer:^3.95 --no-interaction --no-progress
-          fi
-          vendor/bin/php-cs-fixer fix --dry-run --diff --no-interaction
+        run: composer cs-check
 
       - name: PHPStan
         run: composer analyse
@@ -52,7 +48,14 @@ jobs:
       - name: PHPUnit
         run: composer test
 
+      - name: Upload coverage to Codecov
+        if: matrix.php-version == '8.2'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Security audit
-        # Soft-fail until v0.2 publishes a stable lock; advisories surface either way.
-        continue-on-error: true
-        run: composer audit
+        run: composer security
