@@ -20,16 +20,22 @@ interface RepositoryInterface
 
     /**
      * Set the current entity state to avoid redundant DB lookups in auditable models.
+     *
+     * @param object|array<string, mixed> $entity
      */
     public function setEntityContext(int|string $id, object|array $entity): void;
 
     /**
      * Get validation errors
+     *
+     * @return array<string, string|list<string>>
      */
     public function errors(): array;
 
     /**
      * Find all records matching criteria
+     *
+     * @return list<object>
      */
     public function findAll(int $limit = 0, int $offset = 0): array;
 
@@ -48,22 +54,30 @@ interface RepositoryInterface
     /**
      * Insert a new record
      *
+     * @param array<string, mixed>|object $data
      * @return int|string|bool The insert ID on success, false on failure
      */
     public function insert(array|object $data, bool $returnID = true): int|string|bool;
 
     /**
      * Update an existing record
+     *
+     * @param int|string|list<int|string>|null $id
+     * @param array<string, mixed>|object|null $data
      */
     public function update(int|string|array $id = null, array|object|null $data = null): bool;
 
     /**
      * Delete a record by ID
+     *
+     * @param int|string|list<int|string>|null $id
      */
     public function delete(int|string|array $id = null, bool $purge = false): bool;
 
     /**
      * Restore a soft-deleted record
+     *
+     * @param array<string, mixed> $data
      */
     public function restore(int|string $id, array $data = []): bool;
 
@@ -75,11 +89,11 @@ interface RepositoryInterface
     /**
      * Get a paginated result based on given request criteria (filter, sort, search)
      *
-     * @param array $criteria DTO criteria as an array
+     * @param array<string, mixed> $criteria DTO criteria as an array
      * @param int   $page     Current page
      * @param int   $perPage  Items per page
      * @param callable|null $baseCriteria Optional callback to apply security/base constraints
-     * @return array Array containing 'data', 'total', 'page', 'per_page'
+     * @return array{data: list<object>, total: int, page: int, per_page: int}
      */
     public function paginateCriteria(array $criteria, int $page = 1, int $perPage = 20, ?callable $baseCriteria = null): array;
 }

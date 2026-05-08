@@ -186,6 +186,9 @@ abstract class BaseCrudService implements CrudServiceContract
 
     /**
      * Hooks for domain logic (Override in child services)
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      */
     protected function beforeStore(array $data, ?SecurityContext $context): array
     {
@@ -194,6 +197,11 @@ abstract class BaseCrudService implements CrudServiceContract
     protected function afterStore(object $entity, ?SecurityContext $context): void
     {
     }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
     protected function beforeUpdate(int $id, array $data, ?SecurityContext $context): array
     {
         return $data;
@@ -219,6 +227,9 @@ abstract class BaseCrudService implements CrudServiceContract
 
     /**
      * Optional hook for child services to apply/modify query options (filtering, sorting, etc.)
+     *
+     * @param array<string, mixed> $criteria
+     * @return array<string, mixed>
      */
     protected function applyQueryOptions(array $criteria): array
     {
