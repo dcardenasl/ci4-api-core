@@ -86,6 +86,26 @@ Sin ID de tarea — mejoras al motor de scaffolding post-v0.2.0:
 
 ---
 
+## ✅ Medium findings — audit v0.2.0 (2026-05-08)
+
+Todos los hallazgos 🟡 medios del audit resueltos en una sola sesión:
+
+| Hallazgo | Descripción | Estado |
+|---|---|---|
+| R-11 | `CorsFilter`: patrones wildcard compilados cacheados por proceso en lugar de re-compilarse por request. | ✅ |
+| R-12 | `AuditPayloadSanitizer`: constante `DEFAULTS` extraída, constructor acepta `additionalSensitiveFields[]`. Configurable sin subclase. | ✅ |
+| R-13 | `ExceptionFormatter`: debug info expuesto solo en `development` (whitelist) en lugar de blacklist `!== production`. | ✅ |
+| R-15 | `PaginatableResponse` marker interface — `ApiResponse` detecta paginación por `instanceof` en lugar de heurística de claves. `PaginatedResponseDTO` la implementa. | ✅ |
+| S-05 | `MigrationGenerator`: FK constraints nombradas + `dropForeignKey()` explícito en `down()`. 128 líneas de tests nuevos. | ✅ |
+| S-07 | `ModuleCheck`: checks de wiring migrados de `str_contains` a `preg_match` con `\s*` — robusto ante cs-fixer. | ✅ |
+| S-09 | `ScaffoldRemover` (`make:crud:remove`): solicita confirmación antes de borrar archivos. | ✅ |
+| S-10 | `LanguageGenerator`: valida paridad de keys `en`/`es` tras generación. | ✅ |
+| P-09 | `EndToEndScaffoldTest` movido a suite `E2E` separada en `phpunit.xml.dist`. CI corre Unit+Integration por defecto; E2E separado. | ✅ |
+| P-11 | Quick Start (<30s) añadido al README. | ✅ |
+| P-12 | `shellcheck` en CI sobre `bin/make-crud.sh` y `bin/validate-crud.sh`. | ✅ |
+
+---
+
 ## ✅ Packaging hardening pre-Packagist (2026-05-08)
 
 | Hallazgo | Descripción | Estado |

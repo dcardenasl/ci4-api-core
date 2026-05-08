@@ -5,6 +5,49 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 ## [Unreleased]
 
 ### Added
+- **`TemplateRenderer`** (`src/Generators/TemplateRenderer.php`) — lightweight template engine that loads `.php.tpl` files from `src/Generators/Templates/` and substitutes `{varName}` placeholders. All 8 built-in generators now delegate output to template files instead of inline heredocs (4.5).
+- **19 template files** in `src/Generators/Templates/` — one per generator output (DTOs ×4, migration, entity, model, service ×2, controller ×2, route ×2, language ×2, tests ×3). Changing generated output now produces an explicit diff in the template file, visible in PR review (4.5).
+- **17 snapshot tests** in `tests/Unit/Generators/SnapshotTest.php` — assert that each generator's output matches a stored snapshot in `tests/Unit/Generators/__snapshots__/`. A template change that alters generated output will fail CI unless the snapshot is intentionally updated with `--update-snapshots` (4.5).
+- **`spatie/phpunit-snapshot-assertions:^5.0`** added to `require-dev` (4.5).
+- **`*.tpl text eol=lf`** added to `.gitattributes` to ensure consistent line endings in template files across platforms (4.5).
+- **`CrudGeneratorInterface`** (`src/Generators/CrudGeneratorInterface.php`) — formal contract with `name(): string` and `generate(ResourceSchema): array<string,string>`. All 8 built-in generators implement it. Enables plugin architecture: consumers can exclude, replace, or extend the generator set by passing a custom `$generators` list to `ScaffoldingOrchestrator` (4.4).
+- **`ScaffoldingOrchestrator::defaultGenerators(ScaffoldingConfig): list<CrudGeneratorInterface>`** — static factory exposing the canonical 8-generator list so callers can filter before constructing. Example: `array_filter($gens, fn($g) => $g->name() !== 'tests')` (4.4).
+- **`SyncQueueManager`** (`src/Queue/SyncQueueManager.php`) — drop-in alternative to `QueueManager` that executes `Job::handle()` immediately in the current request. Zero infrastructure requirements; useful in development, testing, and single-server deployments without a queue worker. `$throwOnFailure = true` by default for dev-time visibility; set to `false` to swallow exceptions like the async adapter does (4.10).
+- **Coverage reporting in CI** — PHPUnit runs with `--coverage-clover coverage.xml` on PHP 8.2 (xdebug enabled); output is uploaded to Codecov. `phpunit.xml.dist` now has a `<coverage><report><clover>` element (4.8).
+
+### Changed
+- **`ScaffoldingOrchestrator` accepts optional `?array $generators`** — when `null` (default), `defaultGenerators($config)` is used. Pass a filtered or extended list to customise the scaffold output without subclassing. **BC compatible** — existing callsites with one argument (`new ScaffoldingOrchestrator($config)`) are unaffected (4.4).
+- **`BaseRequestDTO::validate()` requires explicit `ValidationInterface` injection** — the `service('validation')` fallback has been removed. Consumers that instantiate DTOs outside of `RequestDtoFactory` must pass a `ValidationInterface` as the second constructor argument. `RequestDtoFactory` already injects one. **BC break for consumers instantiating DTOs manually without passing validation.** (4.3).
+- **`CI PHPUnit step`** — `--coverage-clover coverage.xml` flag added to the PHP 8.2 matrix run (4.8).
+
+### Removed
+- **`src/Helpers/request.php`** — procedural wrappers (`require_id`, `require_fields`, `get_int`, `get_bool`, `get_string`, `get_array`, `pick_fields`, `filter_null`, `filter_empty`, `get_pagination_params`) removed. **BC break.** Use `dcardenasl\Ci4ApiCore\Request\RequestHelper::*()` directly (4.3).
+- **`request.php` removed from `composer.json` autoload.files`** — no autoload side effect for consumers on upgrade (4.3).
+
+### Added
+- **`SearchQueryApplier::sanitizeFulltextQuery(string): string`** — public utility that strips MySQL Boolean Mode operators (`+ - * " ( ) ~ < >`) before a MATCH AGAINST query, preventing user input from altering search semantics silently (R-06).
+- **`SecurityContext` constructor validates metadata depth** — values in `$metadata` must be `scalar|null`; nested arrays/objects throw `InvalidArgumentException` at construction time, preventing accidental mutation through reference sharing (R-10).
+- **`tests/Unit/Services/Audit/AuditPayloadSanitizerTest`** — 6 test cases covering default redaction, additional fields, nested arrays, and regex pattern matching (R-17).
+- **`tests/Unit/Services/Audit/AuditWriterTest`** — 5 test cases covering FK-constraint retry, non-FK re-throw, and non-DatabaseException re-throw (R-17).
+- **Security operator sanitization test cases** — `SearchQueryApplierTest` data provider with 10 Boolean Mode operator variants (R-06).
+- **SecurityContext mutation tests** — 3 new assertions in `SecurityContextTest` validating scalar-only metadata enforcement (R-10).
+
+### Changed
+- **`BaseAuditableModel::initialize()` no longer calls `Services::auditService()`** — audit service is now resolved lazily on the first audit operation via `getAuditService()` (which tries `service('auditService', false)` before throwing). Models that perform no write operations no longer require `auditService` to be registered. Explicit injection via `setAuditService()` still works and takes precedence (R-02).
+- **`Auditable::auditBeforeUpdate()` and `auditBeforeDelete()` emit a `log_message('warning', ...)` in non-production** when the N+1 fallback SELECT fires (i.e. `setAuditOldValues()` was not called by the service layer before the operation). In production the fallback is silent to avoid overhead (R-16).
+- **`SearchQueryApplier::applyFulltext()`** now calls `sanitizeFulltextQuery()` before `$db->escape()` — eliminates Boolean Mode operator injection without disabling FULLTEXT search (R-06).
+- **`phpunit.xml.dist`** — removed stale `Integration` testsuite entry (directory was already moved to `tests/E2E/` in the previous cycle).
+- **`EndToEndScaffoldTest` namespace fixed** — changed from `Tests\Integration` to `Tests\E2E` to match the physical location in `tests/E2E/` (3c).
+- **`EndToEndScaffoldTest::testGeneratedPhpFilesHaveStrictTypesAndNamespace()`** — new E2E test that uses `nikic/php-parser` to verify every generated class/interface/trait file carries `declare(strict_types=1)` and a named namespace. Catches generator regressions that `php -l` does not (S-04 minimum, 3c).
+- **`.github/workflows/ci.yml` PHPUnit step** — `--testsuite Unit,Integration` corrected to `--testsuite Unit` (Integration was removed; E2E already has its own step) (3c).
+- **`.github/workflows/ci.yml` `ci4-compatibility` job** — new parallel job running `--testsuite Unit` across PHP 8.2/8.3 × CI4 4.5/4.6/4.7. Uses `composer update` with a pinned CI4 constraint to exercise the `^4.5` declaration without the lock file (3d).
+
+### Removed
+- **`ConfigWireman` strrpos fallback** — when the AST editor cannot locate a parseable `trait` declaration in the domain trait file, `WiringFailedException` is thrown with a clear recovery message instead of doing a fragile `strrpos('}')` insertion that breaks on heredocs and PHP 8 attributes. Re-run with `--no-wire` to get the manual snippet (S-01 residual, 3b).
+- **`src/Helpers/security.php`** — procedural wrappers (`hash_password`, `verify_password`, `generate_token`, `hash_token`, `generate_api_key`, `hash_api_key`, `generate_uuid`, `constant_time_compare`, `sanitize_filename`, `mask_string`, `mask_email`, `generate_otp`, `is_email_verification_required`) removed. **BC break.** Use the namespaced classes instead: `dcardenasl\Ci4ApiCore\Security\Hasher`, `Token`, `Mask`, and `dcardenasl\Ci4ApiCore\Support\ApiConfigFacade` (R-05).
+- **`security.php` removed from `composer.json` autoload.files`** — no autoload side effect for consumers on upgrade (R-05).
+
+### Added
 - **`src/Contracts/PaginatableResponse`** — marker interface for paginated DTOs. `ApiResponse::handleDto()` now uses `instanceof PaginatableResponse` instead of key-presence heuristics. **BC break:** custom DTOs that returned `data/total/page/per_page` keys but did not implement this interface will no longer be treated as paginated — implement the interface to restore the behaviour.
 - **`PaginatedResponseDTO` implements `PaginatableResponse`** — no behaviour change for existing consumers that use this DTO directly.
 - **`LanguageGenerator::checkParity(string $enPath, string $esPath): array`** — compares top-level keys between the `en` and `es` language files for a resource. Returns `missing_in_es` and `missing_in_en` arrays.
