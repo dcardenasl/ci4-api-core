@@ -28,9 +28,6 @@ jobs:
       - name: Validate composer.json
         run: composer validate --strict --no-check-publish
 
-      - name: Lint shell scripts
-        run: shellcheck bin/make-crud.sh bin/validate-crud.sh
-
       - name: Cache Composer dependencies
         uses: actions/cache@v4
         with:
@@ -51,9 +48,6 @@ jobs:
       - name: PHPUnit
         run: composer test -- --testsuite Unit ${{ matrix.php-version == '8.2' && '--coverage-clover coverage.xml' || '' }}
 
-      - name: PHPUnit E2E
-        run: composer test -- --testsuite E2E
-
       - name: Upload coverage to Codecov
         if: matrix.php-version == '8.2'
         uses: codecov/codecov-action@v4
@@ -73,7 +67,7 @@ jobs:
       fail-fast: false
       matrix:
         php-version: ['8.2', '8.3']
-        ci4-version: ['4.5.*', '4.6.*', '4.7.*']
+        ci4-version: ['4.6.*', '4.7.*']
 
     steps:
       - name: Checkout

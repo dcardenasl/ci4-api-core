@@ -93,7 +93,7 @@ abstract class BaseRepository implements RepositoryInterface
      * @param int|string|list<int|string>|null $id
      * @param array<string, mixed>|object|null $data
      */
-    public function update(int|string|array $id = null, array|object|null $data = null): bool
+    public function update(int|string|array|null $id = null, array|object|null $data = null): bool
     {
         // Guard against empty datasets to avoid CodeIgniter DataException
         if ($data === null || $data === []) {
@@ -106,7 +106,7 @@ abstract class BaseRepository implements RepositoryInterface
     /**
      * @param int|string|list<int|string>|null $id
      */
-    public function delete(int|string|array $id = null, bool $purge = false): bool
+    public function delete(int|string|array|null $id = null, bool $purge = false): bool
     {
         $result = $this->model->delete($id, $purge);
 
