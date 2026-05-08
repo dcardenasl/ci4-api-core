@@ -43,7 +43,7 @@ abstract class BaseCrudService implements CrudServiceContract
         $perPage = $requestData['per_page'] ?? 20;
 
         // The base criteria callable allows services to inject base constraints
-        $baseCriteria = function ($builder) {
+        $baseCriteria = function ($builder): void {
             $this->applyBaseCriteria($builder);
         };
 

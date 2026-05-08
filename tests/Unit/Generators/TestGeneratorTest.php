@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Unit\Generators;
 
 use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
-use dcardenasl\Ci4ApiCore\Config\ScaffoldingPaths;
 use dcardenasl\Ci4ApiCore\Core\Field;
 use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
 use dcardenasl\Ci4ApiCore\Generators\TestGenerator;

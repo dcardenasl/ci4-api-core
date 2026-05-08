@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace dcardenasl\Ci4ApiCore\Mappers;
 
 use dcardenasl\Ci4ApiCore\Dto\DataTransferObjectInterface;
-use dcardenasl\Ci4ApiCore\Mappers\ResponseMapperInterface;
 
 class DtoResponseMapper implements ResponseMapperInterface
 {

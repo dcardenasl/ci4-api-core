@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace dcardenasl\Ci4ApiCore\Http\Filters;
 
-use dcardenasl\Ci4ApiCore\Http\RequestIdHolder;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
+use dcardenasl\Ci4ApiCore\Http\RequestIdHolder;
 
 /**
  * CorrelationIdFilter

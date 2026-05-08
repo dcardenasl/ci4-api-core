@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace dcardenasl\Ci4ApiCore\Queue;
 
 use Throwable;

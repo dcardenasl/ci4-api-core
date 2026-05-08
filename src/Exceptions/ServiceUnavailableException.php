@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace dcardenasl\Ci4ApiCore\Exceptions;
 
-use dcardenasl\Ci4ApiCore\Exceptions\ApiException;
-
 /**
  * Service Unavailable Exception (HTTP 503)
  *

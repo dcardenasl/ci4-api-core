@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace dcardenasl\Ci4ApiCore\Queue\Jobs;
 
-use dcardenasl\Ci4ApiCore\Queue\Job;
 use Config\Database;
+use dcardenasl\Ci4ApiCore\Queue\Job;
 
 class LogRequestJob extends Job
 {

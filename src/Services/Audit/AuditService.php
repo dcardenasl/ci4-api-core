@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace dcardenasl\Ci4ApiCore\Services\Audit;
 
-use dcardenasl\Ci4ApiCore\Dto\Common\PayloadResponseDTO;
-use dcardenasl\Ci4ApiCore\Dto\Audit\AuditEventDTO;
-use dcardenasl\Ci4ApiCore\Queue\Jobs\WriteAuditLogJob;
 use Config\Audit as AuditConfig;
+use dcardenasl\Ci4ApiCore\Dto\Audit\AuditEventDTO;
+use dcardenasl\Ci4ApiCore\Dto\Common\PayloadResponseDTO;
 use dcardenasl\Ci4ApiCore\Dto\DataTransferObjectInterface;
 use dcardenasl\Ci4ApiCore\Dto\SecurityContext;
 use dcardenasl\Ci4ApiCore\Mappers\ResponseMapperInterface;
+use dcardenasl\Ci4ApiCore\Queue\Jobs\WriteAuditLogJob;
 use dcardenasl\Ci4ApiCore\Queue\QueueManager;
 use dcardenasl\Ci4ApiCore\Repositories\AuditRepositoryInterface;
 use dcardenasl\Ci4ApiCore\Services\BaseCrudService;

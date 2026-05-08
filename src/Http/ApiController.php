@@ -45,7 +45,7 @@ abstract class ApiController extends Controller
 
     protected object $defaultService;
 
-    public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
+    public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger): void
     {
         parent::initController($request, $response, $logger);
         $this->defaultService = $this->resolveDefaultService();
