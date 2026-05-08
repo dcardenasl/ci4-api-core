@@ -34,6 +34,18 @@ interface RepositoryInterface
     public function findAll(int $limit = 0, int $offset = 0): array;
 
     /**
+     * Find a batch of records by their primary keys.
+     *
+     * Used by services that need to enrich a list of references in one query
+     * (e.g. a gallery service hydrating the underlying file rows for a set of
+     * pivot entries) without falling back to direct Model access.
+     *
+     * @param  list<int|string>  $ids
+     * @return list<object>      records keyed sequentially; empty list if `$ids` is empty
+     */
+    public function findByIds(array $ids): array;
+
+    /**
      * Insert a new record
      *
      * @return int|string|bool The insert ID on success, false on failure
