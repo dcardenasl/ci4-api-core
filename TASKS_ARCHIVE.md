@@ -86,4 +86,17 @@ Sin ID de tarea — mejoras al motor de scaffolding post-v0.2.0:
 
 ---
 
-*TASKS_ARCHIVE · ci4-api-core · 2026-05-07*
+## ✅ Packaging hardening pre-Packagist (2026-05-08)
+
+| Hallazgo | Descripción | Estado |
+|---|---|---|
+| P-02 | `.gitattributes` con `export-ignore` completo — excluye `tests/`, `docs/`, `.github/`, `TASKS*.md`, `phpunit.xml.dist`, etc. del tarball de Packagist. | ✅ |
+| P-03 | `SECURITY.md` (política de disclosure + contacto email, versiones soportadas). `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1). | ✅ |
+| P-04 | Matriz CI ampliada a PHP 8.2 / 8.3 / 8.4. Coverage con xdebug solo en 8.2. | ✅ |
+| P-05 | `monolog/monolog` y `zircote/swagger-php` movidos de `require` a `suggest`. `nikic/php-parser` es la única dep runtime añadida explícitamente. | ✅ |
+| P-06 | `friendsofphp/php-cs-fixer` añadido a `require-dev`. Scripts `cs-check`/`cs-fix` funcionales en clean install. | ✅ |
+| R-04 | Logging de excepciones estructurado y production-aware: mensaje + file + line en producción; trace completo solo en desarrollo. `ApiController` actualizado. | ✅ |
+
+---
+
+*TASKS_ARCHIVE · ci4-api-core · 2026-05-08*
