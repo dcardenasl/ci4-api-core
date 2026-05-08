@@ -66,6 +66,30 @@ return [
 PHP;
     }
 
+    /**
+     * Compare top-level keys between the en and es language files for a resource.
+     *
+     * @return array{missing_in_es: list<string>, missing_in_en: list<string>}
+     */
+    public function checkParity(string $enPath, string $esPath): array
+    {
+        if (!is_file($enPath) || !is_file($esPath)) {
+            return ['missing_in_es' => [], 'missing_in_en' => []];
+        }
+
+        $en = include $enPath;
+        $es = include $esPath;
+
+        if (!is_array($en) || !is_array($es)) {
+            return ['missing_in_es' => [], 'missing_in_en' => []];
+        }
+
+        return [
+            'missing_in_es' => array_keys(array_diff_key($en, $es)),
+            'missing_in_en' => array_keys(array_diff_key($es, $en)),
+        ];
+    }
+
     private function generateFieldsArray(ResourceSchema $schema): string
     {
         $content = '';

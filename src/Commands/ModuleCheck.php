@@ -9,6 +9,7 @@ use CodeIgniter\CLI\CLI;
 use dcardenasl\Ci4ApiCore\Config\BaseScaffoldingConfig;
 use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
 use dcardenasl\Ci4ApiCore\Core\StringHelper;
+use dcardenasl\Ci4ApiCore\Generators\LanguageGenerator;
 use Throwable;
 
 class ModuleCheck extends BaseCommand
@@ -81,20 +82,31 @@ class ModuleCheck extends BaseCommand
         // Check Domain Wiring in Services
         $domainServicesPath = APPPATH . "Config/{$domain}DomainServices.php";
         $servicesSource = is_file($domainServicesPath) ? (string) file_get_contents($domainServicesPath) : '';
-        $serviceMethod = "function {$resourceLower}Service(";
-        $mapperMethod = "function {$resourceLower}ResponseMapper(";
-        if (!str_contains($servicesSource, $serviceMethod)) {
-            $missing[] = "Missing service registration in {$domain}DomainServices.php: {$serviceMethod}";
+        $serviceMethod = "{$resourceLower}Service";
+        $mapperMethod = "{$resourceLower}ResponseMapper";
+        if (!preg_match('/\bfunction\s+' . preg_quote($serviceMethod, '/') . '\s*\(/', $servicesSource)) {
+            $missing[] = "Missing service registration in {$domain}DomainServices.php: function {$serviceMethod}(";
         }
-        if (!str_contains($servicesSource, $mapperMethod)) {
-            $missing[] = "Missing mapper registration in {$domain}DomainServices.php: {$mapperMethod}";
+        if (!preg_match('/\bfunction\s+' . preg_quote($mapperMethod, '/') . '\s*\(/', $servicesSource)) {
+            $missing[] = "Missing mapper registration in {$domain}DomainServices.php: function {$mapperMethod}(";
+        }
+
+        // Check language parity
+        $enPath = APPPATH . "{$p->languageEn}/{$resourcePlural}.php";
+        $esPath = APPPATH . "{$p->languageEs}/{$resourcePlural}.php";
+        $parity = (new LanguageGenerator($config))->checkParity($enPath, $esPath);
+        foreach ($parity['missing_in_es'] as $key) {
+            $missing[] = "Language key '{$key}' present in en but missing in es ({$resourcePlural}.php)";
+        }
+        foreach ($parity['missing_in_en'] as $key) {
+            $missing[] = "Language key '{$key}' present in es but missing in en ({$resourcePlural}.php)";
         }
 
         // Check Routes
         $routesPath = APPPATH . "{$p->routes}/{$domainKebab}.php";
         $routesSource = is_file($routesPath) ? (string) file_get_contents($routesPath) : '';
         $controllerRef = "{$resource}Controller::";
-        if (!str_contains($routesSource, $controllerRef)) {
+        if (!preg_match('/' . preg_quote($controllerRef, '/') . '/', $routesSource)) {
             $missing[] = "Missing route reference in {$routesPath}: {$controllerRef}";
         }
 
