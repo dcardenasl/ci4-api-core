@@ -13,18 +13,25 @@ namespace dcardenasl\Ci4ApiCore\Dto;
 readonly class SecurityContext
 {
     /**
-     * @param array<string, mixed> $metadata
+     * @param array<string, mixed> $metadata Flat key-value pairs only; nested arrays and
+     *                                       objects are rejected at runtime to prevent
+     *                                       accidental mutation through reference sharing.
+     *                                       Values must be scalar or null.
      * @param list<string> $permissions Effective permission codes for the active application.
-     *
-     * Note: PHP readonly prevents reassignment of these properties but not mutation of
-     * their array contents (e.g. $ctx->permissions[] = 'x' is still possible). Treat
-     * $metadata and $permissions as logically immutable post-construction.
      */
     public function __construct(
         public ?int $user_id = null,
         public array $metadata = [],
         public array $permissions = []
     ) {
+        foreach ($metadata as $key => $value) {
+            if ($value !== null && !is_scalar($value)) {
+                throw new \InvalidArgumentException(
+                    "SecurityContext::\$metadata[\"{$key}\"] must be scalar or null; " .
+                    gettype($value) . ' given.'
+                );
+            }
+        }
     }
 
     /**

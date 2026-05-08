@@ -33,4 +33,32 @@ final class SecurityContextTest extends TestCase
         $this->assertTrue($ctx->hasPermission('users.write'));
         $this->assertFalse($ctx->hasPermission('users.delete'));
     }
+
+    public function testScalarMetadataIsAccepted(): void
+    {
+        $ctx = new SecurityContext(
+            user_id: 1,
+            metadata: ['ip' => '127.0.0.1', 'version' => 2, 'flag' => true, 'empty' => null],
+        );
+
+        $this->assertSame('127.0.0.1', $ctx->metadata['ip']);
+        $this->assertSame(2, $ctx->metadata['version']);
+        $this->assertTrue($ctx->metadata['flag']);
+        $this->assertNull($ctx->metadata['empty']);
+    }
+
+    public function testNestedArrayInMetadataThrows(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/\$metadata\["nested"\]/');
+
+        new SecurityContext(metadata: ['nested' => ['a' => 1]]);
+    }
+
+    public function testObjectInMetadataThrows(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        new SecurityContext(metadata: ['obj' => new \stdClass()]);
+    }
 }
