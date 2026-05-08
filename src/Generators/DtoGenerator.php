@@ -14,10 +14,18 @@ use dcardenasl\Ci4ApiCore\Core\TypeMapper;
  * DtoGenerator
  * Generates all 4 DTOs: Index, Create, Update, and Response.
  */
-class DtoGenerator
+class DtoGenerator implements CrudGeneratorInterface
 {
+    private readonly TemplateRenderer $renderer;
+
     public function __construct(private readonly ScaffoldingConfig $config)
     {
+        $this->renderer = new TemplateRenderer();
+    }
+
+    public function name(): string
+    {
+        return 'dto';
     }
 
     /**
@@ -104,53 +112,12 @@ class DtoGenerator
         $baseFqcn = $this->config->requestDtoBaseClass;
         $baseShort = Fqcn::shortName($baseFqcn);
 
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace {$ns};
-
-use {$baseFqcn};
-use OpenApi\Attributes as OA;
-
-#[OA\Schema(schema: '{$schema->resource}IndexRequest')]
-readonly class {$schema->resource}IndexRequestDTO extends {$baseShort}
-{
-    public int \$page;
-    public int \$per_page;
-    public ?string \$search;
-    public string \$sort;
-
-    public function rules(): array
-    {
-        return [
-            'page'      => 'permit_empty|is_natural_no_zero',
-            'per_page'  => 'permit_empty|is_natural_no_zero|less_than[101]',
-            'search'    => 'permit_empty|string|max_length[100]',
-            'sort'      => 'permit_empty|max_length[100]',
-        ];
-    }
-
-    protected function map(array \$data): void
-    {
-        \$this->page = isset(\$data['page']) ? (int) \$data['page'] : 1;
-        \$this->per_page = isset(\$data['per_page']) ? (int) \$data['per_page'] : 20;
-        \$this->search = \$data['search'] ?? null;
-        \$this->sort = (string) (\$data['sort'] ?? '');
-    }
-
-    public function toArray(): array
-    {
-        return [
-            'page' => \$this->page,
-            'per_page' => \$this->per_page,
-            'search' => \$this->search,
-            'sort' => \$this->sort,
-        ];
-    }
-}
-PHP;
+        return $this->renderer->render('dto/IndexRequestDTO', [
+            'ns'        => $ns,
+            'baseFqcn'  => $baseFqcn,
+            'baseShort' => $baseShort,
+            'resource'  => $schema->resource,
+        ]);
     }
 
     private function createRequestDto(ResourceSchema $schema): string
@@ -180,37 +147,16 @@ PHP;
         $baseFqcn = $this->config->requestDtoBaseClass;
         $baseShort = Fqcn::shortName($baseFqcn);
 
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace {$ns};
-
-use {$baseFqcn};
-use OpenApi\Attributes as OA;
-
-#[OA\Schema(schema: '{$schema->resource}CreateRequest')]
-readonly class {$schema->resource}CreateRequestDTO extends {$baseShort}
-{
-{$properties}
-    public function rules(): array
-    {
-        return [
-{$rules}        ];
-    }
-
-    protected function map(array \$data): void
-    {
-{$mappings}    }
-
-    public function toArray(): array
-    {
-        return [
-{$toArray}        ];
-    }
-}
-PHP;
+        return $this->renderer->render('dto/CreateRequestDTO', [
+            'ns'         => $ns,
+            'baseFqcn'   => $baseFqcn,
+            'baseShort'  => $baseShort,
+            'resource'   => $schema->resource,
+            'properties' => $properties,
+            'rules'      => $rules,
+            'mappings'   => $mappings,
+            'toArray'    => $toArray,
+        ]);
     }
 
     private function updateRequestDto(ResourceSchema $schema): string
@@ -241,37 +187,16 @@ PHP;
         $baseFqcn = $this->config->requestDtoBaseClass;
         $baseShort = Fqcn::shortName($baseFqcn);
 
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace {$ns};
-
-use {$baseFqcn};
-use OpenApi\Attributes as OA;
-
-#[OA\Schema(schema: '{$schema->resource}UpdateRequest')]
-readonly class {$schema->resource}UpdateRequestDTO extends {$baseShort}
-{
-{$properties}
-    public function rules(): array
-    {
-        return [
-{$rules}        ];
-    }
-
-    protected function map(array \$data): void
-    {
-{$mappings}    }
-
-    public function toArray(): array
-    {
-        return array_filter([
-{$toArray}        ], fn(\$v) => \$v !== null);
-    }
-}
-PHP;
+        return $this->renderer->render('dto/UpdateRequestDTO', [
+            'ns'         => $ns,
+            'baseFqcn'   => $baseFqcn,
+            'baseShort'  => $baseShort,
+            'resource'   => $schema->resource,
+            'properties' => $properties,
+            'rules'      => $rules,
+            'mappings'   => $mappings,
+            'toArray'    => $toArray,
+        ]);
     }
 
     private function responseDto(ResourceSchema $schema): string
@@ -291,7 +216,7 @@ PHP;
                 $requiredFields[] = $field->name;
             }
 
-            $params .= "\n        #[OA\Property(description: '{$field->name}', type: '{$oaType}'{$oaFormat}{$nullable})]\n";
+            $params .= "\n        #[OA\\Property(description: '{$field->name}', type: '{$oaType}'{$oaFormat}{$nullable})]\n";
             $params .= "        public {$phpType} \${$field->name},";
 
             $toArray .= "            '{$field->name}' => \$this->{$field->name},\n";
@@ -306,42 +231,14 @@ PHP;
         $ifaceFqcn = $this->config->responseDtoInterface;
         $ifaceShort = Fqcn::shortName($ifaceFqcn);
 
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace {$ns};
-
-use {$ifaceFqcn};
-use OpenApi\Attributes as OA;
-
-#[OA\Schema(
-    schema: '{$schema->resource}Response',
-    title: '{$schema->resource} Response',
-    required: {$requiredJson}
-)]
-readonly class {$schema->resource}ResponseDTO implements {$ifaceShort}
-{
-    public function __construct(
-        #[OA\Property(description: 'Unique identifier', example: 1)]
-        public int \$id,
-{$params}
-        #[OA\Property(property: 'created_at', description: 'Creation timestamp', example: '2026-02-26 12:00:00', nullable: true)]
-        public ?string \$createdAt = null,
-        #[OA\Property(property: 'updated_at', description: 'Last update timestamp', example: '2026-02-26 12:00:00', nullable: true)]
-        public ?string \$updatedAt = null
-    ) {}
-
-    public function toArray(): array
-    {
-        return [
-            'id' => \$this->id,
-{$toArray}            'created_at' => \$this->createdAt,
-            'updated_at' => \$this->updatedAt,
-        ];
-    }
-}
-PHP;
+        return $this->renderer->render('dto/ResponseDTO', [
+            'ns'           => $ns,
+            'ifaceFqcn'    => $ifaceFqcn,
+            'ifaceShort'   => $ifaceShort,
+            'resource'     => $schema->resource,
+            'requiredJson' => (string) $requiredJson,
+            'params'       => $params,
+            'toArray'      => $toArray,
+        ]);
     }
 }

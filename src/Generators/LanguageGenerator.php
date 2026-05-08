@@ -11,10 +11,18 @@ use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
  * LanguageGenerator
  * Generates translation files for English and Spanish.
  */
-class LanguageGenerator
+class LanguageGenerator implements CrudGeneratorInterface
 {
+    private readonly TemplateRenderer $renderer;
+
     public function __construct(private readonly ScaffoldingConfig $config)
     {
+        $this->renderer = new TemplateRenderer();
+    }
+
+    public function name(): string
+    {
+        return 'language';
     }
 
     /** @return array<string,string> path => content */
@@ -30,40 +38,18 @@ class LanguageGenerator
 
     private function enTemplate(ResourceSchema $schema): string
     {
-        $resource = $schema->resource;
-        $fields = $this->generateFieldsArray($schema);
-
-        return <<<PHP
-<?php
-
-return [
-    'create_success' => '{$resource} created successfully.',
-    'update_success' => '{$resource} updated successfully.',
-    'delete_success' => '{$resource} deleted successfully.',
-    'not_found'      => '{$resource} not found.',
-    'fields'         => [
-{$fields}    ],
-];
-PHP;
+        return $this->renderer->render('language/en', [
+            'resource' => $schema->resource,
+            'fields'   => $this->generateFieldsArray($schema),
+        ]);
     }
 
     private function esTemplate(ResourceSchema $schema): string
     {
-        $resource = $schema->resource;
-        $fields = $this->generateFieldsArray($schema);
-
-        return <<<PHP
-<?php
-
-return [
-    'create_success' => '{$resource} creado(a) exitosamente.',
-    'update_success' => '{$resource} actualizado(a) exitosamente.',
-    'delete_success' => '{$resource} eliminado(a) exitosamente.',
-    'not_found'      => '{$resource} no encontrado(a).',
-    'fields'         => [
-{$fields}    ],
-];
-PHP;
+        return $this->renderer->render('language/es', [
+            'resource' => $schema->resource,
+            'fields'   => $this->generateFieldsArray($schema),
+        ]);
     }
 
     /**

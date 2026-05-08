@@ -13,10 +13,18 @@ use dcardenasl\Ci4ApiCore\Core\TypeMapper;
  * ModelEntityGenerator
  * Generates the Entity and Model with full support for Searchable/Filterable traits.
  */
-class ModelEntityGenerator
+class ModelEntityGenerator implements CrudGeneratorInterface
 {
+    private readonly TemplateRenderer $renderer;
+
     public function __construct(private readonly ScaffoldingConfig $config)
     {
+        $this->renderer = new TemplateRenderer();
+    }
+
+    public function name(): string
+    {
+        return 'model';
     }
 
     /** @return array<string,string> path => content */
@@ -72,23 +80,16 @@ class ModelEntityGenerator
                 . "    ];\n\n";
         }
 
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace {$ns};
-
-use {$entityBaseFqcn};
-{$decimalCastUse}
-class {$schema->resource}Entity extends {$entityBaseShort}
-{
-{$castHandlersBlock}    protected \$casts = [
-{$casts}    ];
-
-    protected \$dates = {$dates};
-}
-PHP;
+        return $this->renderer->render('model/Entity', [
+            'ns'               => $ns,
+            'entityBaseFqcn'   => $entityBaseFqcn,
+            'entityBaseShort'  => $entityBaseShort,
+            'resource'         => $schema->resource,
+            'decimalCastUse'   => $decimalCastUse,
+            'castHandlersBlock' => $castHandlersBlock,
+            'casts'            => $casts,
+            'dates'            => $dates,
+        ]);
     }
 
     private function modelTemplate(ResourceSchema $schema): string
@@ -132,43 +133,23 @@ PHP;
         $filterableShort = Fqcn::shortName($filterableFqcn);
         $searchableShort = Fqcn::shortName($searchableFqcn);
 
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace {$ns};
-
-use {$entityNs}\\{$schema->resource}Entity;
-use {$modelBaseFqcn};
-use {$filterableFqcn};
-use {$searchableFqcn};
-
-class {$schema->resource}Model extends {$modelBaseShort}
-{
-    use {$filterableShort};
-    use {$searchableShort};
-
-    protected \$table = '{$table}';
-    protected \$primaryKey = 'id';
-    protected \$returnType = {$schema->resource}Entity::class;
-    protected \$useSoftDeletes = {$softDelete};
-    protected \$useTimestamps = true;
-
-    protected \$allowedFields = [{$allowedFieldsStr}];
-
-    /** @var array<int, string> */
-    protected array \$searchableFields = [{$searchableFieldsStr}];
-
-    /** @var array<int, string> */
-    protected array \$filterableFields = [{$filterableFieldsStr}];
-
-    /** @var array<int, string> */
-    protected array \$sortableFields = [{$sortableFieldsStr}];
-
-    protected \$validationRules = [
-{$validationRules}    ];
-}
-PHP;
+        return $this->renderer->render('model/Model', [
+            'ns'                 => $ns,
+            'entityNs'           => $entityNs,
+            'modelBaseFqcn'      => $modelBaseFqcn,
+            'modelBaseShort'     => $modelBaseShort,
+            'filterableFqcn'     => $filterableFqcn,
+            'searchableFqcn'     => $searchableFqcn,
+            'filterableShort'    => $filterableShort,
+            'searchableShort'    => $searchableShort,
+            'resource'           => $schema->resource,
+            'table'              => $table,
+            'softDelete'         => $softDelete,
+            'allowedFieldsStr'   => $allowedFieldsStr,
+            'searchableFieldsStr' => $searchableFieldsStr,
+            'filterableFieldsStr' => $filterableFieldsStr,
+            'sortableFieldsStr'  => $sortableFieldsStr,
+            'validationRules'    => $validationRules,
+        ]);
     }
 }

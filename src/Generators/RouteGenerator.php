@@ -17,10 +17,18 @@ use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
  * specific permission. Consumers can ship their own filter convention
  * via App\Config\Scaffolding.
  */
-class RouteGenerator
+class RouteGenerator implements CrudGeneratorInterface
 {
+    private readonly TemplateRenderer $renderer;
+
     public function __construct(private readonly ScaffoldingConfig $config)
     {
+        $this->renderer = new TemplateRenderer();
+    }
+
+    public function name(): string
+    {
+        return 'route';
     }
 
     /** @return array<string,string> path => content */
@@ -42,19 +50,11 @@ class RouteGenerator
         $controllersNs = '\\' . $this->config->namespaceFor($this->config->paths->controllers) . '\\' . $schema->domain;
         $filtersList = $this->renderFilterList();
 
-        return <<<PHP
-<?php
-
-/** @var \CodeIgniter\Router\RouteCollection \$routes */
-
-\$routes->group('{$domainKebab}', ['namespace' => '{$controllersNs}'], function (\$routes) {
-
-    // Auth & Admin Protected Group
-    \$routes->group('', ['filter' => {$filtersList}], function (\$routes) {
-        // Resource routes will be injected here
-    });
-});
-PHP;
+        return $this->renderer->render('route/DomainRoutes', [
+            'domainKebab'   => $domainKebab,
+            'controllersNs' => $controllersNs,
+            'filtersList'   => $filtersList,
+        ]);
     }
 
     private function injectRoute(ResourceSchema $schema, string $content): string
@@ -63,15 +63,11 @@ PHP;
         $route = $schema->route;
         $controller = "{$resource}Controller";
 
-        $routeBlock = <<<PHP
-        // {$resource} Routes
-        \$routes->get('{$route}', '{$controller}::index');
-        \$routes->get('{$route}/(:num)', '{$controller}::show/$1');
-        \$routes->post('{$route}', '{$controller}::create');
-        \$routes->put('{$route}/(:num)', '{$controller}::update/$1');
-        \$routes->delete('{$route}/(:num)', '{$controller}::delete/$1');
-
-PHP;
+        $routeBlock = $this->renderer->render('route/RouteBlock', [
+            'resource'   => $resource,
+            'route'      => $route,
+            'controller' => $controller,
+        ]);
 
         if (str_contains($content, "{$controller}::index")) {
             return $content; // Already exists

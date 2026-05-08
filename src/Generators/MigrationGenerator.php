@@ -13,10 +13,18 @@ use dcardenasl\Ci4ApiCore\Core\TypeMapper;
  * MigrationGenerator
  * Generates CodeIgniter 4 migration files with automatic type mapping and FK support.
  */
-class MigrationGenerator
+class MigrationGenerator implements CrudGeneratorInterface
 {
+    private readonly TemplateRenderer $renderer;
+
     public function __construct(private readonly ScaffoldingConfig $config)
     {
+        $this->renderer = new TemplateRenderer();
+    }
+
+    public function name(): string
+    {
+        return 'migration';
     }
 
     /** @return array<string,string> path => content */
@@ -49,46 +57,18 @@ class MigrationGenerator
         $migrationFqcn = $this->config->migrationBaseClass;
         $migrationShort = Fqcn::shortName($migrationFqcn);
 
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace {$ns};
-
-use {$migrationFqcn};
-
-class Create{$resourcePlural}Table extends {$migrationShort}
-{
-    public function up()
-    {
-        \$this->forge->addField([
-            'id' => [
-                'type'           => 'INT',
-                'constraint'     => 11,
-                'unsigned'       => true,
-                'auto_increment' => true,
-            ],
-{$fieldsContent}            'created_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
-            'updated_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
-{$deletedAtField}        ]);
-
-        \$this->forge->addKey('id', true);
-{$indexes}{$foreignKeys}        \$this->forge->createTable('{$table}');
-    }
-
-    public function down()
-    {
-{$dropForeignKeys}        \$this->forge->dropTable('{$table}');
-    }
-}
-PHP;
+        return $this->renderer->render('migration/Migration', [
+            'ns'              => $ns,
+            'migrationFqcn'   => $migrationFqcn,
+            'migrationShort'  => $migrationShort,
+            'resourcePlural'  => $resourcePlural,
+            'table'           => $table,
+            'fieldsContent'   => $fieldsContent,
+            'indexes'         => $indexes,
+            'foreignKeys'     => $foreignKeys,
+            'dropForeignKeys' => $dropForeignKeys,
+            'deletedAtField'  => $deletedAtField,
+        ]);
     }
 
     /**

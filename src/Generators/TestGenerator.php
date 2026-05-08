@@ -17,10 +17,18 @@ use dcardenasl\Ci4ApiCore\Core\StringHelper;
  * so the generated suite passes `vendor/bin/phpunit` immediately. Developers
  * extend these instead of deleting markTestIncomplete() calls.
  */
-class TestGenerator
+class TestGenerator implements CrudGeneratorInterface
 {
+    private readonly TemplateRenderer $renderer;
+
     public function __construct(private readonly ScaffoldingConfig $config)
     {
+        $this->renderer = new TemplateRenderer();
+    }
+
+    public function name(): string
+    {
+        return 'tests';
     }
 
     /** @return array<string,string> path => content */
@@ -43,38 +51,18 @@ class TestGenerator
     {
         $resource = $schema->resource;
         $resourceLower = $schema->getResourceLower();
-
         $interfaceNs = $this->config->namespaceFor($this->config->paths->interfaces) . '\\' . $schema->domain;
         $servicesFactoryFqcn = $this->config->servicesFactoryClass;
         $servicesFactoryShort = Fqcn::shortName($servicesFactoryFqcn);
 
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace Tests\Unit\Services\\{$schema->domain};
-
-use {$interfaceNs}\\{$resource}ServiceInterface;
-use CodeIgniter\Test\CIUnitTestCase;
-use {$servicesFactoryFqcn};
-
-/**
- * Smoke tests for {$resource}Service. Extend with domain-specific assertions
- * as business rules accumulate in the service.
- *
- * @internal
- */
-final class {$resource}ServiceTest extends CIUnitTestCase
-{
-    public function testServiceImplementsItsInterface(): void
-    {
-        \$service = {$servicesFactoryShort}::{$resourceLower}Service(false);
-
-        \$this->assertInstanceOf({$resource}ServiceInterface::class, \$service);
-    }
-}
-PHP;
+        return $this->renderer->render('tests/UnitTest', [
+            'domain'               => $schema->domain,
+            'resource'             => $resource,
+            'resourceLower'        => $resourceLower,
+            'interfaceNs'          => $interfaceNs,
+            'servicesFactoryFqcn'  => $servicesFactoryFqcn,
+            'servicesFactoryShort' => $servicesFactoryShort,
+        ]);
     }
 
     private function integrationTestTemplate(ResourceSchema $schema): string
@@ -82,40 +70,12 @@ PHP;
         $resource = $schema->resource;
         $modelNs = $this->config->namespaceFor($this->config->paths->models);
 
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace Tests\Integration\Models;
-
-use {$modelNs}\\{$resource}Model;
-use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
-
-/**
- * Smoke tests for {$resource}Model. Extend with persistence scenarios as
- * domain behavior solidifies.
- *
- * @internal
- */
-final class {$resource}ModelTest extends CIUnitTestCase
-{
-    use DatabaseTestTrait;
-
-    protected \$migrate     = true;
-    protected \$migrateOnce = true;
-    protected \$refresh     = true;
-    protected \$namespace   = '{$this->config->appNamespace}';
-
-    public function testModelReportsCorrectTable(): void
-    {
-        \$model = new {$resource}Model();
-
-        \$this->assertSame('{$schema->getResourcePluralSnakeCase()}', \$model->getTable());
-    }
-}
-PHP;
+        return $this->renderer->render('tests/IntegrationTest', [
+            'resource'     => $resource,
+            'modelNs'      => $modelNs,
+            'appNamespace' => $this->config->appNamespace,
+            'tableName'    => $schema->getResourcePluralSnakeCase(),
+        ]);
     }
 
     private function featureTestTemplate(ResourceSchema $schema): string
@@ -147,42 +107,13 @@ PHP;
             ? 'wraps every endpoint in an auth filter, so an unauthenticated request must return 401'
             : 'is open, so a request for a missing resource must return 404';
 
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace Tests\Feature\Controllers\\{$schema->domain};
-
-use CodeIgniter\Test\CIUnitTestCase;
-use CodeIgniter\Test\DatabaseTestTrait;
-use CodeIgniter\Test\FeatureTestTrait;
-
-/**
- * HTTP smoke test for {$resource}Controller. The configured route group
- * {$authReason} — a sufficient signal that the route was registered and wired.
- *
- * Extend with authenticated 200 flows as business rules solidify.
- *
- * @internal
- */
-final class {$resource}ControllerTest extends CIUnitTestCase
-{
-    use DatabaseTestTrait;
-    use FeatureTestTrait;
-
-    protected \$migrate     = true;
-    protected \$migrateOnce = true;
-    protected \$refresh     = true;
-    protected \$namespace   = '{$this->config->appNamespace}';
-
-    public function testIndexSmoke(): void
-    {
-        \$result = \$this->get('{$fullPath}');
-
-        \$result->assertStatus({$expectedStatus});
-    }
-}
-PHP;
+        return $this->renderer->render('tests/FeatureTest', [
+            'domain'         => $schema->domain,
+            'resource'       => $resource,
+            'authReason'     => $authReason,
+            'appNamespace'   => $this->config->appNamespace,
+            'fullPath'       => $fullPath,
+            'expectedStatus' => (string) $expectedStatus,
+        ]);
     }
 }

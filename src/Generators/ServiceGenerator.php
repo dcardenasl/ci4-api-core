@@ -12,10 +12,18 @@ use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
  * ServiceGenerator
  * Generates the Service Interface and the Service Implementation.
  */
-class ServiceGenerator
+class ServiceGenerator implements CrudGeneratorInterface
 {
+    private readonly TemplateRenderer $renderer;
+
     public function __construct(private readonly ScaffoldingConfig $config)
     {
+        $this->renderer = new TemplateRenderer();
+    }
+
+    public function name(): string
+    {
+        return 'service';
     }
 
     /** @return array<string,string> path => content */
@@ -38,26 +46,17 @@ class ServiceGenerator
         $contractFqcn = $this->config->serviceContractInterface;
         $contractShort = Fqcn::shortName($contractFqcn);
 
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace {$ns};
-
-use {$contractFqcn};
-
-interface {$schema->resource}ServiceInterface extends {$contractShort}
-{
-    // Add resource-specific service methods here if needed.
-}
-PHP;
+        return $this->renderer->render('service/ServiceInterface', [
+            'ns'            => $ns,
+            'contractFqcn'  => $contractFqcn,
+            'contractShort' => $contractShort,
+            'resource'      => $schema->resource,
+        ]);
     }
 
     private function serviceTemplate(ResourceSchema $schema): string
     {
         $resourceLower = $schema->getResourceLower();
-
         $ns = $this->config->namespaceFor($this->config->paths->services) . '\\' . $schema->domain;
         $interfaceNs = $this->config->namespaceFor($this->config->paths->interfaces) . '\\' . $schema->domain;
         $repoFqcn = $this->config->repositoryInterface;
@@ -67,34 +66,17 @@ PHP;
         $serviceBaseFqcn = $this->config->serviceBaseClass;
         $serviceBaseShort = Fqcn::shortName($serviceBaseFqcn);
 
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace {$ns};
-
-use {$repoFqcn};
-use {$mapperFqcn};
-use {$interfaceNs}\\{$schema->resource}ServiceInterface;
-use {$serviceBaseFqcn};
-
-class {$schema->resource}Service extends {$serviceBaseShort} implements {$schema->resource}ServiceInterface
-{
-    public function __construct(
-        {$repoShort} \${$resourceLower}Repository,
-        {$mapperShort} \$responseMapper
-    ) {
-        parent::__construct(\${$resourceLower}Repository, \$responseMapper);
-    }
-
-    /**
-     * Domain Hooks
-     *
-     * Implement beforeStore, afterStore, beforeUpdate, etc.,
-     * to add specific business logic while keeping the service layer clean.
-     */
-}
-PHP;
+        return $this->renderer->render('service/Service', [
+            'ns'               => $ns,
+            'repoFqcn'         => $repoFqcn,
+            'repoShort'        => $repoShort,
+            'mapperFqcn'       => $mapperFqcn,
+            'mapperShort'      => $mapperShort,
+            'interfaceNs'      => $interfaceNs,
+            'serviceBaseFqcn'  => $serviceBaseFqcn,
+            'serviceBaseShort' => $serviceBaseShort,
+            'resource'         => $schema->resource,
+            'resourceLower'    => $resourceLower,
+        ]);
     }
 }
