@@ -9,6 +9,7 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 use dcardenasl\Ci4ApiCore\Http\ApiRequest;
+use dcardenasl\Ci4ApiCore\Support\ApiConfigFacade;
 
 class RequestLoggingFilter implements FilterInterface
 {
@@ -39,7 +40,7 @@ class RequestLoggingFilter implements FilterInterface
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
         // Check if request logging is enabled
-        if (! config('Api')->requestLoggingEnabled) {
+        if (! ApiConfigFacade::bool('requestLoggingEnabled')) {
             return $response;
         }
 
@@ -76,8 +77,7 @@ class RequestLoggingFilter implements FilterInterface
             );
 
             // Log slow queries
-            $apiConfig = config('Api');
-            $slowQueryThreshold = $apiConfig->slowQueryThreshold;
+            $slowQueryThreshold = ApiConfigFacade::int('slowQueryThreshold', 500);
             $isSlow = $responseTime > $slowQueryThreshold;
 
             if ($isSlow) {

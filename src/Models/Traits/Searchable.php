@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace dcardenasl\Ci4ApiCore\Models\Traits;
 
 use dcardenasl\Ci4ApiCore\Filters\SearchQueryApplier;
+use dcardenasl\Ci4ApiCore\Support\ApiConfigFacade;
 
 /**
  * Searchable
@@ -35,16 +36,16 @@ trait Searchable
 
     protected function useFulltextSearch(): bool
     {
-        if (!self::apiConfigBool('searchUseFulltext', true)) {
+        if (! ApiConfigFacade::bool('searchUseFulltext', true)) {
             return false;
         }
 
         $dbDriver = $this->db->DBDriver ?? '';
-        if (!in_array(strtolower((string) $dbDriver), ['mysqli', 'mysql'], true)) {
+        if (! in_array(strtolower((string) $dbDriver), ['mysqli', 'mysql'], true)) {
             return false;
         }
 
-        return self::apiConfigBool('searchEnabled', true) && !empty($this->searchableFields);
+        return ApiConfigFacade::bool('searchEnabled', true) && ! empty($this->searchableFields);
     }
 
     /** @return list<string> */
@@ -58,18 +59,4 @@ trait Searchable
         return in_array($field, $this->searchableFields, true);
     }
 
-    private static function apiConfigBool(string $key, bool $default): bool
-    {
-        if (!function_exists('config')) {
-            return $default;
-        }
-
-        /** @var object|null $config */
-        $config = config('Api', false);
-        if (!is_object($config) || !property_exists($config, $key) || $config->{$key} === null) {
-            return $default;
-        }
-
-        return (bool) $config->{$key};
-    }
 }

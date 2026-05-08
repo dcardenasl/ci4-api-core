@@ -6,6 +6,7 @@ namespace dcardenasl\Ci4ApiCore\Filters;
 
 use CodeIgniter\Database\BaseBuilder;
 use CodeIgniter\Model;
+use dcardenasl\Ci4ApiCore\Support\ApiConfigFacade;
 
 /**
  * SearchQueryApplier
@@ -37,12 +38,12 @@ class SearchQueryApplier
             return;
         }
 
-        $minLength = self::configInt('searchMinLength', 0);
+        $minLength = ApiConfigFacade::int('searchMinLength', 0);
         if (strlen($query) < $minLength) {
             return;
         }
 
-        if (!self::configBool('searchEnabled', true)) {
+        if (! ApiConfigFacade::bool('searchEnabled', true)) {
             return;
         }
 
@@ -94,41 +95,4 @@ class SearchQueryApplier
         $actualBuilder->groupEnd();
     }
 
-    private static function configBool(string $key, bool $default): bool
-    {
-        $config = self::apiConfig();
-        if ($config === null) {
-            return $default;
-        }
-        if (!property_exists($config, $key) || $config->{$key} === null) {
-            return $default;
-        }
-
-        return (bool) $config->{$key};
-    }
-
-    private static function configInt(string $key, int $default): int
-    {
-        $config = self::apiConfig();
-        if ($config === null) {
-            return $default;
-        }
-        if (!property_exists($config, $key) || $config->{$key} === null) {
-            return $default;
-        }
-
-        return (int) $config->{$key};
-    }
-
-    private static function apiConfig(): ?object
-    {
-        if (!function_exists('config')) {
-            return null;
-        }
-
-        /** @var object|null $config */
-        $config = config('Api', false);
-
-        return is_object($config) ? $config : null;
-    }
 }

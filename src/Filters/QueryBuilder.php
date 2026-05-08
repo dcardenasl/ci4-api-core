@@ -6,6 +6,7 @@ namespace dcardenasl\Ci4ApiCore\Filters;
 
 use CodeIgniter\Model;
 use dcardenasl\Ci4ApiCore\Repositories\RepositoryInterface;
+use dcardenasl\Ci4ApiCore\Support\ApiConfigFacade;
 
 /**
  * QueryBuilder
@@ -102,7 +103,7 @@ class QueryBuilder
             return $this;
         }
 
-        $useFulltext = self::apiConfigBool('searchEnabled', true);
+        $useFulltext = ApiConfigFacade::bool('searchEnabled', true);
 
         SearchQueryApplier::apply($this->model, $query, $searchableFields, $useFulltext);
 
@@ -114,8 +115,8 @@ class QueryBuilder
      */
     public function paginate(int $page = 1, int $limit = 20): array
     {
-        $defaultLimit = self::apiConfigInt('paginationDefaultLimit', 20);
-        $maxLimit = self::apiConfigInt('paginationMaxLimit', 100);
+        $defaultLimit = ApiConfigFacade::int('paginationDefaultLimit', 20);
+        $maxLimit = ApiConfigFacade::int('paginationMaxLimit', 100);
 
         $limit = min($limit > 0 ? $limit : $defaultLimit, $maxLimit);
         $page = max($page, 1);
@@ -154,35 +155,4 @@ class QueryBuilder
         return (int) $this->model->countAllResults();
     }
 
-    private static function apiConfigBool(string $key, bool $default): bool
-    {
-        $config = self::apiConfig();
-        if ($config === null || !property_exists($config, $key) || $config->{$key} === null) {
-            return $default;
-        }
-
-        return (bool) $config->{$key};
-    }
-
-    private static function apiConfigInt(string $key, int $default): int
-    {
-        $config = self::apiConfig();
-        if ($config === null || !property_exists($config, $key) || $config->{$key} === null) {
-            return $default;
-        }
-
-        return (int) $config->{$key};
-    }
-
-    private static function apiConfig(): ?object
-    {
-        if (!function_exists('config')) {
-            return null;
-        }
-
-        /** @var object|null $config */
-        $config = config('Api', false);
-
-        return is_object($config) ? $config : null;
-    }
 }
