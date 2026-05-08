@@ -15,6 +15,10 @@ readonly class SecurityContext
     /**
      * @param array<string, mixed> $metadata
      * @param list<string> $permissions Effective permission codes for the active application.
+     *
+     * Note: PHP readonly prevents reassignment of these properties but not mutation of
+     * their array contents (e.g. $ctx->permissions[] = 'x' is still possible). Treat
+     * $metadata and $permissions as logically immutable post-construction.
      */
     public function __construct(
         public ?int $user_id = null,
