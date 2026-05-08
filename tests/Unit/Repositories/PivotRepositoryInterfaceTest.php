@@ -39,10 +39,11 @@ final class PivotRepositoryInterfaceTest extends TestCase
         );
     }
 
-    public function testPivotRepositoryInterfaceDeclaresFindByParentAndMaxSortOrder(): void
+    public function testPivotRepositoryInterfaceDeclaresExpectedMethods(): void
     {
         $reflection = new \ReflectionClass(PivotRepositoryInterface::class);
 
+        $this->assertTrue($reflection->hasMethod('getParentKey'));
         $this->assertTrue($reflection->hasMethod('findByParent'));
         $this->assertTrue($reflection->hasMethod('maxSortOrder'));
     }
@@ -52,6 +53,7 @@ final class PivotRepositoryInterfaceTest extends TestCase
         $impl = $this->buildPivotRepository();
 
         $this->assertInstanceOf(PivotRepositoryInterface::class, $impl);
+        $this->assertSame('parent_id', $impl->getParentKey());
         $this->assertSame([], $impl->findByParent(123));
         $this->assertSame(0, $impl->maxSortOrder(123));
         $this->assertSame([], $impl->findByIds([]));
@@ -112,6 +114,11 @@ final class PivotRepositoryInterfaceTest extends TestCase
             public function paginateCriteria(array $criteria, int $page = 1, int $perPage = 20, ?callable $baseCriteria = null): array
             {
                 return ['data' => [], 'total' => 0, 'page' => $page, 'per_page' => $perPage];
+            }
+
+            public function getParentKey(): string
+            {
+                return 'parent_id';
             }
 
             public function findByParent(int $parentId): array

@@ -21,6 +21,14 @@ namespace dcardenasl\Ci4ApiCore\Repositories;
 interface PivotRepositoryInterface extends RepositoryInterface
 {
     /**
+     * Name of the column that points back to the parent resource (e.g.
+     * `show_id`, `course_id`). Exposed so generic consumers (gallery service,
+     * etc.) can populate the FK on insert and validate ownership on
+     * find/delete without baking column names into themselves.
+     */
+    public function getParentKey(): string;
+
+    /**
      * All pivot rows for the given parent, ordered by `sort_order` ASC, `id` ASC.
      *
      * @return list<object>
