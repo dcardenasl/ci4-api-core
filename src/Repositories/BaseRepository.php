@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace dcardenasl\Ci4ApiCore\Repositories;
 
 use CodeIgniter\Model;
+use dcardenasl\Ci4ApiCore\Contracts\AuditableModelInterface;
 use dcardenasl\Ci4ApiCore\Filters\QueryBuilder;
 
 /**
@@ -46,7 +47,7 @@ abstract class BaseRepository implements RepositoryInterface
      */
     final public function setEntityContext(int|string $id, object|array $entity): void
     {
-        if (method_exists($this->model, 'setAuditOldValues')) {
+        if ($this->model instanceof AuditableModelInterface) {
             $this->model->setAuditOldValues((int) $id, $entity);
         }
     }

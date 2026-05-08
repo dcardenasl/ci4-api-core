@@ -217,7 +217,10 @@ trait Auditable
     protected function getAuditService(): AuditServiceInterface
     {
         if ($this->auditService === null) {
-            throw new \RuntimeException(lang('Audit.serviceNotConfigured'));
+            throw new \RuntimeException(
+                static::class . ' requires an AuditServiceInterface. ' .
+                'Register auditService() in Config\\Services or call setAuditService() before use.'
+            );
         }
 
         return $this->auditService;
