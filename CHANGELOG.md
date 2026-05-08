@@ -2,7 +2,7 @@
 
 All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-crud-maker`) will be documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/spec/v2.0.0.html) with the caveat that pre-1.0 releases may break.
 
-## [Unreleased]
+## [0.3.0] - 2026-05-08
 
 ### Removed (BC break — bump to v0.3.0)
 - **All scaffolding code extracted** to the new `dcardenasl/ci4-api-scaffolding` package (`require-dev`). Removed from this package: `src/Commands/`, `src/Generators/`, `src/Orchestration/`, `src/Validators/`, `src/Wiring/`, `src/Config/`, `src/Core/`, and `bin/`. Consumers that call `make:crud`, `make:crud:remove`, or `module:check` must add `dcardenasl/ci4-api-scaffolding: dev-main` to `require-dev` and update `App\Config\Scaffolding.php` to use `dcardenasl\Ci4ApiScaffolding\Config\ScaffoldingConfig` (4.1).
