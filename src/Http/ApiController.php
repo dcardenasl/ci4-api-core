@@ -204,8 +204,20 @@ abstract class ApiController extends Controller
 
     protected function handleException(Exception $e): ResponseInterface
     {
-        // Log the full error for server-side monitoring
-        log_message('error', '[' . get_class($e) . '] ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+        $logData = sprintf(
+            '[%s] %s in %s:%d (code: %d)',
+            get_class($e),
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine(),
+            $e->getCode()
+        );
+
+        if (ENVIRONMENT !== 'production') {
+            $logData .= "\n" . $e->getTraceAsString();
+        }
+
+        log_message('error', $logData);
 
         $resultObject = ExceptionFormatter::format($e);
 
