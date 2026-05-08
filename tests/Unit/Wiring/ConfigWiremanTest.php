@@ -210,4 +210,189 @@ final class ConfigWiremanTest extends TestCase
         $this->assertStringContainsString('return new \\App\\Services\\Core\\Mappers\\DtoResponseMapper(', $snippet);
         $this->assertStringContainsString('\\App\\DTO\\Response\\Catalog\\ProductResponseDTO::class', $snippet);
     }
+
+    public function testWireSucceedsWithPhp8AttributeOnServicesClass(): void
+    {
+        // Regression S-01: the old preg_replace anchor `class\s+Services\s+extends\s+\w+`
+        // does not match when a PHP 8 attribute sits between the docblock and the class
+        // keyword. The AST-based approach is immune to this layout.
+        $configDir = APPPATH . 'Config';
+        if (!is_dir($configDir)) {
+            mkdir($configDir, 0o777, true);
+        }
+
+        $servicesFile = $configDir . '/Services.php';
+        file_put_contents(
+            $servicesFile,
+            "<?php\n\nnamespace Config;\n\nuse CodeIgniter\\Config\\BaseService;\n\n#[\\SomeAttribute]\nclass Services extends BaseService\n{\n    // intentionally empty\n}\n",
+        );
+
+        $traitFile = $configDir . '/AttrTestDomainServices.php';
+        @unlink($traitFile);
+
+        $wireman = new ConfigWireman(ScaffoldingConfig::defaults());
+        $schema  = new ResourceSchema(
+            resource: 'Widget',
+            domain: 'AttrTest',
+            route: 'widgets',
+            fields: [new Field(name: 'name', type: 'string')],
+        );
+
+        try {
+            $wireman->wire($schema);
+            $updated = (string) file_get_contents($servicesFile);
+
+            $this->assertStringContainsString(
+                "require_once __DIR__ . '/AttrTestDomainServices.php';",
+                $updated,
+                'require_once must be injected even when class has a PHP 8 attribute',
+            );
+            $this->assertStringContainsString(
+                'use AttrTestDomainServices;',
+                $updated,
+                'use Trait must be injected inside the class body',
+            );
+        } finally {
+            @unlink($traitFile);
+            @unlink($servicesFile);
+        }
+    }
+
+    public function testWireAppendsAfterExistingSiblingRequire(): void
+    {
+        // When Services.php already has a require_once for a sibling domain,
+        // the new require_once must be inserted AFTER the existing one (not before).
+        $configDir = APPPATH . 'Config';
+        if (!is_dir($configDir)) {
+            mkdir($configDir, 0o777, true);
+        }
+
+        $servicesFile   = $configDir . '/Services.php';
+        $catalogTrait   = $configDir . '/CatalogDomainServices.php';
+        $inventoryTrait = $configDir . '/InventoryDomainServices.php';
+
+        file_put_contents(
+            $servicesFile,
+            "<?php\n\nnamespace Config;\n\nuse CodeIgniter\\Config\\BaseService;\n\n"
+            . "require_once __DIR__ . '/CatalogDomainServices.php';\n\n"
+            . "class Services extends BaseService\n{\n    use CatalogDomainServices;\n}\n",
+        );
+        file_put_contents($catalogTrait, "<?php\ndeclare(strict_types=1);\nnamespace Config;\ntrait CatalogDomainServices\n{\n}\n");
+        @unlink($inventoryTrait);
+
+        $wireman = new ConfigWireman(ScaffoldingConfig::defaults());
+        $schema  = new ResourceSchema(
+            resource: 'Stock',
+            domain: 'Inventory',
+            route: 'stocks',
+            fields: [new Field(name: 'qty', type: 'integer')],
+        );
+
+        try {
+            $wireman->wire($schema);
+            $updated = (string) file_get_contents($servicesFile);
+
+            $catalogPos   = strpos($updated, "require_once __DIR__ . '/CatalogDomainServices.php';");
+            $inventoryPos = strpos($updated, "require_once __DIR__ . '/InventoryDomainServices.php';");
+
+            $this->assertNotFalse($catalogPos, 'Original Catalog require_once must still exist');
+            $this->assertNotFalse($inventoryPos, 'New Inventory require_once must be injected');
+            $this->assertGreaterThan(
+                $catalogPos,
+                $inventoryPos,
+                'Inventory require_once must appear AFTER the Catalog require_once',
+            );
+        } finally {
+            @unlink($inventoryTrait);
+            @unlink($catalogTrait);
+            @unlink($servicesFile);
+        }
+    }
+
+    public function testWireInjectsIntoTraitWithClosingBraceInHeredoc(): void
+    {
+        // Regression S-01: the old strrpos('}') picked the wrong closing brace when
+        // the trait already contained a method with a heredoc ending in `}`.
+        // wire() skips the domain-trait-creation step when the trait already exists,
+        // so pre-creating it with a heredoc-containing method exercises the injection path.
+        $configDir = APPPATH . 'Config';
+        if (!is_dir($configDir)) {
+            mkdir($configDir, 0o777, true);
+        }
+
+        $domain    = 'HeredocTest';
+        $traitFile = $configDir . "/{$domain}DomainServices.php";
+
+        // Write a trait with a method that returns a heredoc ending in `}`
+        file_put_contents(
+            $traitFile,
+            "<?php\ndeclare(strict_types=1);\nnamespace Config;\ntrait {$domain}DomainServices\n{\n"
+            . "    public static function getTemplate(): string\n    {\n"
+            . "        return <<<EOT\n        {\n        }\n        EOT;\n    }\n}\n",
+        );
+
+        $wireman = new ConfigWireman(ScaffoldingConfig::defaults());
+        $schema  = new ResourceSchema(
+            resource: 'Widget',
+            domain: $domain,
+            route: 'widgets',
+            fields: [new Field(name: 'name', type: 'string')],
+        );
+
+        try {
+            // Trait exists → wire() skips registration and goes straight to injection.
+            $wireman->wire($schema);
+            $updated = (string) file_get_contents($traitFile);
+
+            $this->assertStringContainsString(
+                'public static function widgetService(',
+                $updated,
+                'Factory method must be injected correctly despite heredoc containing `}`',
+            );
+            $this->assertStringContainsString(
+                'public static function getTemplate(',
+                $updated,
+                'Original method must remain intact',
+            );
+        } finally {
+            @unlink($traitFile);
+        }
+    }
+
+    public function testWireIsIdempotentForServiceFactory(): void
+    {
+        // Calling wire() twice on a trait that already has the factory method
+        // must not duplicate it — the str_contains early-return guard must work.
+        $configDir = APPPATH . 'Config';
+        if (!is_dir($configDir)) {
+            mkdir($configDir, 0o777, true);
+        }
+
+        $domain    = 'IdempotentTest';
+        $traitFile = $configDir . "/{$domain}DomainServices.php";
+        file_put_contents(
+            $traitFile,
+            "<?php\ndeclare(strict_types=1);\nnamespace Config;\ntrait {$domain}DomainServices\n{\n}\n",
+        );
+
+        $wireman = new ConfigWireman(ScaffoldingConfig::defaults());
+        $schema  = new ResourceSchema(
+            resource: 'Widget',
+            domain: $domain,
+            route: 'widgets',
+            fields: [new Field(name: 'name', type: 'string')],
+        );
+
+        try {
+            $wireman->wire($schema); // first call — injects
+            $wireman->wire($schema); // second call — must be a no-op for the factory
+
+            $updated = (string) file_get_contents($traitFile);
+            $count   = substr_count($updated, 'public static function widgetService(');
+
+            $this->assertSame(1, $count, 'widgetService() must appear exactly once after two wire() calls');
+        } finally {
+            @unlink($traitFile);
+        }
+    }
 }

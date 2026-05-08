@@ -6,30 +6,31 @@ namespace dcardenasl\Ci4ApiCore\Wiring;
 
 use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
 use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
+use PhpParser\Node;
+use PhpParser\NodeFinder;
+use PhpParser\ParserFactory;
 
 /**
  * ConfigWireman
  * Automates the "wiring" of services and mappers in the consumer's
  * `app/Config/Services.php` and per-domain trait files.
  *
- * v0.1.0 strategy: regex-based string injection (same approach as the
- * pre-extraction code in ci4-api-starter). It assumes the consumer's
- * Services.php follows the convention shipped with ci4-api-starter:
- *  - Existing `require_once` lines for sibling domain trait files.
- *  - A `use {Domain}DomainServices;` line inside the Services class body.
+ * Uses nikic/php-parser for AST-level injection with format-preserving printing,
+ * making the wiring immune to heredocs, PHP 8 attributes, and non-standard layouts
+ * that broke the previous regex + strrpos approach.
  *
- * If the regex fails to inject (stricter / older Services.php layouts),
- * the spark command's `--no-wire` flag swaps `wire()` for `previewWiring()`,
- * which returns the snippets the consumer must paste manually instead of
- * silently leaving the wiring half-done.
- *
- * A future v0.2 may switch to nikic/php-parser for AST-level injection;
- * that's deferred until the regex breaks for a real consumer.
+ * If the AST injection still cannot locate the expected class/trait node (e.g. the
+ * consumer's Services.php omits `class Services`), the spark command's `--no-wire`
+ * flag swaps `wire()` for `previewWiring()`, which returns the snippets the consumer
+ * must paste manually.
  */
 class ConfigWireman
 {
+    private readonly PhpAstEditor $astEditor;
+
     public function __construct(private readonly ScaffoldingConfig $config)
     {
+        $this->astEditor = new PhpAstEditor();
     }
 
     private function servicesFile(): string
@@ -46,11 +47,10 @@ class ConfigWireman
      * Inject the trait + service factory in-place. Used by the default
      * (write-through) make:crud invocation.
      *
-     * Each injection step is verified after writing — if the regex or write
-     * failed silently (e.g. the consumer's Services.php has a non-standard
-     * layout), this method throws a WiringFailedException carrying the
-     * manual snippet so the user can recover instead of being left with a
-     * half-wired module.
+     * Each injection step is verified after writing — if the AST editor
+     * cannot locate the expected class/trait structure, this method throws a
+     * WiringFailedException carrying the manual snippet so the user can
+     * recover instead of being left with a half-wired module.
      */
     public function wire(ResourceSchema $schema): void
     {
@@ -67,7 +67,7 @@ class ConfigWireman
                 );
             }
 
-            $this->registerDomainInMainServices($domain);
+            $this->registerDomainInMainServices($domain, $schema);
             $this->verifyMainServicesRegistration($domain, $schema);
         }
 
@@ -116,82 +116,129 @@ trait {$domain}DomainServices
 PHP;
     }
 
-    private function registerDomainInMainServices(string $domain): void
+    private function registerDomainInMainServices(string $domain, ResourceSchema $schema): void
     {
         $servicesFile = $this->servicesFile();
         if (!file_exists($servicesFile)) {
             return;
         }
 
-        $content = (string) file_get_contents($servicesFile);
-        $requireLine = "require_once __DIR__ . '/{$domain}DomainServices.php';";
-        $useLine = "    use {$domain}DomainServices;";
+        $originalContent = (string) file_get_contents($servicesFile);
+        $content         = $originalContent;
+        $requireLine     = "require_once __DIR__ . '/{$domain}DomainServices.php';";
+        $useLine         = "    use {$domain}DomainServices;";
 
-        // 1. Inject require_once if not present.
-        // Primary: append after a sibling `require_once __DIR__ . '/...Services.php';`.
-        // Fallback (G1): vanilla CI4 Services.php has no prior trait file — inject
-        // immediately before `class Services extends ...`. The fallback path is
-        // what makes the package usable from a clean CI4 install without the
-        // consumer having to seed a dummy trait first.
+        // --- require_once injection ---
         if (!str_contains($content, $requireLine)) {
-            $injected = preg_replace(
-                '/(require_once __DIR__ \. \'\/[A-Za-z0-9]+Services\.php\';)/',
-                "$0\n" . $requireLine,
-                $content,
-                1
-            );
-            if ($injected === null || $injected === $content) {
-                $injected = preg_replace(
-                    '/^(class\s+Services\s+extends\s+\w+)/m',
-                    $requireLine . "\n\n" . '$1',
-                    $content,
-                    1
-                );
+            $edited = $this->astEditor->edit($content, function (array &$stmts) use ($domain): bool {
+                $finder  = new NodeFinder();
+                $newNode = $this->buildRequireNode($domain);
+
+                // CI4 Services.php always declares `namespace Config;`.
+                // The require_once and class nodes live inside Stmt\Namespace_->stmts,
+                // not at the file top-level. Fall back to top-level for namespace-free files.
+                $ns = $finder->findFirstInstanceOf($stmts, Node\Stmt\Namespace_::class);
+
+                if ($ns instanceof Node\Stmt\Namespace_) {
+                    $this->injectRequireIntoStmts($ns->stmts, $newNode);
+                } else {
+                    $this->injectRequireIntoStmts($stmts, $newNode);
+                }
+
+                return true;
+            });
+
+            if ($edited !== null) {
+                $content = $edited;
             }
-            $content = $injected ?? $content;
         }
 
-        // 2. Inject `use ...DomainServices;` inside the class body.
-        // Primary: alongside an existing `use ...DomainServices;` line.
-        // Fallback (G1): no prior trait — insert just after the class opening `{`.
+        // --- use Trait injection ---
         if (!str_contains($content, $useLine)) {
-            $injected = preg_replace(
-                '/(    use [A-Za-z0-9]+DomainServices;)/',
-                "$0\n" . $useLine,
-                $content,
-                1
-            );
-            if ($injected === null || $injected === $content) {
-                $injected = preg_replace(
-                    '/(class\s+Services\s+extends\s+\w+\s*\{[^\n]*\n)/m',
-                    '$1' . $useLine . "\n",
-                    $content,
-                    1
-                );
+            $edited = $this->astEditor->edit($content, function (array &$stmts) use ($domain): bool {
+                $finder = new NodeFinder();
+                $class  = $finder->findFirstInstanceOf($stmts, Node\Stmt\Class_::class);
+                if ($class === null || $class->name?->name !== 'Services') {
+                    return false;
+                }
+
+                $newUse = new Node\Stmt\TraitUse([new Node\Name("{$domain}DomainServices")]);
+
+                // Find the position of the last TraitUse via an explicit integer counter
+                // to avoid int|string key ambiguity when using array_keys() on an untyped array.
+                $lastTraitUsePos = -1;
+                $pos             = 0;
+                foreach ($class->stmts as $stmt) {
+                    if ($stmt instanceof Node\Stmt\TraitUse) {
+                        $lastTraitUsePos = $pos;
+                    }
+                    $pos++;
+                }
+
+                if ($lastTraitUsePos >= 0) {
+                    array_splice($class->stmts, $lastTraitUsePos + 1, 0, [$newUse]);
+                } else {
+                    // Fallback G1: no prior trait use — prepend as first class statement.
+                    array_unshift($class->stmts, $newUse);
+                }
+
+                return true;
+            });
+
+            if ($edited !== null) {
+                $content = $edited;
             }
-            $content = $injected ?? $content;
         }
 
         file_put_contents($servicesFile, $content);
+
+        // Post-write validation: re-parse; restore original and throw on failure.
+        if (!$this->astEditor->isValidPhp($content)) {
+            file_put_contents($servicesFile, $originalContent);
+            throw new WiringFailedException(
+                sprintf(
+                    'AST re-parse failed after injecting domain %s into Services.php — original restored.',
+                    $domain
+                ),
+                $this->previewWiring($schema)
+            );
+        }
     }
 
     private function injectServiceAndMapper(ResourceSchema $schema, string $path): void
     {
-        $content = (string) file_get_contents($path);
+        $content       = (string) file_get_contents($path);
         $resourceLower = $schema->getResourceLower();
-        $serviceName = "{$resourceLower}Service";
+        $serviceName   = "{$resourceLower}Service";
 
         if (str_contains($content, "function {$serviceName}")) {
-            return; // Already exists
+            return; // Already injected — idempotent
         }
 
-        $code = $this->serviceFactorySnippet($schema);
+        $snippet = $this->serviceFactorySnippet($schema);
+        $methods = $this->extractMethodsFromSnippet($snippet);
 
-        // Inject before the last closing brace of the trait
-        $pos = strrpos($content, '}');
-        if ($pos !== false) {
-            $content = substr($content, 0, $pos) . $code . substr($content, $pos);
-            file_put_contents($path, $content);
+        $edited = $this->astEditor->edit($content, static function (array &$stmts) use ($methods): bool {
+            $trait = (new NodeFinder())->findFirstInstanceOf($stmts, Node\Stmt\Trait_::class);
+            if ($trait === null) {
+                return false;
+            }
+
+            foreach ($methods as $method) {
+                $trait->stmts[] = $method;
+            }
+
+            return true;
+        });
+
+        if ($edited !== null) {
+            file_put_contents($path, $edited);
+        } else {
+            // Fallback: strrpos insertion (pre-AST behavior, only when trait does not parse)
+            $pos = strrpos($content, '}');
+            if ($pos !== false) {
+                file_put_contents($path, substr($content, 0, $pos) . $snippet . substr($content, $pos));
+            }
         }
     }
 
@@ -251,16 +298,12 @@ PHP;
 
     /**
      * Re-read Services.php and confirm both the require_once and use-trait
-     * lines for the new domain are present. The injection regex falls back
-     * silently when the consumer's Services.php layout doesn't match the
-     * expected pattern, which used to leave wiring half-done — this guard
-     * surfaces the problem with an actionable error message.
+     * lines for the new domain are present.
      */
     private function verifyMainServicesRegistration(string $domain, ResourceSchema $schema): void
     {
         $servicesFile = $this->servicesFile();
         if (!file_exists($servicesFile)) {
-            // Acceptable for fresh consumers that haven't booted Services.php yet.
             return;
         }
 
@@ -289,9 +332,7 @@ PHP;
     }
 
     /**
-     * Re-read the domain trait file and confirm the new factory method was
-     * injected. Defends against unusual trait layouts (e.g. a leading comment
-     * pulling `strrpos` astray) that would silently drop the snippet.
+     * Re-read the domain trait file and confirm the new factory method was injected.
      */
     private function verifyServiceFactoryInjection(ResourceSchema $schema, string $traitFile): void
     {
@@ -314,6 +355,99 @@ PHP;
                 ),
                 $this->previewWiring($schema)
             );
+        }
+    }
+
+    /**
+     * Insert $newNode into a list of statements: after the last sibling require_once for
+     * a ...Services.php file, or (fallback) immediately before `class Services`.
+     *
+     * @param array<mixed> $stmts Stmts array mutated in place (object property or top-level)
+     */
+    private function injectRequireIntoStmts(array &$stmts, Node\Stmt\Expression $newNode): void
+    {
+        $lastSiblingPos = -1;
+        $pos            = 0;
+        foreach ($stmts as $stmt) {
+            if ($stmt instanceof Node\Stmt && $this->isServicesRequire($stmt)) {
+                $lastSiblingPos = $pos;
+            }
+            $pos++;
+        }
+
+        if ($lastSiblingPos >= 0) {
+            array_splice($stmts, $lastSiblingPos + 1, 0, [$newNode]);
+
+            return;
+        }
+
+        // Fallback G1: no prior trait require — insert before `class Services`.
+        $classPos = 0;
+        foreach ($stmts as $stmt) {
+            if ($stmt instanceof Node\Stmt\Class_ && $stmt->name?->name === 'Services') {
+                array_splice($stmts, $classPos, 0, [$newNode]);
+
+                return;
+            }
+            $classPos++;
+        }
+    }
+
+    private function isServicesRequire(Node\Stmt $stmt): bool
+    {
+        if (!$stmt instanceof Node\Stmt\Expression) {
+            return false;
+        }
+
+        if (!$stmt->expr instanceof Node\Expr\Include_) {
+            return false;
+        }
+
+        $include = $stmt->expr;
+        if (!$include->expr instanceof Node\Expr\BinaryOp\Concat) {
+            return false;
+        }
+
+        $right = $include->expr->right;
+
+        return $right instanceof Node\Scalar\String_
+            && str_contains($right->value, 'Services.php');
+    }
+
+    private function buildRequireNode(string $domain): Node\Stmt\Expression
+    {
+        return new Node\Stmt\Expression(
+            new Node\Expr\Include_(
+                new Node\Expr\BinaryOp\Concat(
+                    new Node\Scalar\MagicConst\Dir(),
+                    new Node\Scalar\String_("/{$domain}DomainServices.php")
+                ),
+                Node\Expr\Include_::TYPE_REQUIRE_ONCE
+            )
+        );
+    }
+
+    /**
+     * @return list<Node\Stmt\ClassMethod>
+     */
+    private function extractMethodsFromSnippet(string $code): array
+    {
+        try {
+            $parser = (new ParserFactory())->createForHostVersion();
+            $stmts  = $parser->parse("<?php\nclass __Tmp {\n{$code}\n}") ?? [];
+            $finder = new NodeFinder();
+            $class  = $finder->findFirstInstanceOf($stmts, Node\Stmt\Class_::class);
+
+            if ($class === null) {
+                return [];
+            }
+
+            return array_values(array_filter(
+                $class->stmts,
+                static fn ($s) => $s instanceof Node\Stmt\ClassMethod
+            ));
+        } catch (\PhpParser\Error) {
+            return [];
         }
     }
 }
