@@ -1,8 +1,12 @@
 # ci4-api-core
 
+[![CI](https://github.com/dcardenasl/ci4-api-core/actions/workflows/ci.yml/badge.svg)](https://github.com/dcardenasl/ci4-api-core/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/dcardenasl/ci4-api-core/branch/main/graph/badge.svg)](https://codecov.io/gh/dcardenasl/ci4-api-core)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 DTO-first API foundation for CodeIgniter 4: base classes + CRUD scaffolding engine. Powers `ci4-api-starter` and `ci4-domain-starter` so multiple projects share a single, versioned source of truth instead of copying the engine between codebases.
 
-> **Status:** `v0.1.0` — initial release. APIs may change without notice until `1.0.0`. Not yet published to Packagist; install via VCS repository (see below).
+> **Status:** `v0.2.0` — packaging hardening. APIs may change without notice until `1.0.0`. Not yet published to Packagist; install via VCS repository (see below).
 
 ## What it does
 

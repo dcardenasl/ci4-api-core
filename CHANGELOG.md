@@ -4,6 +4,24 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-07
+
+### Added
+- **`.gitattributes`** — `export-ignore` rules so Packagist tarballs exclude `tests/`, `docs/`, `.github/`, `.claude/`, config and quality-tool files. Keeps consumer install weight minimal.
+- **`SECURITY.md`** — vulnerability disclosure policy and maintainer contact.
+- **`CODE_OF_CONDUCT.md`** — Contributor Covenant 2.1 summary with enforcement contact.
+- **`suggest` block in `composer.json`** — `monolog/monolog` and `zircote/swagger-php` are now optional; consumers who don't need JSON logging or OpenAPI generation no longer pull ~3MB of unused deps.
+- **`composer security` script** — `composer audit --no-dev --locked`; integrated into `composer quality`.
+- **Codecov upload in CI** — coverage report generated on PHP 8.2 is now uploaded via `codecov/codecov-action@v4`; badges added to README.
+
+### Changed
+- **`monolog/monolog` and `zircote/swagger-php` moved from `require` to `require-dev`** — present for development and CI; consumers install them explicitly if they use `JsonFormatter`, `MonologHandler`, or OpenAPI generation.
+- **`friendsofphp/php-cs-fixer` added to `require-dev`** — previously installed on-demand via a shell guard in `cs-check`/`cs-fix` scripts; now a first-class dev dependency.
+- **`composer analyse` now passes `--level=8 --memory-limit=1G` explicitly** — prevents silent level drift if `phpstan.neon` is edited.
+- **`composer quality` expanded** — now runs `@analyse`, `@cs-check`, `@security`, and `@test` (previously only `@analyse` + `@test`).
+- **CI `Security audit` step** now calls `composer security` (hard-fail) instead of `composer audit` with `continue-on-error: true`.
+- **CI PHP CS Fixer step** simplified to `composer cs-check` — no longer needs an inline guard to install the tool.
+
 ### Changed (CORE-011, 2026-05-07)
 - **PHPStan upgraded from 1.12 to 2.x** (`composer.json`: `phpstan/phpstan: ^1.10` → `^2.0`). Aligns the package with `ci4-api-starter` (already on 2.x) and unlocks list types, level 10, and `@phpstan-pure` enforcement. Five real type-safety fixes in flight:
   - `Core/TypeMapper::knownTypes()` and `Http/ApiRequest::setAuthContext()`: removed redundant `array_values()` calls on values already typed as `list<string>` (PHPStan 2.x flags this as `arrayValues.list`).
