@@ -2,7 +2,7 @@
 
 > Fuente de verdad para trabajo en este repo.
 > Gestionado desde Cowork/VentureOS. Ejecutado desde Claude Code.
-> Última actualización: 2026-05-07 (vanilla-consumer fixes B1/B2/B3/G1/G3 completados)
+> Última actualización: 2026-05-07 (CORE-008/009 abiertos tras code review post-port teatromuseo)
 
 ---
 
@@ -14,7 +14,8 @@
 
 ## 🟡 Próximo (ordenado por prioridad)
 
-*(vacío — vanilla-consumer fixes completos. Próxima tarea: CORE-004 en ci4-api-starter, planificada por separado.)*
+- **[CORE-008]** Extender contrato de repositorios para servicios de infraestructura. Agregar `findByIds(array $ids): list<object>` a `RepositoryInterface` (breaking minor — implementers existentes deben sumar el método). Crear nueva `PivotRepositoryInterface extends RepositoryInterface` con `findByParent(int $parentId): list<object>` y `maxSortOrder(int $parentId): int`. Habilita servicios genéricos tipo galería / asociaciones N:M sin acoplarse a `\CodeIgniter\Model`. Tests unit con anonymous classes verificando los contratos. Desbloquea API-016 en ci4-api-starter.
+- **[CORE-009]** Relajar `ResponseMapperInterface::map(object)` → `map(object|array)`. Blast radius bajo (1 implementer concreto en starter, `DtoResponseMapper`, ya soporta arrays via `extractData()`). Habilita borrado de helpers tipo `DataBag` en consumers (API-017). Sin breaking real — sólo amplía el dominio del parámetro.
 
 ---
 
