@@ -18,7 +18,28 @@ For cross-repo context (current milestone, blocked tasks), read `../TASKS.md`.
 
 **ci4-api-core** is a Composer package that provides DTO-first API foundations (base classes + CRUD scaffolding engine) for CodeIgniter 4 projects. It is consumed by `ci4-api-starter` and `ci4-domain-starter` (and projects generated from them) via a path/VCS repository reference.
 
-**Current version:** v0.1.0 (not yet published on Packagist — APIs may still change before 1.0.0)
+**Current version:** v0.2.0 (not yet published on Packagist — APIs may still change before 1.0.0)
+
+**v0.2.0 — Consolidación 2026-05-07.** Lifted from `ci4-api-starter` /
+`ci4-domain-starter` to remove triplication:
+
+- **Repositories**: `BaseRepository`, `GenericRepository`, `AuditRepositoryInterface`
+- **Exceptions**: `AuthenticationException`, `AuthorizationException`,
+  `ConflictException`, `ServiceUnavailableException`, `TooManyRequestsException`
+- **Mappers / Support / Validators / Traits**: `DtoResponseMapper`,
+  `RelationLabelLoader`, `RequestDtoFactory`, `RequestDataCollector`,
+  `ResponseDtoFactory`, `RequestAuditContextFactory`, `ResolvesWebAppLinks`,
+  `ValidatesRequiredFields`, `AppliesQueryOptions`
+- **HTTP filters**: 8 identical filters under `src/Http/Filters/` plus an
+  extensible `FeatureToggleFilter` (subclass to integrate with metrics)
+- **Logging / Monitoring / Queue base / RequestIdHolder**: `JsonFormatter`,
+  `MonologHandler`, `HealthChecker`, `Queue\Job`, `Queue\QueueManager`,
+  `Http\RequestIdHolder`
+- **Audit chain**: `AuditService` (concrete, defensive accessor), `AuditWriter`,
+  `AuditPayloadSanitizer`, `Dto\Audit\AuditEventDTO`, `Dto\Common\PayloadResponseDTO`,
+  `Queue\Jobs\WriteAuditLogJob`, `Queue\Jobs\LogRequestJob`
+- **Helpers** (procedural, autoloaded via `composer files`): `date.php`,
+  `request.php`, `security.php`
 
 ## Commands
 

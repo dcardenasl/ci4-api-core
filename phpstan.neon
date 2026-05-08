@@ -4,18 +4,88 @@ parameters:
         - src
     excludePaths:
         - vendor
+    # Patterns below cover legitimate package-isolation issues (consumer-side
+    # `Config\*` symbols, optional Sentry integration, CI4 framework helpers
+    # not visible in package scope). Some patterns may match a superset of
+    # the active error set depending on which files use which symbol — keep
+    # this disabled rather than maintaining a brittle per-file enumeration.
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         # Config\Database / Config\Services / Config\App live in each consumer
         # app's app/Config/, not in the CI4 framework. PHPStan can't resolve
         # them from the package side, but the symbols are guaranteed at
         # runtime in any CI4 host.
         -
-            message: '#unknown class Config\\(Database|Services|App)#'
+            message: '#(unknown class|Class) Config\\(Database|Services|App|Cors|Api|FeatureFlags|Queue|Audit)( not found\.)?#'
             paths:
                 - src/Validators/ForeignKeyValidator.php
                 - src/Http/*
                 - src/Models/*
                 - src/Services/*
+                - src/Support/*
+                - src/Logging/*
+                - src/Monitoring/*
+                - src/Queue/*
+                - src/Dto/*
+
+        # Config\Cors / Config\Api / Config\FeatureFlags / Config\Queue
+        # / Config\Audit class.notFound for method/property access.
+        -
+            message: '#(method|property|Access to property) [^ ]+ on an unknown class Config\\(Cors|Api|FeatureFlags|App|Queue|Audit)#'
+            paths:
+                - src/Http/*
+                - src/Logging/*
+                - src/Monitoring/*
+                - src/Queue/*
+                - src/Services/Audit/*
+
+        # And for parameter type-hints (`has invalid type Config\X`).
+        -
+            message: '#has invalid type Config\\(Cors|Api|FeatureFlags|App|Queue|Audit)#'
+            paths:
+                - src/Http/*
+                - src/Logging/*
+                - src/Monitoring/*
+                - src/Queue/*
+                - src/Services/Audit/*
+
+        # QueueManager works with stdClass-shaped DB rows fetched via the CI4
+        # query builder. The expected columns (`id`, `queue`, `payload`,
+        # `attempts`, etc.) exist at runtime in the `jobs` table provided by
+        # the consumer's migration. PHPStan cannot infer the row shape.
+        -
+            identifier: property.notFound
+            path: src/Queue/QueueManager.php
+
+        # CI4 FilterInterface ships untyped `array $arguments` — to keep
+        # signature compatibility we cannot tighten without breaking LSP.
+        -
+            identifier: missingType.iterableValue
+            paths:
+                - src/Http/Filters/*
+
+        # Procedural CI4-style helpers (date/request/security) accept generic
+        # `array` parameters from arbitrary callers. Adding `array<string,mixed>`
+        # docblocks is doable but yields false positives at sites that pass
+        # mixed shapes; the helpers are part of the package's stable global API.
+        -
+            identifier: missingType.iterableValue
+            paths:
+                - src/Helpers/*
+
+        # Sentry is an optional integration in MonologHandler. The starter
+        # adds `sentry/sentry: ^4.0` to its own composer.json when SENTRY_DSN
+        # is set; core does not require it. PHPStan correctly cannot find
+        # Sentry symbols when the package is not installed.
+        -
+            message: '#(class|Function) Sentry\\#'
+            path: src/Logging/MonologHandler.php
+        -
+            message: '#Instantiated class Sentry\\Monolog\\Handler not found#'
+            path: src/Logging/MonologHandler.php
+        -
+            message: '#expects Monolog\\Handler\\HandlerInterface, Sentry\\Monolog\\Handler given#'
+            path: src/Logging/MonologHandler.php
 
         # ApiRequest extends CodeIgniter\HTTP\IncomingRequest, whose constructor
         # signature is __construct(Config\App $config, ...). We cannot change it
@@ -36,16 +106,38 @@ parameters:
             identifier: instanceof.alwaysTrue
             path: src/Http/ApiController.php
 
-        # Filterable and Searchable are public-API traits consumed by models in
-        # consumer projects (ci4-api-starter, ci4-domain-starter, generated apps).
-        # PHPStan analyses traits only in context of their users — there are no
-        # users inside `src/`, so the package-side analysis flags them as unused.
-        # See https://phpstan.org/blog/how-phpstan-analyses-traits
+        # Filterable, Searchable, AppliesQueryOptions, ResolvesWebAppLinks, and
+        # ValidatesRequiredFields are public-API traits consumed by models /
+        # services in consumer projects (ci4-api-starter, ci4-domain-starter,
+        # generated apps). PHPStan analyses traits only in context of their
+        # users — there are no users inside `src/`, so the package-side analysis
+        # flags them as unused. See https://phpstan.org/blog/how-phpstan-analyses-traits
         -
             identifier: trait.unused
             paths:
                 - src/Models/Traits/Filterable.php
                 - src/Models/Traits/Searchable.php
+                - src/Models/Traits/AppliesQueryOptions.php
+                - src/Support/ResolvesWebAppLinks.php
+                - src/Validators/ValidatesRequiredFields.php
+
+        # DtoResponseMapper does defensive runtime checks via instanceof on
+        # objects returned by reflection / `::fromArray()`. The PHPDoc-narrowed
+        # type is the contract; the instanceof guards reflection edge cases
+        # where the DTO class signs the contract but a subclass returns
+        # something different. PHPStan correctly sees the static type matches
+        # but cannot model the dynamic dispatch.
+        -
+            identifier: instanceof.alwaysTrue
+            path: src/Mappers/DtoResponseMapper.php
+
+        # RelationLabelLoader queries opaque CI4 row objects (stdClass-shaped)
+        # from arbitrary tables identified by config. The `user_email`,
+        # `user_full_name`, `user_label` properties exist at runtime on rows
+        # from the join query but PHPStan cannot infer them statically.
+        -
+            identifier: property.notFound
+            path: src/Support/RelationLabelLoader.php
 
         # CI4 global helpers (lang, service, log_message, config) are loaded
         # by the framework's system/Common.php. PHPStan does not see them
@@ -61,6 +153,22 @@ parameters:
             message: '#Constant ENVIRONMENT not found#'
             paths:
                 - src/Support/ExceptionFormatter.php
+                - src/Logging/*
+                - src/Monitoring/*
+                - src/Http/Filters/*
+
+        # WRITEPATH is a CI4 framework runtime path constant.
+        -
+            message: '#Constant WRITEPATH not found#'
+            paths:
+                - src/Logging/*
+                - src/Monitoring/*
+
+        # `env()` is a CI4 framework helper, available in any host.
+        -
+            message: '#Function env not found#'
+            paths:
+                - src/*
 
         # APPPATH and ROOTPATH are CI4 framework runtime constants. PHPStan
         # doesn't see them when analyzing the package in isolation; in any

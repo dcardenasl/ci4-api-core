@@ -25,6 +25,7 @@
   "require": {
     "php": "^8.2",
     "codeigniter4/framework": "^4.5",
+    "monolog/monolog": "^3.5",
     "zircote/swagger-php": "^4.10 || ^5.0 || ^6.0"
   },
   "require-dev": {
@@ -38,7 +39,12 @@
   "autoload": {
     "psr-4": {
       "dcardenasl\\Ci4ApiCore\\": "src/"
-    }
+    },
+    "files": [
+      "src/Helpers/date.php",
+      "src/Helpers/request.php",
+      "src/Helpers/security.php"
+    ]
   },
   "autoload-dev": {
     "psr-4": {
@@ -59,7 +65,7 @@
   "prefer-stable": true,
   "extra": {
     "branch-alias": {
-      "dev-main": "0.1.x-dev"
+      "dev-main": "0.2.x-dev"
     }
   }
 }
