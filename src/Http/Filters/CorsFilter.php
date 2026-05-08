@@ -11,6 +11,9 @@ use Config\Services;
 
 class CorsFilter implements FilterInterface
 {
+    /** @var array<string, string> */
+    private static array $compiledWildcardPatterns = [];
+
     /**
      * Handle CORS preflight requests
      *
@@ -127,7 +130,8 @@ class CorsFilter implements FilterInterface
 
         foreach ($allowedOrigins as $allowed) {
             if (str_contains($allowed, '*')) {
-                $pattern = '/^' . str_replace(['*', '.'], ['.*', '\.'], $allowed) . '$/';
+                $pattern = self::$compiledWildcardPatterns[$allowed]
+                    ??= '/^' . str_replace(['*', '.'], ['.*', '\.'], $allowed) . '$/';
 
                 try {
                     if (preg_match($pattern, $origin)) {
