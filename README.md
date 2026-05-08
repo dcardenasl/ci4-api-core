@@ -8,6 +8,22 @@ DTO-first API foundation for CodeIgniter 4: base classes + CRUD scaffolding engi
 
 > **Status:** `v0.2.0` — packaging hardening. APIs may change without notice until `1.0.0`. Not yet published to Packagist; install via VCS repository (see below).
 
+## Quick Start
+
+```bash
+# Add to composer.json → "repositories"
+# {"type": "vcs", "url": "https://github.com/dcardenasl/ci4-api-core"}
+
+composer require dcardenasl/ci4-api-core:dev-main
+
+# Scaffold a CRUD module
+bash vendor/bin/make-crud.sh Product Catalog \
+  'name:string:required|searchable,price:decimal:required|filterable' yes
+
+# Validate wiring
+php spark module:check Product --domain Catalog
+```
+
 ## What it does
 
 Generates a complete, production-ready CRUD module from a single command:
