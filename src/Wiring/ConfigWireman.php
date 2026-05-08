@@ -234,11 +234,16 @@ PHP;
         if ($edited !== null) {
             file_put_contents($path, $edited);
         } else {
-            // Fallback: strrpos insertion (pre-AST behavior, only when trait does not parse)
-            $pos = strrpos($content, '}');
-            if ($pos !== false) {
-                file_put_contents($path, substr($content, 0, $pos) . $snippet . substr($content, $pos));
-            }
+            throw new WiringFailedException(
+                sprintf(
+                    "Could not inject service factory into %s — the file does not contain a parseable trait declaration.\n" .
+                    "If you edited the trait manually, ensure it still declares `trait %sDomainServices { }`.\n" .
+                    "Alternatively, re-run with --no-wire and paste the snippet manually.",
+                    basename($path),
+                    $schema->domain
+                ),
+                $this->previewWiring($schema)
+            );
         }
     }
 
