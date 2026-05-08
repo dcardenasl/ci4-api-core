@@ -32,9 +32,10 @@ class MakeCrudRemove extends BaseCommand
         'Resource' => 'Resource singular name (e.g. Product, ApiKeyV2)',
     ];
     protected $options = [
-        '--domain' => 'Domain folder (default: Catalog) — must match the original make:crud invocation',
-        '--route' => 'Route slug plural (default: kebab-case plural of resource)',
+        '--domain'  => 'Domain folder (default: Catalog) — must match the original make:crud invocation',
+        '--route'   => 'Route slug plural (default: kebab-case plural of resource)',
         '--dry-run' => 'Show what would be removed without touching the filesystem',
+        '--force'   => 'Skip confirmation prompt and delete immediately',
     ];
 
     public function run(array $params)
@@ -51,6 +52,7 @@ class MakeCrudRemove extends BaseCommand
         $domain = StringHelper::studly((string) (CLI::getOption('domain') ?: 'Catalog'));
         $route = (string) (CLI::getOption('route') ?: StringHelper::toKebab(StringHelper::pluralize($resource)));
         $dryRun = CLI::getOption('dry-run') !== null;
+        $force = CLI::getOption('force') !== null;
 
         $schema = new ResourceSchema(
             resource: $resource,
@@ -59,15 +61,33 @@ class MakeCrudRemove extends BaseCommand
             fields: [],
         );
 
+        $remover = new ScaffoldRemover($config);
+
         if ($dryRun) {
             CLI::write("🔎 DRY RUN — no files will be modified.", 'cyan');
+            CLI::newLine();
+            $report = $remover->plan($schema);
+        } else {
+            // Show plan first and ask for confirmation unless --force is set
+            $plan = $remover->plan($schema);
+            if (!$force && !empty($plan['deleted'])) {
+                CLI::write("The following files will be permanently deleted:", 'yellow');
+                foreach ($plan['deleted'] as $path) {
+                    CLI::write("  - {$path}");
+                }
+                CLI::newLine();
+                $confirm = CLI::prompt('Proceed? Manually edited files will be lost.', ['y', 'n']);
+                if ($confirm !== 'y') {
+                    CLI::write('Aborted.', 'yellow');
+                    return EXIT_SUCCESS;
+                }
+                CLI::newLine();
+            }
+            $report = $remover->remove($schema);
         }
 
         CLI::write("🗑  Removing scaffold: {$resource} from domain {$domain}", 'cyan');
         CLI::newLine();
-
-        $remover = new ScaffoldRemover($config);
-        $report = $dryRun ? $remover->plan($schema) : $remover->remove($schema);
 
         if (empty($report['deleted'])
             && $report['routes_cleaned'] === null
