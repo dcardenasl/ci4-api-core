@@ -73,4 +73,67 @@ final class ScaffoldingOrchestratorTest extends TestCase
 
         rmdir($dir);
     }
+
+    public function testRollbackLastRunCleansUpAfterSuccessfulOrchestrate(): void
+    {
+        // After a successful orchestrate(), rollbackLastRun() must delete all written files.
+        // We can't invoke the full orchestrator (it needs APPPATH etc.), but we can verify
+        // rollbackLastRun() via the orchestrator's public interface by writing files manually
+        // and asserting they are removed.
+        $dir = sys_get_temp_dir() . '/scaffold_rollback_last_' . uniqid('', true);
+        mkdir($dir, 0775, true);
+
+        $file1 = $dir . '/file1.php';
+        $file2 = $dir . '/file2.php';
+        file_put_contents($file1, '<?php // 1');
+        file_put_contents($file2, '<?php // 2');
+
+        $orchestrator = new ScaffoldingOrchestrator(ScaffoldingConfig::defaults());
+
+        // Inject lastCreatedFiles via reflection to simulate what orchestrate() would populate.
+        $lastCreated = new \ReflectionProperty($orchestrator, 'lastCreatedFiles');
+        $lastCreated->setAccessible(true);
+        $lastCreated->setValue($orchestrator, [$file1, $file2]);
+
+        $lastSnapshots = new \ReflectionProperty($orchestrator, 'lastSnapshots');
+        $lastSnapshots->setAccessible(true);
+        $lastSnapshots->setValue($orchestrator, []);
+
+        $orchestrator->rollbackLastRun();
+
+        $this->assertFileDoesNotExist($file1, 'File 1 must be deleted by rollbackLastRun()');
+        $this->assertFileDoesNotExist($file2, 'File 2 must be deleted by rollbackLastRun()');
+
+        // Properties must be cleared after rollback.
+        $this->assertSame([], $lastCreated->getValue($orchestrator));
+        $this->assertSame([], $lastSnapshots->getValue($orchestrator));
+
+        rmdir($dir);
+    }
+
+    public function testRollbackLastRunIsIdempotent(): void
+    {
+        // Calling rollbackLastRun() a second time after files are gone must not throw.
+        $dir  = sys_get_temp_dir() . '/scaffold_idempotent_' . uniqid('', true);
+        mkdir($dir, 0775, true);
+
+        $file = $dir . '/file.php';
+        file_put_contents($file, '<?php // tmp');
+
+        $orchestrator = new ScaffoldingOrchestrator(ScaffoldingConfig::defaults());
+
+        $lastCreated = new \ReflectionProperty($orchestrator, 'lastCreatedFiles');
+        $lastCreated->setAccessible(true);
+        $lastCreated->setValue($orchestrator, [$file]);
+
+        $lastSnapshots = new \ReflectionProperty($orchestrator, 'lastSnapshots');
+        $lastSnapshots->setAccessible(true);
+        $lastSnapshots->setValue($orchestrator, []);
+
+        $orchestrator->rollbackLastRun(); // first call — deletes file, clears state
+        $orchestrator->rollbackLastRun(); // second call — no-op, must not throw
+
+        $this->assertFileDoesNotExist($file);
+        rmdir($dir);
+    }
 }

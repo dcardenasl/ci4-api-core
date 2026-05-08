@@ -158,7 +158,9 @@ class MakeCrud extends BaseCommand
                     CLI::write("WIRING: Services and Mappers registered successfully.", 'green');
                 } catch (\dcardenasl\Ci4ApiCore\Wiring\WiringFailedException $e) {
                     CLI::newLine();
-                    CLI::write('WIRING FAILED — module files were generated but Services.php could not be auto-wired.', 'red');
+                    CLI::write('WIRING FAILED — rolling back generated files...', 'red');
+                    $orchestrator->rollbackLastRun();
+                    CLI::write('WIRING FAILED — module files were rolled back. Services.php was NOT modified.', 'red');
                     CLI::newLine();
                     CLI::write($e->describe(), 'yellow');
                     CLI::newLine();

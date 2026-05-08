@@ -45,6 +45,12 @@ class ScaffoldingOrchestrator
      */
     private array $preExisting = [];
 
+    /** @var list<string> */
+    private array $lastCreatedFiles = [];
+
+    /** @var array<string, string> */
+    private array $lastSnapshots = [];
+
     public function __construct(private readonly ScaffoldingConfig $config)
     {
         $this->dtoGenerator = new DtoGenerator($config);
@@ -98,6 +104,9 @@ class ScaffoldingOrchestrator
 
         $this->validateFilesDoNotExist($filesToCreate);
 
+        $this->lastCreatedFiles = [];
+        $this->lastSnapshots    = [];
+
         $createdFiles = [];
         $snapshots    = []; // original content of pre-existing files overwritten in this run
         try {
@@ -115,6 +124,8 @@ class ScaffoldingOrchestrator
                     throw new RuntimeException("Failed to write scaffolded file: {$path}");
                 }
                 $createdFiles[] = $path;
+                $this->lastCreatedFiles = $createdFiles;
+                $this->lastSnapshots    = $snapshots;
             }
         } catch (Throwable $e) {
             // Avoid leaving the project in a half-scaffolded state: delete any file
@@ -125,6 +136,18 @@ class ScaffoldingOrchestrator
         }
 
         return $createdFiles;
+    }
+
+    /**
+     * Roll back all files written by the most recent orchestrate() call.
+     * Intended for use by MakeCrud when wire() fails after orchestrate() returns.
+     * Idempotent: if the files are already gone, this is a no-op.
+     */
+    public function rollbackLastRun(): void
+    {
+        $this->rollback($this->lastCreatedFiles, $this->lastSnapshots);
+        $this->lastCreatedFiles = [];
+        $this->lastSnapshots    = [];
     }
 
     /**
