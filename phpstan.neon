@@ -33,8 +33,19 @@ parameters:
         # early init, or a controller invoked outside the normal HTTP pipeline)
         # CI4 may inject the base IncomingRequest before the property is set.
         -
-            message: '#Else branch is unreachable because ternary operator condition is always true\.#'
+            identifier: instanceof.alwaysTrue
             path: src/Http/ApiController.php
+
+        # Filterable and Searchable are public-API traits consumed by models in
+        # consumer projects (ci4-api-starter, ci4-domain-starter, generated apps).
+        # PHPStan analyses traits only in context of their users — there are no
+        # users inside `src/`, so the package-side analysis flags them as unused.
+        # See https://phpstan.org/blog/how-phpstan-analyses-traits
+        -
+            identifier: trait.unused
+            paths:
+                - src/Models/Traits/Filterable.php
+                - src/Models/Traits/Searchable.php
 
         # CI4 global helpers (lang, service, log_message, config) are loaded
         # by the framework's system/Common.php. PHPStan does not see them
