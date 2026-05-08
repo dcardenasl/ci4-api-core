@@ -7,6 +7,7 @@ namespace dcardenasl\Ci4ApiCore\Orchestration;
 use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
 use dcardenasl\Ci4ApiCore\Core\ResourceSchema;
 use dcardenasl\Ci4ApiCore\Generators\ControllerGenerator;
+use dcardenasl\Ci4ApiCore\Generators\CrudGeneratorInterface;
 use dcardenasl\Ci4ApiCore\Generators\DtoGenerator;
 use dcardenasl\Ci4ApiCore\Generators\LanguageGenerator;
 use dcardenasl\Ci4ApiCore\Generators\MigrationGenerator;
@@ -24,17 +25,21 @@ use Throwable;
  * Pure file-tree operation: never writes to anything outside of paths
  * derived from $config->paths. Wiring (Services.php, domain trait) is
  * a separate responsibility handled by ConfigWireman.
+ *
+ * **Plugin architecture:** pass a custom `$generators` list to override,
+ * exclude, or extend the default generator set. Each generator must implement
+ * CrudGeneratorInterface. To filter out a built-in by name:
+ *
+ * ```php
+ * $gens = ScaffoldingOrchestrator::defaultGenerators($config);
+ * $gens = array_values(array_filter($gens, fn ($g) => $g->name() !== 'tests'));
+ * $orchestrator = new ScaffoldingOrchestrator($config, generators: $gens);
+ * ```
  */
 class ScaffoldingOrchestrator
 {
-    private DtoGenerator $dtoGenerator;
-    private MigrationGenerator $migrationGenerator;
-    private ModelEntityGenerator $modelEntityGenerator;
-    private ServiceGenerator $serviceGenerator;
-    private ControllerGenerator $controllerGenerator;
-    private RouteGenerator $routeGenerator;
-    private LanguageGenerator $languageGenerator;
-    private TestGenerator $testGenerator;
+    /** @var list<CrudGeneratorInterface> */
+    private array $generators;
 
     /**
      * Track whether a planned file existed before this run so the caller can show
@@ -51,16 +56,36 @@ class ScaffoldingOrchestrator
     /** @var array<string, string> */
     private array $lastSnapshots = [];
 
-    public function __construct(private readonly ScaffoldingConfig $config)
+    /**
+     * @param list<CrudGeneratorInterface>|null $generators Override the default generator set.
+     *                                                       When null, defaultGenerators($config) is used.
+     */
+    public function __construct(
+        private readonly ScaffoldingConfig $config,
+        ?array $generators = null
+    ) {
+        $this->generators = $generators ?? self::defaultGenerators($config);
+    }
+
+    /**
+     * Return the canonical set of generators in their conventional execution order.
+     * Exposed as a static factory so callers can filter or extend the list before
+     * passing it to the constructor.
+     *
+     * @return list<CrudGeneratorInterface>
+     */
+    public static function defaultGenerators(ScaffoldingConfig $config): array
     {
-        $this->dtoGenerator = new DtoGenerator($config);
-        $this->migrationGenerator = new MigrationGenerator($config);
-        $this->modelEntityGenerator = new ModelEntityGenerator($config);
-        $this->serviceGenerator = new ServiceGenerator($config);
-        $this->controllerGenerator = new ControllerGenerator($config);
-        $this->routeGenerator = new RouteGenerator($config);
-        $this->languageGenerator = new LanguageGenerator($config);
-        $this->testGenerator = new TestGenerator($config);
+        return [
+            new DtoGenerator($config),
+            new MigrationGenerator($config),
+            new ModelEntityGenerator($config),
+            new ServiceGenerator($config),
+            new ControllerGenerator($config),
+            new RouteGenerator($config),
+            new LanguageGenerator($config),
+            new TestGenerator($config),
+        ];
     }
 
     /**
@@ -71,16 +96,13 @@ class ScaffoldingOrchestrator
      */
     public function plan(ResourceSchema $schema): array
     {
-        return array_merge(
-            $this->dtoGenerator->generate($schema),
-            $this->migrationGenerator->generate($schema),
-            $this->modelEntityGenerator->generate($schema),
-            $this->serviceGenerator->generate($schema),
-            $this->controllerGenerator->generate($schema),
-            $this->routeGenerator->generate($schema),
-            $this->languageGenerator->generate($schema),
-            $this->testGenerator->generate($schema)
-        );
+        $result = [];
+        foreach ($this->generators as $generator) {
+            foreach ($generator->generate($schema) as $path => $content) {
+                $result[$path] = $content;
+            }
+        }
+        return $result;
     }
 
     public function wasExisting(string $path): bool
