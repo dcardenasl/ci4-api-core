@@ -65,14 +65,14 @@ interface RepositoryInterface
      * @param int|string|list<int|string>|null $id
      * @param array<string, mixed>|object|null $data
      */
-    public function update(int|string|array $id = null, array|object|null $data = null): bool;
+    public function update(int|string|array|null $id = null, array|object|null $data = null): bool;
 
     /**
      * Delete a record by ID
      *
      * @param int|string|list<int|string>|null $id
      */
-    public function delete(int|string|array $id = null, bool $purge = false): bool;
+    public function delete(int|string|array|null $id = null, bool $purge = false): bool;
 
     /**
      * Restore a soft-deleted record
