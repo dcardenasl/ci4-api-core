@@ -6,15 +6,12 @@
 
 DTO-first API foundation for CodeIgniter 4: base classes + CRUD scaffolding engine. Powers `ci4-api-starter` and `ci4-domain-starter` so multiple projects share a single, versioned source of truth instead of copying the engine between codebases.
 
-> **Status:** `v0.2.0` — packaging hardening. APIs may change without notice until `1.0.0`. Not yet published to Packagist; install via VCS repository (see below).
+> **Status:** `v0.3.0` — published on Packagist. APIs may change without notice until `1.0.0`.
 
 ## Quick Start
 
 ```bash
-# Add to composer.json → "repositories"
-# {"type": "vcs", "url": "https://github.com/dcardenasl/ci4-api-core"}
-
-composer require dcardenasl/ci4-api-core:dev-main
+composer require dcardenasl/ci4-api-core:^0.3
 
 # Scaffold a CRUD module
 bash vendor/bin/make-crud.sh Product Catalog \
@@ -83,24 +80,8 @@ The engine was being copied between projects manually, leading to drift. Extract
 
 ## Installation
 
-Add the VCS repository to your project's `composer.json` and require the package:
-
-```json
-"repositories": [
-    {
-        "type": "vcs",
-        "url": "https://github.com/dcardenasl/ci4-api-core"
-    }
-],
-"require-dev": {
-    "dcardenasl/ci4-api-core": "^0.1.0"
-}
-```
-
-Then install:
-
 ```bash
-composer update dcardenasl/ci4-api-core --no-interaction
+composer require dcardenasl/ci4-api-core:^0.3
 ```
 
 ## Configure
