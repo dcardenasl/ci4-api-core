@@ -4,6 +4,11 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+### Removed (BC break — bump to v0.3.0)
+- **All scaffolding code extracted** to the new `dcardenasl/ci4-api-scaffolding` package (`require-dev`). Removed from this package: `src/Commands/`, `src/Generators/`, `src/Orchestration/`, `src/Validators/`, `src/Wiring/`, `src/Config/`, `src/Core/`, and `bin/`. Consumers that call `make:crud`, `make:crud:remove`, or `module:check` must add `dcardenasl/ci4-api-scaffolding: dev-main` to `require-dev` and update `App\Config\Scaffolding.php` to use `dcardenasl\Ci4ApiScaffolding\Config\ScaffoldingConfig` (4.1).
+- **`nikic/php-parser`** removed from `require` — it now belongs to `ci4-api-scaffolding`. Production installs of this package no longer pull in the parser library (4.1).
+- **`bin/make-crud.sh`** and **`bin/validate-crud.sh`** moved to `ci4-api-scaffolding` (4.1).
+
 ### Added
 - **`TemplateRenderer`** (`src/Generators/TemplateRenderer.php`) — lightweight template engine that loads `.php.tpl` files from `src/Generators/Templates/` and substitutes `{varName}` placeholders. All 8 built-in generators now delegate output to template files instead of inline heredocs (4.5).
 - **19 template files** in `src/Generators/Templates/` — one per generator output (DTOs ×4, migration, entity, model, service ×2, controller ×2, route ×2, language ×2, tests ×3). Changing generated output now produces an explicit diff in the template file, visible in PR review (4.5).

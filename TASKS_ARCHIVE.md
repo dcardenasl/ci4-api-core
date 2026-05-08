@@ -86,6 +86,27 @@ Sin ID de tarea — mejoras al motor de scaffolding post-v0.2.0:
 
 ---
 
+## ✅ v0.3.0 — Architectural hardening (2026-05-08)
+
+Cambios estructurales de visión 1.0 completados antes de publicar:
+
+| Hallazgo | Componente | Descripción | Estado |
+|---|---|---|---|
+| S-03 / V-4.5 | `CrudGeneratorInterface` + `TemplateRenderer` + 8 generators refactorizados | Templates extraídos a archivos `.php.tpl` en `src/Generators/Templates/{controller,dto,language,migration,model,route,service,tests}/`. Todos los generators implementan `CrudGeneratorInterface`. Heredocs eliminados. | ✅ |
+| S-11 / V-4.4 | `ScaffoldingOrchestrator` pluggable | Acepta `?array $generators` en constructor. Consumers pueden sustituir, añadir o quitar generators. Plugin architecture sin breaking change. | ✅ |
+| R-01 | `BaseRequestDTO` sin service locator | `service('validation')` fallback eliminado completamente. Injection explícita obligatoria. | ✅ |
+| R-02 | `BaseAuditableModel` lazy-resolve | `auditService` resuelto lazy vía `service()` con warning explícito. `setAuditService()` para DI limpio. | ✅ |
+| R-05 | Helpers procedurales eliminados | `src/Helpers/request.php` y `security.php` removidos (214 líneas de globals). Clases namespacadas `Hasher`/`Mask`/`Token` son la API definitiva. | ✅ |
+| R-06 | `SearchQueryApplier` Boolean Mode | Operadores MySQL FULLTEXT Boolean Mode (`+`, `-`, `*`, `"`) sanitizados antes del MATCH...AGAINST. | ✅ |
+| R-10 | `SecurityContext` deep immutability | Valores no-scalar en `$metadata` rechazados en construcción. `readonly` ya no es superficial. | ✅ |
+| R-16 / R-17 | Audit chain: N+1 warning + coverage | N+1 implícito documentado con warning. `AuditWriterTest` añadido (78 líneas). | ✅ |
+| R-20 / V-4.10 | `SyncQueueManager` | Queue adapter real (in-process síncrono). `SyncQueueManager` con 101 líneas de tests. Ya no es solo un esqueleto de interfaz. | ✅ |
+| S-04 / V-4.6 | Snapshot tests + E2E AST | `SnapshotTest` (225 líneas) para output de generators. `EndToEndScaffoldTest` ampliado con assertions AST. `spatie/phpunit-snapshot-assertions` en require-dev. | ✅ |
+| P-04 / V-4.6 | CI4 compatibility matrix | Job dedicado `[php: 8.2, 8.3] × [ci4: 4.5.*, 4.6.*, 4.7.*]` — 6 combinaciones validadas. Clover coverage report habilitado. | ✅ |
+| bf09541 | `WiringFailedException` explícita | AST wiring lanza excepción tipada en lugar de silent fallback al `strrpos`. | ✅ |
+
+---
+
 ## ✅ Medium findings — audit v0.2.0 (2026-05-08)
 
 Todos los hallazgos 🟡 medios del audit resueltos en una sola sesión:
