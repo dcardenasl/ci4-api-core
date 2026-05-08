@@ -56,7 +56,7 @@ abstract class ApiController extends Controller
      *
      * @param string|callable $target Service method name or custom callable
      * @param string|null $dtoClass Optional DTO class to validate and map request data
-     * @param array|null $additionalParams Extra params to merge into the request
+     * @param array<string, mixed>|null $additionalParams Extra params to merge into the request
      */
     protected function handleRequest(string|callable $target, ?string $dtoClass = null, ?array $additionalParams = null): ResponseInterface
     {
@@ -116,6 +116,8 @@ abstract class ApiController extends Controller
 
     /**
      * Execute the target service method or callable
+     *
+     * @param array<string, mixed> $data
      */
     private function executeTarget(string|callable $target, ?string $dtoClass, array $data, SecurityContext $context): mixed
     {
@@ -149,6 +151,9 @@ abstract class ApiController extends Controller
 
     /**
      * Keep context enrichment at the HTTP boundary so DTOs remain pure data objects.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      */
     private function withSecurityContext(array $data, SecurityContext $context): array
     {
@@ -186,6 +191,9 @@ abstract class ApiController extends Controller
 
     /**
      * Collect all incoming request data and inject auth context
+     *
+     * @param array<string, mixed>|null $params
+     * @return array<string, mixed>
      */
     protected function collectRequestData(?array $params = null): array
     {

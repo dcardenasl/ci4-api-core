@@ -19,6 +19,9 @@ class ApiResponse
 {
     /**
      * Build a successful response
+     *
+     * @param array<string, mixed> $meta
+     * @return array<string, mixed>
      */
     public static function success(
         mixed $data = null,
@@ -44,6 +47,9 @@ class ApiResponse
 
     /**
      * Build an error response
+     *
+     * @param array<string, mixed>|string $errors
+     * @return array<string, mixed>
      */
     public static function error(
         array|string $errors,
@@ -71,6 +77,8 @@ class ApiResponse
 
     /**
      * Create a standard response object from any service result
+     *
+     * @param array<string, int> $statusCodes
      */
     public static function fromResult(mixed $result, string $methodName = '', array $statusCodes = []): ApiResult
     {
@@ -138,6 +146,9 @@ class ApiResponse
         return new ApiResult($body, $status);
     }
 
+    /**
+     * @param array<string, mixed> $result
+     */
     private static function handleArray(array $result, int $status): ApiResult
     {
         if (isset($result['data'], $result['total'], $result['page'], $result['per_page'])) {
@@ -190,6 +201,9 @@ class ApiResponse
 
     /**
      * Build a paginated response
+     *
+     * @param array<int, mixed> $items
+     * @return array<string, mixed>
      */
     public static function paginated(
         array $items,
@@ -207,36 +221,58 @@ class ApiResponse
         ]);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public static function created(mixed $data, ?string $message = null): array
     {
         return self::success($data, $message ?? lang('Api.resourceCreated'));
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public static function deleted(?string $message = null): array
     {
         return self::success(null, $message ?? lang('Api.resourceDeleted'));
     }
 
+    /**
+     * @param array<string, mixed> $errors
+     * @return array<string, mixed>
+     */
     public static function validationError(array $errors, ?string $message = null): array
     {
         return self::error($errors, $message ?? lang('Api.validationFailed'), 422);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public static function notFound(?string $message = null): array
     {
         return self::error([], $message ?? lang('Api.resourceNotFound'), 404);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public static function unauthorized(?string $message = null): array
     {
         return self::error([], $message ?? lang('Api.unauthorized'), 401);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public static function forbidden(?string $message = null): array
     {
         return self::error([], $message ?? lang('Api.forbidden'), 403);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public static function serverError(?string $message = null): array
     {
         return self::error([], $message ?? lang('Api.serverError'), 500);
