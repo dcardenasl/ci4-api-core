@@ -57,7 +57,7 @@ class ExceptionFormatter
      */
     private static function resolveMessage(Exception $e): string
     {
-        if (ENVIRONMENT === 'production') {
+        if (ENVIRONMENT !== 'development') {
             return lang('Api.serverError');
         }
 
@@ -65,13 +65,13 @@ class ExceptionFormatter
     }
 
     /**
-     * Provide detailed debugging information in non-production environments.
+     * Provide detailed debugging information only in development.
      *
      * @return array{}|array{class: string, file: string, line: int, trace: list<string>}
      */
     private static function resolveDebugInfo(Exception $e): array
     {
-        if (ENVIRONMENT === 'production') {
+        if (ENVIRONMENT !== 'development') {
             return [];
         }
 
