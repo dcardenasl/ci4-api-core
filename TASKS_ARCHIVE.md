@@ -73,4 +73,17 @@ Work adicional realizado tras CORE-003, fuera del scope original de CORE-001/005
 
 ---
 
+## ✅ AST-based wiring + rollback seguro (2026-05-07)
+
+Sin ID de tarea — mejoras al motor de scaffolding post-v0.2.0:
+
+| Componente | Descripción |
+|---|---|
+| `PhpAstEditor` | Editor AST format-preserving usando `nikic/php-parser ^5.0`. Declarado como dependencia explícita. |
+| `ConfigWireman` refactor | Reemplaza inyección por regex con manipulación AST. Más robusto ante layouts no estándar de `Services.php`. |
+| Rollback en fallo de wiring | Si el wiring falla tras generar los archivos, se hace rollback de todos los artefactos generados. `rollbackLastRun()` expuesto públicamente. |
+| Auditoría v0.2.0 | Reporte de auditoría deep agregado a `docs/`. |
+
+---
+
 *TASKS_ARCHIVE · ci4-api-core · 2026-05-07*
