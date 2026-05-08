@@ -1,7 +1,7 @@
 # TASKS_ARCHIVE — ci4-api-core
 
 > Historial de tareas completadas. Movido desde TASKS.md para mantener el tracker activo liviano.
-> Última actualización: 2026-05-07
+> Última actualización: 2026-05-07 (v0.2.0 + runtime decoupling)
 
 ---
 
@@ -41,6 +41,35 @@
 ## ✅ v0.1.0 — Motor inicial (~2026-04)
 
 Comandos `make:crud`, `make:crud:remove`, `module:check`. 8 generadores modulares. Shell wrapper `make-crud.sh`. Validación `validate-crud.sh`.
+
+---
+
+## ✅ CORE-008 / CORE-009 — Contratos de repositorios y mappers (2026-05-07)
+
+| ID | Descripción | Estado |
+|---|---|---|
+| CORE-008 | `findByIds(array $ids): list<object>` en `RepositoryInterface`. `PivotRepositoryInterface` con `findByParent()` y `maxSortOrder()`. Desbloquea API-016. | ✅ |
+| CORE-009 | `ResponseMapperInterface::map(object\|array)` — acepta array directamente. Habilita borrado de `DataBag` en consumers. | ✅ |
+
+---
+
+## ✅ v0.2.0 — Runtime decoupling (2026-05-07)
+
+Work adicional realizado tras CORE-003, fuera del scope original de CORE-001/005 pero necesario para que ci4-api-core sea consumible sin dependencias del starter:
+
+| Componente | Descripción |
+|---|---|
+| `ApiConfigFacade` | Punto único para leer `config('Api')` con defaults seguros. Reemplaza 3 métodos `apiConfig()` duplicados en `SearchQueryApplier`, `QueryBuilder`, `Searchable`. |
+| `OperationState` enum | PHP 8.1 backed enum reemplazando las constantes string `SUCCESS`/`ACCEPTED`/`ERROR` en `OperationResult`. |
+| `AuditableModelInterface` | Contrato formal para modelos auditables. `BaseRepository::setEntityContext()` usa `instanceof` en vez de duck-typing con `method_exists`. |
+| `RequestHelper` | Utilidad para acceso seguro a datos del request. |
+| `Hasher`, `Mask`, `Token` | Utilidades de seguridad centralizadas. |
+| `DateHelper` | Helper de fechas centralizado. |
+| `ValidationInterface` inyectable | DTOs (`BaseRequestDTO`) permiten inyectar `ValidationInterface` para testabilidad (sin depender de `\Config\Services::validation()`). |
+| Helpers procedurales deprecados | Wrappers delegando a clases con namespace. Marcados deprecated para remoción en v1.0. |
+| Filtros centralizados | `ApiConfigFacade` centraliza lectura de config en filtros. |
+| Tests | Unit tests para `ApiConfigFacade` y `OperationState`. |
+| CI | Codecov upload, cs-fixer step simplificado, security audit endurecido. |
 
 ---
 
