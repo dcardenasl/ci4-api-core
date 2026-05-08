@@ -5,6 +5,20 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 ## [Unreleased]
 
 ### Added
+- **`src/Contracts/PaginatableResponse`** — marker interface for paginated DTOs. `ApiResponse::handleDto()` now uses `instanceof PaginatableResponse` instead of key-presence heuristics. **BC break:** custom DTOs that returned `data/total/page/per_page` keys but did not implement this interface will no longer be treated as paginated — implement the interface to restore the behaviour.
+- **`PaginatedResponseDTO` implements `PaginatableResponse`** — no behaviour change for existing consumers that use this DTO directly.
+- **`LanguageGenerator::checkParity(string $enPath, string $esPath): array`** — compares top-level keys between the `en` and `es` language files for a resource. Returns `missing_in_es` and `missing_in_en` arrays.
+- **`ModuleCheck` check #14: language key parity** — reports diverging keys between `en` and `es` language files. Surfaces after manual edits to one file without updating the other.
+- **`CorsFilter` static wildcard pattern cache** (`$compiledWildcardPatterns`) — regex patterns for `allowedOrigins` wildcard entries are now compiled once per PHP process instead of on every request.
+- **`make:crud:remove --force` flag** — without `--force`, the command now shows a preview of files that will be deleted and asks for confirmation before proceeding. Protects against accidental loss of manually-edited scaffold files. `--force` restores the previous silent-delete behaviour (useful in CI/scripts).
+- **`shellcheck` step in CI** — lints `bin/make-crud.sh` and `bin/validate-crud.sh` on every push/PR. `shellcheck` is pre-installed on `ubuntu-latest`.
+- **Quick Start section in README** — install + scaffold + validate in three commands, visible immediately after the status badge.
+- **`tests/E2E/` suite** — `EndToEndScaffoldTest` moved from `tests/Integration/` to `tests/E2E/`; registered as a separate `E2E` testsuite in `phpunit.xml.dist`. CI runs `Unit,Integration` on every push and `E2E` as a separate step.
+
+### Changed
+- **`ExceptionFormatter` uses whitelist instead of blacklist** — `ENVIRONMENT !== 'development'` replaces `ENVIRONMENT === 'production'`. Trace details and verbose messages are now exposed **only** in `development`; any other environment (staging, testing, canary) gets the generic 500 message. Previously, only `production` was protected.
+- **`AuditPayloadSanitizer` default fields extracted to `private const DEFAULTS`** — constructor now accepts `$additionalSensitiveFields` (merged with defaults) instead of replacing the full list. **BC break (param rename):** callers using the named argument `$sensitiveFields: [...]` must rename to `$additionalSensitiveFields: [...]`; callers adding extra fields used to have to copy the full default list — now they pass only the extra ones.
+- **`ModuleCheck` wiring checks use `preg_match`** — service/mapper/route lookups now tolerate whitespace variations introduced by CS-Fixer (e.g., a space before the opening parenthesis) instead of relying on exact `str_contains` matches.
 - **`src/Support/ApiConfigFacade`** — single point of truth for reading `config('Api')` with safe defaults. Replaces three duplicated `apiConfig()` private methods in `SearchQueryApplier`, `QueryBuilder`, and `Searchable`.
 - **`src/Support/OperationState` enum** — PHP 8.1 backed enum replacing the `SUCCESS`/`ACCEPTED`/`ERROR` string constants on `OperationResult`. Eliminates silent typo bugs.
 - **`src/Contracts/AuditableModelInterface`** — formal contract for auditable models. `BaseRepository::setEntityContext()` now uses `instanceof` instead of `method_exists` duck-typing.
