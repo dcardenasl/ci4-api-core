@@ -9,22 +9,25 @@ namespace dcardenasl\Ci4ApiCore\Services\Audit;
  */
 class AuditPayloadSanitizer
 {
+    /** @var array<int, string> */
+    private const DEFAULTS = [
+        'password',
+        'password_confirmation',
+        'token',
+        'accesstoken',
+        'refreshtoken',
+        'apikey',
+        'access_token',
+        'refresh_token',
+        'api_key',
+        'key_hash',
+    ];
+
     /**
-     * @param array<int, string> $sensitiveFields
+     * @param array<int, string> $additionalSensitiveFields Extra fields to redact on top of the built-in list.
      */
     public function __construct(
-        private array $sensitiveFields = [
-            'password',
-            'password_confirmation',
-            'token',
-            'accesstoken',
-            'refreshtoken',
-            'apikey',
-            'access_token',
-            'refresh_token',
-            'api_key',
-            'key_hash',
-        ]
+        private readonly array $additionalSensitiveFields = []
     ) {
     }
 
@@ -56,7 +59,7 @@ class AuditPayloadSanitizer
             return false;
         }
 
-        if (in_array($normalized, $this->sensitiveFields, true)) {
+        if (in_array($normalized, array_merge(self::DEFAULTS, $this->additionalSensitiveFields), true)) {
             return true;
         }
 
