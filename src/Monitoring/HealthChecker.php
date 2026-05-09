@@ -16,7 +16,17 @@ class HealthChecker
 
     public function __construct()
     {
-        $this->db = Database::connect();
+        $this->db = $this->createConnection();
+    }
+
+    /**
+     * Returns the database connection. Override in tests to inject a mock.
+     *
+     * @return BaseConnection<object, object>
+     */
+    protected function createConnection(): BaseConnection
+    {
+        return Database::connect();
     }
 
     /**
