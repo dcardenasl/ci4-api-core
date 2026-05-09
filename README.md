@@ -4,14 +4,39 @@
 [![Coverage](https://codecov.io/gh/dcardenasl/ci4-api-core/branch/main/graph/badge.svg)](https://codecov.io/gh/dcardenasl/ci4-api-core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-DTO-first API foundation for CodeIgniter 4: base classes + CRUD scaffolding engine. Powers `ci4-api-starter` and `ci4-domain-starter` so multiple projects share a single, versioned source of truth instead of copying the engine between codebases.
+DTO-first API runtime foundation for CodeIgniter 4: base classes, HTTP layer, services, repositories, filters, audit chain, and queue. Powers `ci4-api-starter` and `ci4-domain-starter`. Pair with [`dcardenasl/ci4-api-scaffolding`](https://github.com/dcardenasl/ci4-api-scaffolding) for CRUD generation.
 
 > **Status:** `v0.3.0` — published on Packagist. APIs may change without notice until `1.0.0`.
+
+## Contents
+
+- [Quick Start](#quick-start)
+- [What it does](#what-it-does)
+- [Why a package](#why-a-package)
+- [Runtime foundation](#runtime-foundation)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configure](#configure)
+- [Usage](#usage)
+- [Field syntax](#field-syntax)
+- [Scope and limitations](#scope-and-limitations-v0x)
+- [Customization](#customization)
+- [Scaffolding contract](#scaffolding-contract)
+- [Wiring assumption](#wiring-assumption)
+- [Migration from an inline copy](#migration-from-an-inline-copy)
+- [Troubleshooting](#troubleshooting)
+- [See also](#see-also)
+- [Development](#development)
+- [License](#license)
 
 ## Quick Start
 
 ```bash
+# Runtime foundation
 composer require dcardenasl/ci4-api-core:^0.3
+
+# Scaffolding engine (dev-only — provides make-crud.sh and spark commands)
+composer require --dev dcardenasl/ci4-api-scaffolding:dev-main
 
 # Scaffold a CRUD module
 bash vendor/bin/make-crud.sh Product Catalog \
@@ -22,6 +47,8 @@ php spark module:check Product --domain Catalog
 ```
 
 ## What it does
+
+> **Package boundary:** `ci4-api-core` provides the **runtime foundation** — base classes, HTTP layer, services, repositories, models, filters, audit chain, queue, and security utilities. The scaffolding engine (generators, `make-crud.sh`, spark commands) lives in the companion package `dcardenasl/ci4-api-scaffolding`. The flowchart below shows the full system when both packages are installed.
 
 Generates a complete, production-ready CRUD module from a single command:
 
@@ -73,10 +100,29 @@ The engine was being copied between projects manually, leading to drift. Extract
 - **Versioned upgrades** — projects pin to a constraint and adopt new versions when ready.
 - **Configurable conventions** — base class FQCNs, paths, and route filters are declared per project in `Config\Scaffolding`.
 
+## Runtime foundation
+
+`ci4-api-core` ships the classes that generated (and hand-written) modules extend and depend on at runtime:
+
+| Layer | Key classes |
+|-------|-------------|
+| **HTTP** | `ApiController` (`handleRequest()` pipeline), `ApiRequest`, `ApiResponse`, `ContextHolder`, `RequestIdHolder` |
+| **HTTP filters** | `CorsFilter`, `CorrelationIdFilter`, `IdempotencyFilter`, `LocaleFilter`, `MaintenanceFilter`, `RequestLoggingFilter`, `DeprecationHeadersFilter`, `FeatureToggleFilter` |
+| **DTOs** | `BaseRequestDTO` (auto-validation), `PaginatedResponseDTO`, `DataTransferObjectInterface`, `SecurityContext` |
+| **Services** | `BaseCrudService`, `CrudServiceContract`, `HandlesTransactions` trait, `AuditService`, `AuditServiceInterface` |
+| **Repositories** | `RepositoryInterface`, `GenericRepository`, `BaseRepository`, `AuditRepositoryInterface` |
+| **Models** | `BaseAuditableModel`, `Auditable` trait, `Filterable` trait, `Searchable` trait, `DecimalCast` |
+| **Query layer** | `FilterParser`, `FilterOperatorApplier`, `SearchQueryApplier`, `QueryBuilder` |
+| **Exceptions** | `ApiException` + `NotFoundException`, `ValidationException`, `BadRequestException`, `AuthenticationException`, `AuthorizationException`, `ConflictException`, `ServiceUnavailableException`, `TooManyRequestsException` |
+| **Support** | `OperationResult`, `OperationState` enum, `ApiResult`, `ExceptionFormatter`, `ApiConfigFacade` |
+| **Security** | `Security\Hasher`, `Security\Token`, `Security\Mask` |
+| **Queue** | `QueueManager`, `SyncQueueManager`, `Job` base, `WriteAuditLogJob`, `LogRequestJob` |
+| **Logging** | `JsonFormatter`, `MonologHandler` |
+
 ## Requirements
 
 - PHP `^8.2`
-- CodeIgniter 4 `^4.5`
+- CodeIgniter 4 `^4.6`
 
 ## Installation
 
@@ -85,6 +131,31 @@ composer require dcardenasl/ci4-api-core:^0.3
 ```
 
 ## Configure
+
+### Runtime — `Config\Api` (optional)
+
+`ci4-api-core` reads an optional `Config\Api` class for search and pagination knobs. Defaults are safe when absent:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Config;
+
+use CodeIgniter\Config\BaseConfig;
+
+class Api extends BaseConfig
+{
+    public bool $searchEnabled        = true;
+    public bool $searchUseFulltext    = true;  // MATCH AGAINST; false = LIKE
+    public int  $searchMinLength      = 0;     // minimum query length
+    public int  $paginationDefaultLimit = 20;
+    public int  $paginationMaxLimit     = 100;
+}
+```
+
+### Scaffolding — `Config\Scaffolding` (`ci4-api-scaffolding`)
 
 Create `app/Config/Scaffolding.php` in your project. If your project follows the `ci4-api-starter` conventions exactly, a one-liner is sufficient:
 
@@ -214,7 +285,7 @@ The generator is designed for **flat resources**: one resource = one table = one
 
 If your domain needs any of the above, scaffold both resources flat first, then hand-edit the Service / Response DTO of the parent to load and expose the child collection. This is rarely more than ~30 lines of code per relation, and keeps the generator's surface small enough to remain stable across versions.
 
-> **Roadmap:** relation-aware generators are tracked as a v0.3 candidate. See `TASKS.md` and the v0.3 design notes once they land in `docs/`. The pre-1.0 API may still change.
+> **Roadmap:** relation-aware generators are tracked in `ci4-api-scaffolding`'s backlog (`CRUD-003`). The pre-1.0 API may still change.
 
 ## Customization
 
@@ -337,13 +408,14 @@ The commands fall back to `--no-wire` behaviour if they cannot locate the trait 
 
 - [`docs/CRUD_FROM_ZERO.md`](docs/CRUD_FROM_ZERO.md) — step-by-step playbook for scaffolding and post-scaffold customization.
 - [`docs/ARCHITECTURE_CONTRACT.md`](docs/ARCHITECTURE_CONTRACT.md) — non-negotiable layer rules for modules built with this engine.
+- [`docs/UPGRADE.md`](docs/UPGRADE.md) — migration guide (v0.2.0 → v0.3.0 breaking changes).
 
 ## Development
 
 ```bash
 composer install
 composer test      # PHPUnit
-composer analyse   # PHPStan level 5
+composer analyse   # PHPStan level 8
 ```
 
 Tests run without bootstrapping a CI4 app — `tests/bootstrap.php` defines the minimum `APPPATH`/`ROOTPATH` shims.

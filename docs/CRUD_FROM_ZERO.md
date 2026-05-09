@@ -159,6 +159,10 @@ Re-reads DTOs (for schemas) and `app/Documentation/{Domain}/*Endpoints.php` (for
 
 The scaffolding engine emits PSR-12-compliant code, but if you manually tweak a generated file you may introduce style violations that the pre-commit hook will reject. `vendor/bin/make-crud.sh` runs `cs-fix` automatically after generation; run it manually after edits.
 
+## 4. Customize Domain-Specific Logic
+
+After the scaffold is validated and migrated, adapt the generated files to your domain's specific rules. The generated code is complete for standard CRUD; only modify what your business rules require. Sections 5–9 walk through each layer in order.
+
 ## 5. Align Persistence Layer
 
 1. Update `Entity` casts/dates to match migration
