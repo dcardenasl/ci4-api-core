@@ -8,3 +8,6 @@
 .idea/
 .vscode/
 *.swp
+/infection.log
+/infection-summary.log
+/.infection/
