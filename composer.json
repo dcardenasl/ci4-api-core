@@ -70,7 +70,8 @@
   "extra": {
     "codeigniter4": {
       "commands": [
-        "dcardenasl\\Ci4ApiCore\\Commands\\CoreCheck"
+        "dcardenasl\\Ci4ApiCore\\Commands\\CoreCheck",
+        "dcardenasl\\Ci4ApiCore\\Commands\\CoreInstall"
       ]
     },
     "branch-alias": {
