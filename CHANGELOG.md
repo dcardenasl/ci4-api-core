@@ -2,6 +2,17 @@
 
 All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-crud-maker`) will be documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/spec/v2.0.0.html) with the caveat that pre-1.0 releases may break.
 
+## [Unreleased]
+
+### Added
+- **`php spark core:install`** (`src/Commands/CoreInstall.php`) — interactive wiring wizard for consumer projects. Detects which of the 4 required service factories are missing from `app/Config/Services.php` and generates the boilerplate stubs, printing a diff-ready summary. Idempotent: re-running against an already-wired project is a no-op. Registered in `composer.json` via CI4 package discovery.
+- **`NullAuditService`** (`src/Services/Audit/NullAuditService.php`) — no-op implementation of `AuditServiceInterface`. Implements every method as a silent noop so consumer projects can disable auditing in tests or lightweight deployments without injecting a real `AuditService` or conditionally branching around audit calls.
+- **Package-owned `Config/` and `Language/` files** (`src/Config/Api.php`, `src/Config/Audit.php`, `src/Config/Cors.php`, `src/Config/FeatureFlags.php`, `src/Config/Queue.php`; `src/Language/{en,es}/Api.php`, `Audit.php`, `Exceptions.php`, `Health.php`, `InputValidation.php`) — canonical defaults that consumers now inherit from the package via CI4's config merging, eliminating copy-paste drift across projects. Bilingual (EN + ES) language files included.
+- **`AuditableModelInterface::auditActionName()`** and **`BaseRepository::withAuditAction(string $action)`** — allow individual CRUD operations to override the audit action label (e.g. `'restore'` instead of `'update'` for soft-delete recovery). Defined on `AuditableModelInterface` and `RepositoryInterface`; implemented in `Auditable` trait and `BaseRepository`. `AuditService` reads the override when present.
+
+### Fixed
+- **`RequestDtoFactory`** auto-resolves `InputValidationService` when it is not explicitly injected — prevents "service not found" errors in consumer projects that wire the factory without passing all optional arguments.
+
 ## [0.3.0] - 2026-05-08
 
 ### Removed (BC break — bump to v0.3.0)

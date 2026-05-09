@@ -6,7 +6,7 @@
 
 DTO-first API runtime foundation for CodeIgniter 4: base classes, HTTP layer, services, repositories, filters, audit chain, and queue. Powers `ci4-api-starter` and `ci4-domain-starter`. Pair with [`dcardenasl/ci4-api-scaffolding`](https://github.com/dcardenasl/ci4-api-scaffolding) for CRUD generation.
 
-> **Status:** `v0.3.0` — published on Packagist. APIs may change without notice until `1.0.0`.
+> **Status:** `v0.3.x` (pre-release) — published on Packagist. APIs may change without notice until `1.0.0`. New in HEAD: `core:install` wiring wizard, bundled `Config/` + `Language/` defaults, `NullAuditService`, and per-operation audit action override.
 
 ## Contents
 
@@ -109,7 +109,7 @@ The engine was being copied between projects manually, leading to drift. Extract
 | **HTTP** | `ApiController` (`handleRequest()` pipeline), `ApiRequest`, `ApiResponse`, `ContextHolder`, `RequestIdHolder` |
 | **HTTP filters** | `CorsFilter`, `CorrelationIdFilter`, `IdempotencyFilter`, `LocaleFilter`, `MaintenanceFilter`, `RequestLoggingFilter`, `DeprecationHeadersFilter`, `FeatureToggleFilter` |
 | **DTOs** | `BaseRequestDTO` (auto-validation), `PaginatedResponseDTO`, `DataTransferObjectInterface`, `SecurityContext` |
-| **Services** | `BaseCrudService`, `CrudServiceContract`, `HandlesTransactions` trait, `AuditService`, `AuditServiceInterface` |
+| **Services** | `BaseCrudService`, `CrudServiceContract`, `HandlesTransactions` trait, `AuditService`, `AuditServiceInterface`, `NullAuditService` |
 | **Repositories** | `RepositoryInterface`, `GenericRepository`, `BaseRepository`, `AuditRepositoryInterface` |
 | **Models** | `BaseAuditableModel`, `Auditable` trait, `Filterable` trait, `Searchable` trait, `DecimalCast` |
 | **Query layer** | `FilterParser`, `FilterOperatorApplier`, `SearchQueryApplier`, `QueryBuilder` |
@@ -166,8 +166,8 @@ declare(strict_types=1);
 
 namespace Config;
 
-use dcardenasl\Ci4ApiCore\Config\BaseScaffoldingConfig;
-use dcardenasl\Ci4ApiCore\Config\ScaffoldingConfig;
+use dcardenasl\Ci4ApiScaffolding\Config\BaseScaffoldingConfig;
+use dcardenasl\Ci4ApiScaffolding\Config\ScaffoldingConfig;
 
 class Scaffolding extends BaseScaffoldingConfig
 {
@@ -179,6 +179,16 @@ class Scaffolding extends BaseScaffoldingConfig
 ```
 
 If omitted, the spark commands fall back to `ScaffoldingConfig::defaults()` with a warning.
+
+### Wiring — `php spark core:install`
+
+After adding the package, run the wiring wizard to inject the required service factories into `app/Config/Services.php`:
+
+```bash
+php spark core:install
+```
+
+The command detects which of the 4 required factories are already present and generates only the missing stubs. Re-running against an already-wired project is a no-op.
 
 ## Usage
 
