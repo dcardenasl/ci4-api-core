@@ -30,6 +30,8 @@ class RequestDtoFactory
             throw new \InvalidArgumentException("{$dtoClass} must extend " . BaseRequestDTO::class);
         }
 
+        $validation ??= \Config\Services::validation();
+
         return new $dtoClass($data, $validation);
     }
 }
