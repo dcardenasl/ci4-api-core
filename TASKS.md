@@ -19,6 +19,15 @@
 
 ---
 
+## ✅ Completadas
+
+### CORE-008 — `php spark core:install` + `NullAuditService`
+- **Qué**: Agregado `NullAuditService` (no-op de `AuditServiceInterface`) y comando `core:install` que genera `ApiCoreServices.php`, parchea `Services.php`, y opcionalmente genera `Config/Scaffolding.php` cuando `ci4-api-scaffolding` está instalado.
+- **Por qué**: Un proyecto CI4 limpio no tenía camino documentado ni automatizado para instalar `ci4-api-core`. El patch es idempotente y valida contra el contenido del archivo (no `method_exists`) para evitar falsos negativos al correr en el mismo proceso de CI4.
+- **Verificado**: `composer quality` limpio (PHPStan L8 + CS-Fixer + 108 tests). `core:check` pasa 4/4 en un proceso nuevo. Segunda ejecución de `core:install` es idempotente.
+
+---
+
 ## ⚪ Backlog
 
 *(Las tareas CRUD-002/003/004 — soporte json, relaciones belongsTo, make:crud:list — fueron movidas a `ci4-api-scaffolding/TASKS.md` junto con el código de scaffolding)*
