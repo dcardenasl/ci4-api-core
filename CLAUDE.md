@@ -18,7 +18,9 @@ For cross-repo context (current milestone, blocked tasks), read `../TASKS.md`.
 
 **ci4-api-core** is a Composer package providing the **runtime foundation** for CodeIgniter 4 API projects: base classes, HTTP layer, services, repositories, models, filters, audit chain, queue, and security utilities. It is consumed by `ci4-api-starter` and `ci4-domain-starter` (and projects generated from them) via Packagist (`dcardenasl/ci4-api-core:^0.3`).
 
-**Current version:** v0.3.0 — published on Packagist. APIs may still change before 1.0.0.
+**Current version:** v0.4.0 — published on Packagist. APIs may still change before 1.0.0.
+
+**v0.4.0 — 2026-05-09.** Tightens the boundary between runtime foundation (this package) and CRUD scaffolding (`ci4-api-scaffolding`). Externalises consumer-specific knobs that were hardcoded in core helpers (`AuditService` aliases, `RelationLabelLoader` user table). Publishes generic abstract bases for HTTP filters (`AbstractJwtAuthFilter`, `AbstractPermissionFilter`, `AbstractThrottleFilter`) and IAM (`AbstractIamAuthorizationService`, `PermissionResolverInterface`, `ApplicationPermissionResolverInterface`, `SecurityAuditLoggerInterface`). Hardens `core:install` with idempotent markers, `.bak` backup, and fail-safe fallback to a manual snippet. Moves generic commands `env:check` and `queue:work` from `ci4-api-starter` into the package. **`ci4-api-core` remains autonomous — installable and usable without `ci4-api-scaffolding`.** See `docs/MIGRATION_v0.3_to_v0.4.md`.
 
 **v0.3.0 — 2026-05-08.** Key change: all scaffolding code (Commands, Generators, Core, Orchestration, Validators, Wiring, Config, bin scripts) was extracted to the companion package `dcardenasl/ci4-api-scaffolding`. This package now provides only the runtime foundation:
 
@@ -26,7 +28,9 @@ For cross-repo context (current milestone, blocked tasks), read `../TASKS.md`.
 - **Exceptions**: `ApiException` base + `AuthenticationException`, `AuthorizationException`, `ConflictException`, `ServiceUnavailableException`, `TooManyRequestsException`, `ValidationException`, `BadRequestException`, `NotFoundException`
 - **Mappers / Support**: `DtoResponseMapper`, `RelationLabelLoader`, `RequestDtoFactory`, `RequestDataCollector`, `ResponseDtoFactory`, `RequestAuditContextFactory`, `ResolvesWebAppLinks`, `ApiConfigFacade`, `OperationResult`, `OperationState` enum
 - **HTTP layer**: `ApiController`, `ApiRequest`, `ApiResponse`, `ContextHolder`, `RequestIdHolder`
-- **HTTP filters**: 9 filters — `CorrelationIdFilter`, `CorsFilter`, `DeprecationHeadersFilter`, `FeatureToggleFilter`, `IdempotencyFilter`, `LocaleFilter`, `MaintenanceFilter`, `RequestLoggingFilter`, `SecurityHeadersFilter`
+- **HTTP filters (concrete)**: 9 filters — `CorrelationIdFilter`, `CorsFilter`, `DeprecationHeadersFilter`, `FeatureToggleFilter`, `IdempotencyFilter`, `LocaleFilter`, `MaintenanceFilter`, `RequestLoggingFilter`, `SecurityHeadersFilter`
+- **HTTP filters (abstract)**: 3 abstract bases consumers extend with their JWT/IAM concretions — `AbstractJwtAuthFilter`, `AbstractPermissionFilter`, `AbstractThrottleFilter`
+- **IAM**: `Contracts\Iam\PermissionResolverInterface`, `Contracts\Iam\ApplicationPermissionResolverInterface`, `Contracts\SecurityAuditLoggerInterface`, `Services\Iam\AbstractIamAuthorizationService`
 - **Query filters**: `FilterParser`, `FilterOperatorApplier`, `SearchQueryApplier`, `QueryBuilder`
 - **Logging / Monitoring / Queue**: `JsonFormatter`, `MonologHandler`, `HealthChecker`, `Queue\Job`, `QueueManager`, `SyncQueueManager`, `WriteAuditLogJob`, `LogRequestJob`
 - **Audit chain**: `AuditService`, `AuditWriter`, `AuditPayloadSanitizer`, `AuditEventDTO`, `PayloadResponseDTO`
@@ -47,13 +51,17 @@ composer security   # composer audit --no-dev --locked
 composer quality    # analyse + cs-check + security + test
 ```
 
-**Spark command (available in consumer projects):**
+**Spark commands (available in consumer projects):**
 
 ```bash
-php spark core:check   # Verify all 4 required Service factories are wired
+php spark core:install   # One-shot wiring: writes ApiCoreServices.php, patches Services.php
+                         # (idempotent, with .bak backup and fail-safe recovery snippet)
+php spark core:check     # Verify all 4 required Service factories are wired
+php spark env:check      # Validate required env vars + secret strength + prod CORS gate
+php spark queue:work     # Run the bundled QueueManager worker (--once, --max-jobs, --queue, ...)
 ```
 
-Scaffolding commands (`make:crud`, `make:crud:remove`, `module:check`) and shell wrappers (`make-crud.sh`, `validate-crud.sh`) live in `ci4-api-scaffolding`. See that package's README.
+Scaffolding commands (`make:crud`, `make:crud:remove`, `module:check`, `swagger:generate`, `scaffold:check`) and shell wrappers (`make-crud.sh`, `validate-crud.sh`) live in `ci4-api-scaffolding`. See that package's README.
 
 ## Architecture
 

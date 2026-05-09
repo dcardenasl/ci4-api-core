@@ -4,14 +4,43 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-09
+
+This release tightens the boundary between **runtime foundation** (this package) and **CRUD scaffolding** (`ci4-api-scaffolding`), externalises consumer-specific knobs that were hardcoded in core helpers, and publishes generic abstract bases for HTTP filters and IAM that consumers can extend instead of reimplementing. `ci4-api-core` remains autonomous — installable and usable without `ci4-api-scaffolding`.
+
+### Breaking changes
+
+- **`AuditService` no longer hardcodes entity-type aliases** — the previous `'user' => 'users'`, `'api-key' => 'api_keys'`, `'file' => 'files'` mapping is now read from `Config\Audit::$entityTypeAliases` (default: empty array). Consumers that depend on the legacy mapping must declare it in their own `app/Config/Audit.php` (the starter does this in v0.4 — see migration guide).
+- **`AuditService::enrichEntities()` actor table is now configurable via `Config\Audit`** — `actorTable`, `actorEmailColumn`, `actorNameColumns`, `actorTargetPrefix`. Defaults preserve the previous behaviour (`users` / `email` / `[first_name, last_name]` / `user`), so consumers using a `users` table are unaffected. Consumers with a different actor schema should override these in their `app/Config/Audit.php`.
+- **`RelationLabelLoader::attachUserLabels()` is deprecated** in favour of the generic `attachActorLabels(entities, sourceField, table, emailColumn?, nameColumns?, targetPrefix?, relatedKey?)`. The deprecated method delegates to the generic one with the legacy `users`/`email`/`first_name,last_name`/`user` arguments. Will be removed in v1.0.
+- **`CoreInstall` is now idempotent and fail-safe** — wiring writes are bracketed by `// ci4-api-core: <section> start/end` markers; re-running the command is a no-op when those markers exist. A `Services.php.bak` backup is written before any modification. If the file is hand-edited or non-standard (anchors not found), the command refuses to write and prints a recovery snippet instead of corrupting the file. The previous "also generate Config/Scaffolding.php if scaffolding is installed" branch is removed (cross-package responsibility); use `dcardenasl\Ci4ApiScaffolding\Commands\ScaffoldCheck` and copy the bundled `docs/Scaffolding.php.example` instead.
+
 ### Added
-- **`php spark core:install`** (`src/Commands/CoreInstall.php`) — interactive wiring wizard for consumer projects. Detects which of the 4 required service factories are missing from `app/Config/Services.php` and generates the boilerplate stubs, printing a diff-ready summary. Idempotent: re-running against an already-wired project is a no-op. Registered in `composer.json` via CI4 package discovery.
-- **`NullAuditService`** (`src/Services/Audit/NullAuditService.php`) — no-op implementation of `AuditServiceInterface`. Implements every method as a silent noop so consumer projects can disable auditing in tests or lightweight deployments without injecting a real `AuditService` or conditionally branching around audit calls.
-- **Package-owned `Config/` and `Language/` files** (`src/Config/Api.php`, `src/Config/Audit.php`, `src/Config/Cors.php`, `src/Config/FeatureFlags.php`, `src/Config/Queue.php`; `src/Language/{en,es}/Api.php`, `Audit.php`, `Exceptions.php`, `Health.php`, `InputValidation.php`) — canonical defaults that consumers now inherit from the package via CI4's config merging, eliminating copy-paste drift across projects. Bilingual (EN + ES) language files included.
-- **`AuditableModelInterface::auditActionName()`** and **`BaseRepository::withAuditAction(string $action)`** — allow individual CRUD operations to override the audit action label (e.g. `'restore'` instead of `'update'` for soft-delete recovery). Defined on `AuditableModelInterface` and `RepositoryInterface`; implemented in `Auditable` trait and `BaseRepository`. `AuditService` reads the override when present.
+
+- **`Http\Filters\AbstractJwtAuthFilter`** — generic Bearer-token authentication filter with template-method hooks (`decodeToken` *required*; `extractBearerToken`, `shouldCheckRevocation`, `isTokenRevoked`, `loadActor`, `requireActorOnUserToken`, `assertAccessPolicy`, `accessPolicyBypassRoutes`, `getSecurityAuditLogger`, `getRequestAuditContextFactory`). Consumers extend this and provide their JWT/user-loading concretions (the starter ships `App\Filters\JwtAuthFilter extends AbstractJwtAuthFilter` in v0.4).
+- **`Http\Filters\AbstractPermissionFilter`** — generic `permission:<code>` filter that reads scope from `ApiRequest`/`ContextHolder`. Subclasses inject the consumer's `SecurityAuditLoggerInterface`.
+- **`Http\Filters\AbstractThrottleFilter`** — generic per-bucket rate limiter (IP + user buckets by default) with a `resolveBuckets()` hook for app-aware overrides (e.g. API-key-based limits).
+- **`Contracts\Iam\PermissionResolverInterface`** — contract for resolving `(user_id, application_id) → list<string>` permission codes. Consumers may back this with any storage (DB, Redis, remote IAM hub).
+- **`Contracts\Iam\ApplicationPermissionResolverInterface`** — contract for resolving `application_id → list<string>` codes (used by service/M2M tokens).
+- **`Contracts\SecurityAuditLoggerInterface`** — contract consumed by the new abstract filters (`logAuthorizationDeniedFromRequest`, `logAuthorizationDeniedFromContext`, `logRevokedTokenReuse`).
+- **`Services\Iam\AbstractIamAuthorizationService`** — hierarchical authorization rules (`assertNotSelf`, `isSuperAdmin`, `actorPermissions`, `assertCanGrantPermissions/Roles`, `assertCanModifyRole`, `assertCanActOnSubject`, `assertSuperAdmin`) with three storage hooks (`loadRoleSystemFlag`, `resolvePermissionCodes`, `resolveRolePermissionCodes`). The superadmin permission code, default application id, and i18n key prefix are all overrideable via hook methods.
+- **`Commands\EnvCheck`** — moved from `ci4-api-starter`. Validates required env vars, secret strength (`JWT_SECRET_KEY` ≥ 64 bytes, `encryption.key` ≥ 32 bytes), and production-only requirements (`CORS_ALLOWED_ORIGINS`). Subclassable via `protected` properties (`$required`, `$recommended`, `$secrets`) and the `minSecretLength()` hook.
+- **`Commands\QueueWork`** — moved from `ci4-api-starter`. Generic worker for the bundled `QueueManager` (`--once`, `--queue`, `--max-jobs`, `--sleep`, `--job-delay`).
+- **`Config\Api` is now heredable** with `protected envValue()` and a self-hydrating `__construct()`. Consumers can extend via `class Api extends \dcardenasl\Ci4ApiCore\Config\Api { ... }` instead of copying every field. Falls back to declared defaults when run outside CI4 bootstrap (tests). Set `protected bool $hydrateFromEnv = false` in a subclass to keep declared defaults exactly.
+- **`Config\Audit::$entityTypeAliases`** plus actor-table metadata properties (`actorTable`, `actorEmailColumn`, `actorNameColumns`, `actorTargetPrefix`).
+- **`composer analyse:baseline`** script for emitting `phpstan-baseline.neon`.
+- **`php spark core:install`** wiring command (was previously [Unreleased] under v0.3 — now hardened with markers, backup, idempotency, and fail-safe; no longer touches scaffolding config).
+- **`NullAuditService`** — no-op `AuditServiceInterface` implementation (was previously [Unreleased]).
+- **Package-owned `Config/` and `Language/` files** — canonical defaults consumers inherit (was previously [Unreleased]).
+- **`AuditableModelInterface::auditActionName()`** and **`BaseRepository::withAuditAction(string $action)`** — operation-level audit action override (was previously [Unreleased]).
 
 ### Fixed
-- **`RequestDtoFactory`** auto-resolves `InputValidationService` when it is not explicitly injected — prevents "service not found" errors in consumer projects that wire the factory without passing all optional arguments.
+
+- **`RequestDtoFactory`** auto-resolves `InputValidationService` when not explicitly injected (was previously [Unreleased]).
+
+### Migration
+
+See `docs/MIGRATION_v0.3_to_v0.4.md` for a full upgrade walkthrough.
 
 ## [0.3.0] - 2026-05-08
 

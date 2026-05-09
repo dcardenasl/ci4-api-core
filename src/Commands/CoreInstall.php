@@ -10,14 +10,16 @@ use CodeIgniter\CLI\CLI;
 /**
  * Wires ci4-api-core into a consumer project in one command.
  *
- * Generates app/Config/ApiCoreServices.php (the required service factories)
- * and patches app/Config/Services.php to pull in the trait and override the
- * request() factory. Run once after `composer require dcardenasl/ci4-api-core`.
+ * Generates `app/Config/ApiCoreServices.php` (the required service factories)
+ * and patches `app/Config/Services.php` to pull in the trait and override the
+ * `request()` factory. Run once after `composer require dcardenasl/ci4-api-core`.
  *
- * If ci4-api-scaffolding is also installed, optionally generates a minimal
- * app/Config/Scaffolding.php so scaffold-generated routes use the right filters.
- *
- * Safe to re-run — each step checks for existing content before writing.
+ * Self-installer of this package only — does not touch any companion package
+ * (e.g. ci4-api-scaffolding has its own `scaffold:check` command). Safe to
+ * re-run: each step looks for the wiring markers and, if found, leaves the
+ * file untouched. If a manual edit ever broke the wiring (markers missing
+ * but partial content present), the command aborts without writing and prints
+ * a recovery snippet — it never corrupts an existing `Services.php`.
  */
 class CoreInstall extends BaseCommand
 {
@@ -32,6 +34,16 @@ class CoreInstall extends BaseCommand
         'requestDataCollector',
     ];
 
+    private const MARKER_REQUIRE_START = '// ci4-api-core: require start';
+    private const MARKER_REQUIRE_END   = '// ci4-api-core: require end';
+    private const MARKER_TRAIT_START   = '// ci4-api-core: trait start';
+    private const MARKER_TRAIT_END     = '// ci4-api-core: trait end';
+    private const MARKER_REQUEST_START = '// ci4-api-core: request override start';
+    private const MARKER_REQUEST_END   = '// ci4-api-core: request override end';
+
+    /**
+     * @param array<int|string, string|null> $params
+     */
     public function run(array $params): void
     {
         CLI::write('');
@@ -41,7 +53,6 @@ class CoreInstall extends BaseCommand
 
         $this->generateApiCoreServices();
         $this->patchServicesPhp();
-        $this->maybeGenerateScaffoldingConfig();
         $this->validate();
         $this->printNextSteps();
     }
@@ -77,76 +88,165 @@ class CoreInstall extends BaseCommand
             exit(1);
         }
 
-        $content  = $raw;
-        $modified = false;
+        $hasRequireMarkers = str_contains($raw, self::MARKER_REQUIRE_START);
+        $hasTraitMarkers   = str_contains($raw, self::MARKER_TRAIT_START);
+        $hasRequestMarkers = str_contains($raw, self::MARKER_REQUEST_START);
 
-        // 1. Add require_once after namespace declaration
-        if (! str_contains($content, 'ApiCoreServices.php')) {
-            $content  = str_replace(
-                "namespace Config;\n",
-                "namespace Config;\n\nrequire_once __DIR__ . '/ApiCoreServices.php';\n",
-                $content
-            );
-            $modified = true;
+        if ($hasRequireMarkers && $hasTraitMarkers && $hasRequestMarkers) {
+            CLI::write('  ' . CLI::color('~', 'yellow') . '  app/Config/Services.php already wired — skipped');
+
+            return;
         }
 
-        // 2. Add use statement after class opening brace
-        if (! str_contains($content, 'use ApiCoreServices;')) {
-            $content  = (string) preg_replace(
-                '/(class\s+Services\s+extends\s+BaseService\s*\{)/',
-                "$1\n    use ApiCoreServices;\n",
+        // Fail-safe: existing partial wiring without our markers means the file
+        // was hand-edited (or wired by a previous, marker-less version). Refuse
+        // to touch it — print a recovery snippet instead.
+        $hasManualRequire = str_contains($raw, 'ApiCoreServices.php');
+        $hasManualTrait   = str_contains($raw, 'use ApiCoreServices;');
+        $hasManualRequest = str_contains($raw, 'ApiRequest');
+
+        if (
+            ($hasManualRequire && ! $hasRequireMarkers)
+            || ($hasManualTrait && ! $hasTraitMarkers)
+            || ($hasManualRequest && ! $hasRequestMarkers)
+        ) {
+            $this->emitRecoverySnippet('Detected hand-edited wiring without core markers — refusing to patch automatically.');
+
+            exit(1);
+        }
+
+        // Verify required anchors exist before any modification.
+        if (! $this->hasAnchor($raw, '/namespace\s+Config\s*;\s*\n/')) {
+            $this->emitRecoverySnippet('Could not find `namespace Config;` declaration.');
+
+            exit(1);
+        }
+
+        if (! $this->hasAnchor($raw, '/class\s+Services\s+extends\s+BaseService\s*\{/')) {
+            $this->emitRecoverySnippet('Could not find `class Services extends BaseService {` opening.');
+
+            exit(1);
+        }
+
+        $lastBrace = strrpos($raw, '}');
+        if ($lastBrace === false) {
+            $this->emitRecoverySnippet('Could not locate the closing `}` of the Services class.');
+
+            exit(1);
+        }
+
+        $this->backup($path, $raw);
+
+        $patched = $this->applyPatch($raw, $hasRequireMarkers, $hasTraitMarkers, $hasRequestMarkers, $lastBrace);
+
+        if (file_put_contents($path, $patched) === false) {
+            CLI::error('Failed to write app/Config/Services.php. Backup is at ' . $path . '.bak');
+            CLI::newLine();
+            exit(1);
+        }
+
+        CLI::write('  ' . CLI::color('✓', 'green') . '  Patched  app/Config/Services.php (backup: Services.php.bak)');
+    }
+
+    private function backup(string $path, string $content): void
+    {
+        $backup = $path . '.bak';
+        @file_put_contents($backup, $content);
+    }
+
+    private function applyPatch(
+        string $content,
+        bool $hasRequireMarkers,
+        bool $hasTraitMarkers,
+        bool $hasRequestMarkers,
+        int $lastBrace
+    ): string {
+        if (! $hasRequireMarkers) {
+            $content = (string) preg_replace(
+                '/(namespace\s+Config\s*;\s*\n)/',
+                "$1\n" . self::MARKER_REQUIRE_START . "\nrequire_once __DIR__ . '/ApiCoreServices.php';\n" . self::MARKER_REQUIRE_END . "\n",
                 $content,
                 1
             );
-            $modified = true;
         }
 
-        // 3. Add request() override before the last closing brace
-        if (! str_contains($content, 'ApiRequest')) {
+        if (! $hasTraitMarkers) {
+            $content = (string) preg_replace(
+                '/(class\s+Services\s+extends\s+BaseService\s*\{)/',
+                "$1\n    " . self::MARKER_TRAIT_START . "\n    use ApiCoreServices;\n    " . self::MARKER_TRAIT_END . "\n",
+                $content,
+                1
+            );
+        }
+
+        if (! $hasRequestMarkers) {
+            // Recompute the last brace because earlier replacements shifted offsets.
             $lastBrace = strrpos($content, '}');
             if ($lastBrace !== false) {
-                $content  = substr_replace($content, $this->requestMethodContent(), $lastBrace, 0);
-                $modified = true;
+                $content = substr_replace($content, $this->requestMethodContent(), $lastBrace, 0);
             }
         }
 
-        if ($modified) {
-            file_put_contents($path, $content);
-            CLI::write('  ' . CLI::color('✓', 'green') . '  Patched  app/Config/Services.php');
-        } else {
-            CLI::write('  ' . CLI::color('~', 'yellow') . '  app/Config/Services.php already patched — skipped');
-        }
+        return $content;
     }
 
-    private function maybeGenerateScaffoldingConfig(): void
+    private function hasAnchor(string $content, string $pattern): bool
     {
-        if (! class_exists('dcardenasl\\Ci4ApiScaffolding\\Config\\BaseScaffoldingConfig')) {
-            return;
-        }
+        return preg_match($pattern, $content) === 1;
+    }
 
-        $path = APPPATH . 'Config/Scaffolding.php';
-
-        if (file_exists($path)) {
-            CLI::write('  ' . CLI::color('~', 'yellow') . '  app/Config/Scaffolding.php already exists — skipped');
-
-            return;
-        }
-
+    private function emitRecoverySnippet(string $reason): void
+    {
         CLI::newLine();
-        $answer  = CLI::prompt('  Use JWT auth filters on scaffold-generated routes?', ['n', 'y']);
-        $useAuth = $answer === 'y';
+        CLI::error('Cannot patch app/Config/Services.php automatically.');
+        CLI::write('Reason: ' . $reason, 'yellow');
+        CLI::newLine();
+        CLI::write('Apply the following snippet manually inside `app/Config/Services.php`:', 'cyan');
+        CLI::newLine();
+        CLI::write($this->manualWiringSnippet());
+        CLI::newLine();
+    }
 
-        file_put_contents($path, $this->scaffoldingConfigContent($useAuth));
-        CLI::write('  ' . CLI::color('✓', 'green') . '  Created  app/Config/Scaffolding.php');
+    private function manualWiringSnippet(): string
+    {
+        return <<<TEXT
+<?php
+namespace Config;
+
+require_once __DIR__ . '/ApiCoreServices.php';
+
+use CodeIgniter\\Config\\BaseService;
+
+class Services extends BaseService
+{
+    use ApiCoreServices;
+
+    /**
+     * @param \\Config\\App|bool \$getShared
+     */
+    public static function request(\$getShared = true): \\dcardenasl\\Ci4ApiCore\\Http\\ApiRequest
+    {
+        if (is_bool(\$getShared) && \$getShared) {
+            return static::getSharedInstance('request');
+        }
+
+        \$config = \$getShared instanceof \\Config\\App ? \$getShared : config('App');
+
+        return new \\dcardenasl\\Ci4ApiCore\\Http\\ApiRequest(
+            \$config,
+            static::uri(),
+            'php://input',
+            new \\CodeIgniter\\HTTP\\UserAgent()
+        );
+    }
+}
+TEXT;
     }
 
     private function validate(): void
     {
         CLI::newLine();
 
-        // Config\Services is already loaded in memory at this point (CI4 bootstraps
-        // it before commands run). We validate against the written file content instead
-        // so the check reflects what the next fresh boot will see.
         $combined = $this->readFileContent(APPPATH . 'Config/Services.php')
                   . $this->readFileContent(APPPATH . 'Config/ApiCoreServices.php');
 
@@ -191,11 +291,14 @@ class CoreInstall extends BaseCommand
         CLI::write('  Next steps:');
         CLI::write('    1. Configure your database in .env');
         CLI::write('    2. php spark migrate');
-        CLI::write('    3. bash vendor/bin/make-crud.sh {Resource} {Domain} \'field:type\' yes');
+        CLI::write('    3. php spark core:check       (verify wiring)');
         CLI::write('    4. php spark serve');
         CLI::newLine();
         CLI::write('  ' . CLI::color('Note:', 'yellow') . ' auditService() uses NullAuditService — write events are silently');
         CLI::write('        dropped, read operations throw. Upgrade when audit infrastructure is ready.');
+        CLI::newLine();
+        CLI::write('  ' . CLI::color('Tip:', 'cyan') . '  to use CRUD scaffolding, install ci4-api-scaffolding separately:');
+        CLI::write('         composer require --dev dcardenasl/ci4-api-scaffolding');
         CLI::newLine();
     }
 
@@ -279,7 +382,7 @@ PHP;
 
     private function requestMethodContent(): string
     {
-        return <<<'PHP'
+        return "\n    " . self::MARKER_REQUEST_START . <<<'PHP'
 
     /**
      * @param \Config\App|bool $getShared
@@ -299,58 +402,7 @@ PHP;
             new \CodeIgniter\HTTP\UserAgent()
         );
     }
-
-PHP;
-    }
-
-    private function scaffoldingConfigContent(bool $useAuth): string
-    {
-        $filters = $useAuth
-            ? "['jwtauth', 'permission:resource.read', 'throttle']"
-            : "['throttle']";
-
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace Config;
-
-use dcardenasl\\Ci4ApiScaffolding\\Config\\BaseScaffoldingConfig;
-use dcardenasl\\Ci4ApiScaffolding\\Config\\ScaffoldingConfig;
-
-/**
- * Scaffolding configuration — generated by `php spark core:install`.
- * Adjust protectedRouteFilters to match your auth strategy.
- */
-class Scaffolding extends BaseScaffoldingConfig
-{
-    public function build(): ScaffoldingConfig
-    {
-        \$defaults = ScaffoldingConfig::defaults();
-
-        return new ScaffoldingConfig(
-            controllerBaseClass: \$defaults->controllerBaseClass,
-            serviceBaseClass: \$defaults->serviceBaseClass,
-            serviceContractInterface: \$defaults->serviceContractInterface,
-            modelBaseClass: \$defaults->modelBaseClass,
-            entityBaseClass: \$defaults->entityBaseClass,
-            migrationBaseClass: \$defaults->migrationBaseClass,
-            requestDtoBaseClass: \$defaults->requestDtoBaseClass,
-            responseDtoInterface: \$defaults->responseDtoInterface,
-            repositoryInterface: \$defaults->repositoryInterface,
-            responseMapperInterface: \$defaults->responseMapperInterface,
-            repositoryImplementation: \$defaults->repositoryImplementation,
-            responseMapperImplementation: \$defaults->responseMapperImplementation,
-            servicesFactoryClass: \$defaults->servicesFactoryClass,
-            paths: \$defaults->paths,
-            protectedRouteFilters: {$filters},
-            appNamespace: \$defaults->appNamespace,
-            openApiTagPrefix: \$defaults->openApiTagPrefix,
-            conditionalControllerTraits: \$defaults->conditionalControllerTraits,
-        );
-    }
-}
-PHP;
+PHP
+            . "\n    " . self::MARKER_REQUEST_END . "\n";
     }
 }

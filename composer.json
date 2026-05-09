@@ -55,6 +55,7 @@
   "scripts": {
     "test": "phpunit",
     "analyse": "phpstan analyse --level=8 --memory-limit=1G",
+    "analyse:baseline": "phpstan analyse --level=8 --memory-limit=1G --generate-baseline=phpstan-baseline.neon",
     "cs-check": "vendor/bin/php-cs-fixer fix --dry-run --diff --no-interaction",
     "cs-fix": "vendor/bin/php-cs-fixer fix --no-interaction",
     "security": "composer audit --no-dev --locked",
@@ -71,11 +72,13 @@
     "codeigniter4": {
       "commands": [
         "dcardenasl\\Ci4ApiCore\\Commands\\CoreCheck",
-        "dcardenasl\\Ci4ApiCore\\Commands\\CoreInstall"
+        "dcardenasl\\Ci4ApiCore\\Commands\\CoreInstall",
+        "dcardenasl\\Ci4ApiCore\\Commands\\EnvCheck",
+        "dcardenasl\\Ci4ApiCore\\Commands\\QueueWork"
       ]
     },
     "branch-alias": {
-      "dev-main": "0.3.x-dev"
+      "dev-main": "0.4.x-dev"
     }
   }
 }

@@ -65,7 +65,14 @@ class AuditService extends BaseCrudService implements \dcardenasl\Ci4ApiCore\Ser
 
     protected function enrichEntities(array $entities): array
     {
-        return $this->labels->attachUserLabels($entities, 'user_id');
+        return $this->labels->attachActorLabels(
+            $entities,
+            'user_id',
+            $this->auditConfig->actorTable,
+            $this->auditConfig->actorEmailColumn,
+            $this->auditConfig->actorNameColumns,
+            $this->auditConfig->actorTargetPrefix
+        );
     }
 
     /**
@@ -167,12 +174,8 @@ class AuditService extends BaseCrudService implements \dcardenasl\Ci4ApiCore\Ser
     private function normalizeEntityType(string $entityType): string
     {
         $normalized = strtolower(trim($entityType));
-        $aliases = [
-            'user' => 'users',
-            'api-key' => 'api_keys',
-            'file' => 'files',
-        ];
-        return $aliases[$normalized] ?? $normalized;
+
+        return $this->auditConfig->entityTypeAliases[$normalized] ?? $normalized;
     }
 
     private function normalizeResult(string $result): string
