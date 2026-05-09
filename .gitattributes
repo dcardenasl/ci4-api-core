@@ -3,7 +3,14 @@
 
 /.claude                export-ignore
 /.github                export-ignore
-/docs                   export-ignore
+/docs/ARCHITECTURE_CONTRACT.md  export-ignore
+/docs/CRUD_FROM_ZERO.md         export-ignore
+/docs/EXTENDING_AUDIT.md        export-ignore
+/docs/EXTENDING_IAM.md          export-ignore
+/docs/EXTENDING_QUEUE.md        export-ignore
+/docs/EXTENDING_THROTTLE.md     export-ignore
+/docs/adr                       export-ignore
+# OPERATIONS.md intentionally absent — it ships in the Packagist tarball
 /tests                  export-ignore
 
 /.gitattributes         export-ignore
