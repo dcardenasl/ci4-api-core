@@ -53,6 +53,19 @@ abstract class BaseRepository implements RepositoryInterface
     }
 
     /**
+     * Override the audit action name for the next CUD operation.
+     * No-op when the underlying model is not auditable.
+     */
+    public function withAuditAction(string $action): static
+    {
+        if ($this->model instanceof AuditableModelInterface) {
+            $this->model->withAuditAction($action);
+        }
+
+        return $this;
+    }
+
+    /**
      * @return list<object>
      */
     public function findAll(int $limit = 0, int $offset = 0): array

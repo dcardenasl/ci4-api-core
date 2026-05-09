@@ -53,6 +53,19 @@ trait Auditable
      */
     protected array $auditOldValues = [];
 
+    protected ?string $pendingAuditAction = null;
+
+    /**
+     * Override the action name written to the audit log for the next CUD call.
+     * Resets automatically after the hook fires.
+     */
+    public function withAuditAction(string $action): static
+    {
+        $this->pendingAuditAction = $action;
+
+        return $this;
+    }
+
     /**
      * Inject old values from service layer to avoid redundant DB queries.
      *
@@ -151,6 +164,9 @@ trait Auditable
             return;
         }
 
+        $action = $this->pendingAuditAction;
+        $this->pendingAuditAction = null;
+
         $auditService = $this->getAuditService();
         $context = ContextHolder::get();
 
@@ -158,7 +174,8 @@ trait Auditable
             $this->getEntityType(),
             is_array($data['id']) ? (int) $data['id'][0] : (int) $data['id'],
             $data['data'] ?? [],
-            $context
+            $context,
+            $action
         );
     }
 
@@ -183,8 +200,10 @@ trait Auditable
         $oldValues = $this->auditOldValues[$id];
         $newValues = array_merge($oldValues, $data['data'] ?? []);
 
-        // Clear stored old values
         unset($this->auditOldValues[$id]);
+
+        $action = $this->pendingAuditAction;
+        $this->pendingAuditAction = null;
 
         $auditService = $this->getAuditService();
         $context = ContextHolder::get();
@@ -194,7 +213,8 @@ trait Auditable
             $id,
             $oldValues,
             $newValues,
-            $context
+            $context,
+            $action
         );
     }
 
@@ -218,8 +238,10 @@ trait Auditable
 
         $deletedData = $this->auditOldValues[$id];
 
-        // Clear stored old values
         unset($this->auditOldValues[$id]);
+
+        $action = $this->pendingAuditAction;
+        $this->pendingAuditAction = null;
 
         $auditService = $this->getAuditService();
         $context = ContextHolder::get();
@@ -228,7 +250,8 @@ trait Auditable
             $this->getEntityType(),
             $id,
             $deletedData,
-            $context
+            $context,
+            $action
         );
     }
 

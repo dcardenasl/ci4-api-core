@@ -138,30 +138,30 @@ class AuditService extends BaseCrudService implements \dcardenasl\Ci4ApiCore\Ser
     /**
      * Log a create action
      */
-    public function logCreate(string $entityType, int $entityId, array $data, ?SecurityContext $context = null): void
+    public function logCreate(string $entityType, int $entityId, array $data, ?SecurityContext $context = null, ?string $action = null): void
     {
-        $this->log('create', $entityType, $entityId, [], $data, $context);
+        $this->log($action ?? 'create', $entityType, $entityId, [], $data, $context);
     }
 
     /**
      * Log an update action
      */
-    public function logUpdate(string $entityType, int $entityId, array $oldValues, array $newValues, ?SecurityContext $context = null): void
+    public function logUpdate(string $entityType, int $entityId, array $oldValues, array $newValues, ?SecurityContext $context = null, ?string $action = null): void
     {
         $sanitizedOld = $this->payloadSanitizer->sanitize($oldValues);
         $sanitizedNew = $this->payloadSanitizer->sanitize($newValues);
 
         if (json_encode($sanitizedOld) !== json_encode($sanitizedNew)) {
-            $this->log('update', $entityType, $entityId, $sanitizedOld, $sanitizedNew, $context);
+            $this->log($action ?? 'update', $entityType, $entityId, $sanitizedOld, $sanitizedNew, $context);
         }
     }
 
     /**
      * Log a delete action
      */
-    public function logDelete(string $entityType, int $entityId, array $data, ?SecurityContext $context = null): void
+    public function logDelete(string $entityType, int $entityId, array $data, ?SecurityContext $context = null, ?string $action = null): void
     {
-        $this->log('delete', $entityType, $entityId, $data, [], $context);
+        $this->log($action ?? 'delete', $entityType, $entityId, $data, [], $context);
     }
 
     private function normalizeEntityType(string $entityType): string
