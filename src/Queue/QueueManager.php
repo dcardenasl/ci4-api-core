@@ -9,7 +9,7 @@ use Config\Database;
 use Config\Queue as QueueConfig;
 use Throwable;
 
-class QueueManager
+class QueueManager implements QueueManagerInterface
 {
     protected QueueConfig $config;
 
