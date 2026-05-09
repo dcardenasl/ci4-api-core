@@ -2,9 +2,9 @@
 
 ## Overview
 
-This package is the **DTO-first CRUD scaffolding engine** consumed by `ci4-api-starter` and any project generated from it. Every change here propagates to all consumer projects on their next `composer update`, so the bar for stability is high.
+This package is the **DTO-first runtime foundation** for CodeIgniter 4 API projects. Every change here propagates to all downstream consumers on their next `composer update`, so the bar for stability is high.
 
-**Do not edit generated code in consumer projects to "fix" the engine** — fix it here, regenerate, and ship a new tag.
+**Do not edit generated code in consumer projects to "fix" the engine** — fix it here, ship a new tag, and have consumers `composer update`.
 
 ## Development Setup
 
@@ -107,7 +107,7 @@ Releases are cut from `main`. Tags belong on `main` after a merge — never on `
    git push origin vx.y.z
    ```
 
-4. **Update consumer projects** (ci4-api-starter and derivatives) by running `composer update dcardenasl/ci4-api-core`.
+4. **Update downstream consumer projects** by running `composer update dcardenasl/ci4-api-core`.
 
 > **Packagist:** the package is **not yet published** (currently consumed via path/VCS repository). It will be published once v1.0.0 cuts. Until then, downstream projects pin to a specific tag or to `dev-main`.
 

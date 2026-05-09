@@ -16,13 +16,11 @@ For cross-repo context (current milestone, blocked tasks), read `../TASKS.md`.
 
 ## Repository Overview
 
-**ci4-api-core** is a Composer package providing the **runtime foundation** for CodeIgniter 4 API projects: base classes, HTTP layer, services, repositories, models, filters, audit chain, queue, and security utilities. It is consumed by `ci4-api-starter` and `ci4-domain-starter` (and projects generated from them) via Packagist (`dcardenasl/ci4-api-core:^0.3`).
+**ci4-api-core** is a Composer package providing the **runtime foundation** for CodeIgniter 4 API projects: base classes, HTTP layer, services, repositories, models, filters, audit chain, queue, and security utilities. Designed to drop into any CodeIgniter 4 application via Packagist (`dcardenasl/ci4-api-core`).
 
 **Current version:** v0.4.0 — published on Packagist. APIs may still change before 1.0.0.
 
-**v0.4.0 — 2026-05-09.** Tightens the boundary between runtime foundation (this package) and CRUD scaffolding (`ci4-api-scaffolding`). Externalises consumer-specific knobs that were hardcoded in core helpers (`AuditService` aliases, `RelationLabelLoader` user table). Publishes generic abstract bases for HTTP filters (`AbstractJwtAuthFilter`, `AbstractPermissionFilter`, `AbstractThrottleFilter`) and IAM (`AbstractIamAuthorizationService`, `PermissionResolverInterface`, `ApplicationPermissionResolverInterface`, `SecurityAuditLoggerInterface`). Hardens `core:install` with idempotent markers, `.bak` backup, and fail-safe fallback to a manual snippet. Moves generic commands `env:check` and `queue:work` from `ci4-api-starter` into the package. **`ci4-api-core` remains autonomous — installable and usable without `ci4-api-scaffolding`.** See `docs/MIGRATION_v0.3_to_v0.4.md`.
-
-**v0.3.0 — 2026-05-08.** Key change: all scaffolding code (Commands, Generators, Core, Orchestration, Validators, Wiring, Config, bin scripts) was extracted to the companion package `dcardenasl/ci4-api-scaffolding`. This package now provides only the runtime foundation:
+For release history see `CHANGELOG.md`. Current state of this package:
 
 - **Repositories**: `BaseRepository`, `GenericRepository`, `AuditRepositoryInterface`, `PivotRepositoryInterface`
 - **Exceptions**: `ApiException` base + `AuthenticationException`, `AuthorizationException`, `ConflictException`, `ServiceUnavailableException`, `TooManyRequestsException`, `ValidationException`, `BadRequestException`, `NotFoundException`
@@ -85,11 +83,11 @@ Scaffolding commands (`make:crud`, `make:crud:remove`, `module:check`, `swagger:
 | `src/Logging/` | `JsonFormatter`, `MonologHandler` (structured JSON logging via monolog) |
 | `src/Monitoring/` | `HealthChecker` |
 | `src/Contracts/` | `AuditableModelInterface`, `PaginatableResponse` (marker interface for paginated DTOs) |
-| `docs/` | `ARCHITECTURE_CONTRACT.md` (non-negotiable layer rules for consumer modules) |
+| `docs/` | `ARCHITECTURE_CONTRACT.md` (non-negotiable layer rules for consumer modules) · `EXTENDING_IAM.md` (plug in another identity provider) · `EXTENDING_THROTTLE.md` (custom rate-limit strategy) · `EXTENDING_QUEUE.md` (alternative queue backend) · `EXTENDING_AUDIT.md` (replace or extend the audit pipeline) |
 
 ### Consumer requirements (runtime contract)
 
-Classes under `src/Http/`, `src/Models/`, `src/Services/`, and `src/Filters/` rely on a few CI4-host symbols that this package cannot bundle. Any consumer (e.g. ci4-api-starter) must provide the following in its own `app/Config/Services.php`:
+Classes under `src/Http/`, `src/Models/`, `src/Services/`, and `src/Filters/` rely on a few CI4-host symbols that this package cannot bundle. Any consumer must provide the following in its own `app/Config/Services.php`:
 
 - `Services::auditService()` → instance of `dcardenasl\Ci4ApiCore\Services\AuditServiceInterface` (used by `BaseAuditableModel::initialize()`)
 - `Services::requestAuditContextFactory()` → object with `buildMetadata(ApiRequest): array` (used by `ApiController::buildRequestMetadata()`)
@@ -105,16 +103,16 @@ These are not enforced at install time — a missing factory (factories 1–4) w
 
 - **This is a Composer package** — changes here affect all consumer projects. Breaking changes require a version bump.
 - **Run `composer quality` before any merge** — PHPStan level 8 + PHPUnit + CS check + security audit. All must be clean.
-- **`docs/ARCHITECTURE_CONTRACT.md` is the authority** — the copy in `ci4-api-starter` is a reference snapshot only.
+- **`docs/ARCHITECTURE_CONTRACT.md` is the authority** — any copy that lives in a downstream consumer is a reference snapshot only.
 - **Scaffolding lives in `ci4-api-scaffolding`** — do not add generators, spark commands, or field types here.
 - **Do not introduce procedural helpers** — use namespaced classes (`Security\Hasher`, `Request\RequestHelper`, `Support\DateHelper`).
 
 ## Companion package
 
-CRUD scaffolding (generators, spark commands, `make-crud.sh`) was extracted to `dcardenasl/ci4-api-scaffolding` in v0.3.0. Add it to `require-dev` in consumer projects:
+CRUD scaffolding (generators, spark commands, `make-crud.sh`) lives in the sibling Composer package `dcardenasl/ci4-api-scaffolding`. Add it to `require-dev` in consumer projects:
 
 ```bash
 composer require --dev dcardenasl/ci4-api-scaffolding:dev-main
 ```
 
-See `ci4-api-scaffolding/README.md` for field syntax, scaffolding contract, customization, and troubleshooting.
+See that package's README for field syntax, scaffolding contract, customization, and troubleshooting.

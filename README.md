@@ -4,7 +4,7 @@
 [![Coverage](https://codecov.io/gh/dcardenasl/ci4-api-core/branch/main/graph/badge.svg)](https://codecov.io/gh/dcardenasl/ci4-api-core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-DTO-first API runtime foundation for CodeIgniter 4: base classes, HTTP layer, services, repositories, filters, audit chain, and queue. Powers `ci4-api-starter` and `ci4-domain-starter`. Pair with [`dcardenasl/ci4-api-scaffolding`](https://github.com/dcardenasl/ci4-api-scaffolding) for CRUD generation.
+DTO-first API runtime foundation for CodeIgniter 4: base classes, HTTP layer, services, repositories, filters, audit chain, and queue. Drop into any CodeIgniter 4 project. Pair with [`dcardenasl/ci4-api-scaffolding`](https://github.com/dcardenasl/ci4-api-scaffolding) for CRUD generation.
 
 > **Status:** `v0.3.x` (pre-release) — published on Packagist. APIs may change without notice until `1.0.0`. New in HEAD: `core:install` wiring wizard, bundled `Config/` + `Language/` defaults, `NullAuditService`, and per-operation audit action override.
 
@@ -23,7 +23,6 @@ DTO-first API runtime foundation for CodeIgniter 4: base classes, HTTP layer, se
 - [Customization](#customization)
 - [Scaffolding contract](#scaffolding-contract)
 - [Wiring assumption](#wiring-assumption)
-- [Migration from an inline copy](#migration-from-an-inline-copy)
 - [Troubleshooting](#troubleshooting)
 - [See also](#see-also)
 - [Development](#development)
@@ -59,7 +58,7 @@ bash vendor/bin/make-crud.sh Product Catalog \
 ```
 
 ```mermaid
-flowchart LR
+flowchart TB
     Input["Field spec<br/>name:string:required|searchable,<br/>price:decimal:filterable,<br/>category_id:fk:categories"]
     Schema["ResourceSchema<br/>(parsed Fields,<br/>typed via TypeMapper)"]
 
@@ -157,7 +156,7 @@ class Api extends BaseConfig
 
 ### Scaffolding — `Config\Scaffolding` (`ci4-api-scaffolding`)
 
-Create `app/Config/Scaffolding.php` in your project. If your project follows the `ci4-api-starter` conventions exactly, a one-liner is sufficient:
+Create `app/Config/Scaffolding.php` in your project. If your project follows the default conventions exactly, a one-liner is sufficient:
 
 ```php
 <?php
@@ -364,31 +363,11 @@ The engine generates code that extends specific base classes. Your project must 
 | Response mapper interface | `App\Interfaces\Mappers\ResponseMapperInterface` | DTO mapping |
 | Response mapper impl | `App\Services\Core\Mappers\DtoResponseMapper` | Default mapper |
 
-These are the defaults in `ScaffoldingConfig::defaults()` and match `ci4-api-starter` exactly.
+These are the defaults in `ScaffoldingConfig::defaults()`.
 
 ### Wiring assumption
 
 `ConfigWireman` (the auto-wiring component) uses regex injection against `app/Config/Services.php`. It looks for a trait import line matching `use {Domain}DomainServices;` and injects the new service factory method there. If your `Services.php` has a non-standard layout, pass `--no-wire` and paste the printed snippet manually.
-
-## Migration from an inline copy
-
-If your project has `app/Support/Scaffolding/` (the inline copy shipped with `ci4-api-starter`):
-
-1. Follow the **Installation** and **Configure** steps above.
-2. Verify the package's spark commands are discovered before the inline ones (they share the same `$name`, so CI4 will pick one):
-   ```bash
-   php spark list | grep -E '(make:crud|module:check)'
-   ```
-3. Run a dry-run scaffold and compare output against the inline version:
-   ```bash
-   bash vendor/bin/make-crud.sh TestExtraction TestDomain 'name:string:required' yes --dry-run
-   ```
-4. Only after confirming parity, delete the inline files:
-   - `app/Support/Scaffolding/` (entire directory)
-   - `app/Commands/MakeCrud.php`, `MakeCrudRemove.php`, `ModuleCheck.php`
-   - `bin/make-crud.sh`, `bin/validate-crud.sh`
-   - Any tests that were ported to the package's own test suite
-5. Run `composer quality` to confirm nothing broke.
 
 ## Troubleshooting
 
@@ -416,9 +395,12 @@ The commands fall back to `--no-wire` behaviour if they cannot locate the trait 
 
 ## See also
 
-- [`docs/CRUD_FROM_ZERO.md`](docs/CRUD_FROM_ZERO.md) — step-by-step playbook for scaffolding and post-scaffold customization.
-- [`docs/ARCHITECTURE_CONTRACT.md`](docs/ARCHITECTURE_CONTRACT.md) — non-negotiable layer rules for modules built with this engine.
-- [`docs/UPGRADE.md`](docs/UPGRADE.md) — migration guide (v0.2.0 → v0.3.0 breaking changes).
+- [`docs/ARCHITECTURE_CONTRACT.md`](docs/ARCHITECTURE_CONTRACT.md) — non-negotiable layer rules for modules built on this package.
+- [`docs/CRUD_FROM_ZERO.md`](docs/CRUD_FROM_ZERO.md) — step-by-step playbook for scaffolding a module from a blank field spec.
+- [`docs/EXTENDING_IAM.md`](docs/EXTENDING_IAM.md) — plug in any identity provider (Shield, OAuth, Keycloak, …).
+- [`docs/EXTENDING_THROTTLE.md`](docs/EXTENDING_THROTTLE.md) — custom rate-limit strategies.
+- [`docs/EXTENDING_QUEUE.md`](docs/EXTENDING_QUEUE.md) — alternative queue backends.
+- [`docs/EXTENDING_AUDIT.md`](docs/EXTENDING_AUDIT.md) — replace or extend the audit pipeline.
 
 ## Development
 

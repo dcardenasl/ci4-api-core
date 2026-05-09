@@ -1,18 +1,16 @@
 # Architecture Contract
 
-> **Single source of truth.** This document in `ci4-api-core` is the authority for all modules
-> built on this stack. The companion package `ci4-api-scaffolding` references this file; it does
-> not maintain a separate copy.
+> **Single source of truth.** This document is the authority for all modules built on
+> `dcardenasl/ci4-api-core`. Companion scaffolding tooling references this file; it
+> does not maintain a separate copy.
 
 Non-negotiable architecture rules for modules built with `dcardenasl/ci4-api-core`. These
-constraints are what the scaffolding engine assumes when generating code; deviating from them
+constraints are what any scaffolding engine assumes when generating code; deviating from them
 without updating `Config\Scaffolding` will produce code that does not compile or does not
 integrate.
 
 Every `ScaffoldingConfig` property maps to one of these rules. If your project uses different
-base classes or paths, override them in `app/Config/Scaffolding.php` — see
-[ci4-api-scaffolding README](https://github.com/dcardenasl/ci4-api-scaffolding) for the full
-option list.
+base classes or paths, override them in `app/Config/Scaffolding.php`.
 
 ---
 
