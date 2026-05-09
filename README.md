@@ -6,7 +6,7 @@
 
 DTO-first API runtime foundation for CodeIgniter 4: base classes, HTTP layer, services, repositories, filters, audit chain, and queue. Drop into any CodeIgniter 4 project. Pair with [`dcardenasl/ci4-api-scaffolding`](https://github.com/dcardenasl/ci4-api-scaffolding) for CRUD generation.
 
-> **Status:** `v0.3.x` (pre-release) — published on Packagist. APIs may change without notice until `1.0.0`. New in HEAD: `core:install` wiring wizard, bundled `Config/` + `Language/` defaults, `NullAuditService`, and per-operation audit action override.
+> **Status:** `v0.4.x` (pre-release) — published on Packagist. APIs may still change before `1.0.0`. Pin to `~0.4.0` or an exact version in production until 1.0.
 
 ## Contents
 
@@ -25,6 +25,7 @@ DTO-first API runtime foundation for CodeIgniter 4: base classes, HTTP layer, se
 - [Wiring assumption](#wiring-assumption)
 - [Troubleshooting](#troubleshooting)
 - [See also](#see-also)
+- [Toward 1.0](#toward-10)
 - [Development](#development)
 - [License](#license)
 
@@ -32,7 +33,7 @@ DTO-first API runtime foundation for CodeIgniter 4: base classes, HTTP layer, se
 
 ```bash
 # Runtime foundation
-composer require dcardenasl/ci4-api-core:^0.3
+composer require dcardenasl/ci4-api-core:^0.4
 
 # Scaffolding engine (dev-only — provides make-crud.sh and spark commands)
 composer require --dev dcardenasl/ci4-api-scaffolding:dev-main
@@ -126,7 +127,7 @@ The engine was being copied between projects manually, leading to drift. Extract
 ## Installation
 
 ```bash
-composer require dcardenasl/ci4-api-core:^0.3
+composer require dcardenasl/ci4-api-core:^0.4
 ```
 
 ## Configure
@@ -401,6 +402,40 @@ The commands fall back to `--no-wire` behaviour if they cannot locate the trait 
 - [`docs/EXTENDING_THROTTLE.md`](docs/EXTENDING_THROTTLE.md) — custom rate-limit strategies.
 - [`docs/EXTENDING_QUEUE.md`](docs/EXTENDING_QUEUE.md) — alternative queue backends.
 - [`docs/EXTENDING_AUDIT.md`](docs/EXTENDING_AUDIT.md) — replace or extend the audit pipeline.
+
+## Toward 1.0
+
+### What is stable today
+
+The following surfaces have integration tests and are considered stable. Changes here will carry a `BREAKING` tag in the changelog.
+
+| Area | Stable classes / interfaces |
+|------|-----------------------------|
+| HTTP layer | `ApiController`, `ApiRequest`, `ApiResponse`, `ContextHolder`, `RequestIdHolder` |
+| Exception hierarchy | `ApiException` + all 8 concrete exceptions, `ExceptionFormatter` |
+| DTO contracts | `DataTransferObjectInterface`, `BaseRequestDTO`, `PaginatedResponseDTO`, `SecurityContext` |
+| Repository contract | `RepositoryInterface`, `BaseRepository`, `GenericRepository` |
+| Audit chain | `AuditService`, `AuditWriter`, `AuditPayloadSanitizer`, `AuditServiceInterface`, `NullAuditService` |
+| Queue contract | `QueueManager`, `SyncQueueManager`, `Job`, `WriteAuditLogJob` |
+| Security utilities | `Security\Hasher`, `Security\Token`, `Security\Mask` |
+| Concrete filters (9) | `CorrelationIdFilter`, `CorsFilter`, `SecurityHeadersFilter`, `FeatureToggleFilter`, `IdempotencyFilter`, `LocaleFilter`, `MaintenanceFilter`, `RequestLoggingFilter`, `DeprecationHeadersFilter` |
+| Abstract filter bases (3) | `AbstractJwtAuthFilter`, `AbstractPermissionFilter`, `AbstractThrottleFilter` |
+
+### What may still change before 1.0
+
+| Surface | Likelihood | Notes |
+|---------|-----------|-------|
+| `BaseCrudService` hook signatures (`beforeStore`, `afterUpdate`, etc.) | Low | Signature is clean, but exact parameter set may gain a `$context` overload |
+| `HealthChecker` constructor | Medium | Planned: accept an injected `BaseConnection` so it is testable without a live DB connection |
+| IAM hook surface (`AbstractIamAuthorizationService`) | Medium | May gain a standardized `resolvePermissions()` contract before 1.0 |
+
+### Criteria for 1.0.0
+
+1. All stable-surface classes have integration tests with verified behavior.
+2. `HealthChecker` accepts an injected `BaseConnection` — testable without a live database.
+3. At least one documented real-world consumer running in production.
+4. Infection PHP Mutation Score Indicator (MSI) ≥ 80% across the Unit + Integration suite.
+5. No open `BREAKING` items in `CHANGELOG.md [Unreleased]`.
 
 ## Development
 
