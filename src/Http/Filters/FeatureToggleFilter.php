@@ -7,8 +7,8 @@ namespace dcardenasl\Ci4ApiCore\Http\Filters;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use Config\FeatureFlags;
 use Config\Services;
+use dcardenasl\Ci4ApiCore\Config\FeatureFlags;
 use dcardenasl\Ci4ApiCore\Http\ApiResponse;
 
 /**
@@ -31,7 +31,7 @@ class FeatureToggleFilter implements FilterInterface
         }
 
         /** @var FeatureFlags $flags */
-        $flags = config(FeatureFlags::class, false);
+        $flags = config('FeatureFlags', false);
         $enabled = $flags->isEnabled($flag);
 
         $this->recordToggle($flag, $enabled);

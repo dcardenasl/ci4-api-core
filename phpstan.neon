@@ -126,6 +126,7 @@ parameters:
         -
             message: '#Constant ENVIRONMENT not found#'
             paths:
+                - src/Config/*
                 - src/Support/ExceptionFormatter.php
                 - src/Http/ApiController.php
                 - src/Logging/*
