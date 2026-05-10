@@ -13,6 +13,7 @@ use dcardenasl\Ci4ApiCore\Dto\BaseRequestDTO;
 use dcardenasl\Ci4ApiCore\Dto\SecurityContext;
 use dcardenasl\Ci4ApiCore\Exceptions\ValidationException;
 use dcardenasl\Ci4ApiCore\Support\ExceptionFormatter;
+use dcardenasl\Ci4ApiCore\Support\ServiceFactoriesValidator;
 use Exception;
 use Psr\Log\LoggerInterface;
 
@@ -48,6 +49,7 @@ abstract class ApiController extends Controller
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger): void
     {
         parent::initController($request, $response, $logger);
+        ServiceFactoriesValidator::assertRegistered();
         $this->defaultService = $this->resolveDefaultService();
     }
 

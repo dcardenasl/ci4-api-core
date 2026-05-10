@@ -46,7 +46,7 @@ jobs:
         run: composer analyse
 
       - name: PHPUnit
-        run: composer test -- --testsuite Unit ${{ matrix.php-version == '8.2' && '--coverage-clover coverage.xml' || '' }}
+        run: composer test -- --testsuite Unit,Integration ${{ matrix.php-version == '8.2' && '--coverage-clover coverage.xml' || '' }}
 
       - name: Upload coverage to Codecov
         if: matrix.php-version == '8.2'
@@ -56,6 +56,11 @@ jobs:
           fail_ci_if_error: false
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Mutation Testing (Infection)
+        if: matrix.php-version == '8.2'
+        continue-on-error: true
+        run: composer mutate
 
       - name: Security audit
         run: composer security

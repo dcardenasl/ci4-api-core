@@ -26,6 +26,12 @@ interface RepositoryInterface
     public function setEntityContext(int|string $id, object|array $entity): void;
 
     /**
+     * Override the audit action name for the next CUD operation on this repository.
+     * No-op when the underlying model is not auditable. Returns $this for fluent chaining.
+     */
+    public function withAuditAction(string $action): static;
+
+    /**
      * Get validation errors
      *
      * @return array<string, string|list<string>>

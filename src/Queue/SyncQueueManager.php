@@ -15,7 +15,7 @@ use Throwable;
  * infrastructure requirements. The `later()` method ignores the delay and runs
  * immediately (the sync transport has no concept of time-deferred execution).
  */
-class SyncQueueManager
+class SyncQueueManager implements QueueManagerInterface
 {
     /**
      * @param bool $throwOnFailure Re-throw exceptions from Job::handle(). Defaults to true

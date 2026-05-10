@@ -20,6 +20,21 @@ parameters:
                 - src/Monitoring/*
                 - src/Queue/*
                 - src/Dto/*
+                - src/Commands/*
+
+        # CoreCheck, CoreInstall and ServiceFactoriesValidator inspect consumer
+        # Config\Services for factory methods at runtime. PHPStan knows the class
+        # doesn't exist in this package so method_exists() appears to always
+        # return false — suppress this expected false positive.
+        -
+            identifier: function.impossibleType
+            path: src/Commands/CoreCheck.php
+        -
+            identifier: function.impossibleType
+            path: src/Commands/CoreInstall.php
+        -
+            identifier: function.impossibleType
+            path: src/Support/ServiceFactoriesValidator.php
 
         # Config\* method/property access on unknown classes.
         -
@@ -114,6 +129,7 @@ parameters:
         -
             message: '#Constant ENVIRONMENT not found#'
             paths:
+                - src/Config/*
                 - src/Support/ExceptionFormatter.php
                 - src/Http/ApiController.php
                 - src/Logging/*
@@ -126,3 +142,9 @@ parameters:
             paths:
                 - src/Logging/*
                 - src/Monitoring/*
+
+        # APPPATH is a CI4 framework runtime path constant used by install commands.
+        -
+            message: '#Constant APPPATH not found#'
+            paths:
+                - src/Commands/*

@@ -2,6 +2,42 @@
 
 All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-crud-maker`) will be documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/spec/v2.0.0.html) with the caveat that pre-1.0 releases may break.
 
+## [Unreleased]
+
+## [0.4.0] - 2026-05-09
+
+This release tightens the boundary between **runtime foundation** (this package) and **CRUD scaffolding** (`ci4-api-scaffolding`), externalises consumer-specific knobs that were hardcoded in core helpers, and publishes generic abstract bases for HTTP filters and IAM that consumers can extend instead of reimplementing. `ci4-api-core` remains autonomous — installable and usable without `ci4-api-scaffolding`.
+
+### Breaking changes
+
+- **`AuditService` no longer hardcodes entity-type aliases** — the previous `'user' => 'users'`, `'api-key' => 'api_keys'`, `'file' => 'files'` mapping is now read from `Config\Audit::$entityTypeAliases` (default: empty array). Consumers that depend on the legacy mapping must declare it in their own `app/Config/Audit.php`.
+- **`AuditService::enrichEntities()` actor table is now configurable via `Config\Audit`** — `actorTable`, `actorEmailColumn`, `actorNameColumns`, `actorTargetPrefix`. Defaults preserve the previous behaviour (`users` / `email` / `[first_name, last_name]` / `user`), so consumers using a `users` table are unaffected. Consumers with a different actor schema should override these in their `app/Config/Audit.php`.
+- **`RelationLabelLoader::attachUserLabels()` is deprecated** in favour of the generic `attachActorLabels(entities, sourceField, table, emailColumn?, nameColumns?, targetPrefix?, relatedKey?)`. The deprecated method delegates to the generic one with the legacy `users`/`email`/`first_name,last_name`/`user` arguments. Will be removed in v1.0.
+- **`CoreInstall` is now idempotent and fail-safe** — wiring writes are bracketed by `// ci4-api-core: <section> start/end` markers; re-running the command is a no-op when those markers exist. A `Services.php.bak` backup is written before any modification. If the file is hand-edited or non-standard (anchors not found), the command refuses to write and prints a recovery snippet instead of corrupting the file. The previous "also generate Config/Scaffolding.php if scaffolding is installed" branch is removed (cross-package responsibility); use `dcardenasl\Ci4ApiScaffolding\Commands\ScaffoldCheck` and copy the bundled `docs/Scaffolding.php.example` instead.
+
+### Added
+
+- **`Http\Filters\AbstractJwtAuthFilter`** — generic Bearer-token authentication filter with template-method hooks (`decodeToken` *required*; `extractBearerToken`, `shouldCheckRevocation`, `isTokenRevoked`, `loadActor`, `requireActorOnUserToken`, `assertAccessPolicy`, `accessPolicyBypassRoutes`, `getSecurityAuditLogger`, `getRequestAuditContextFactory`). Consumers extend this and provide their JWT/user-loading concretions.
+- **`Http\Filters\AbstractPermissionFilter`** — generic `permission:<code>` filter that reads scope from `ApiRequest`/`ContextHolder`. Subclasses inject the consumer's `SecurityAuditLoggerInterface`.
+- **`Http\Filters\AbstractThrottleFilter`** — generic per-bucket rate limiter (IP + user buckets by default) with a `resolveBuckets()` hook for app-aware overrides (e.g. API-key-based limits).
+- **`Contracts\Iam\PermissionResolverInterface`** — contract for resolving `(user_id, application_id) → list<string>` permission codes. Consumers may back this with any storage (DB, Redis, remote IAM hub).
+- **`Contracts\Iam\ApplicationPermissionResolverInterface`** — contract for resolving `application_id → list<string>` codes (used by service/M2M tokens).
+- **`Contracts\SecurityAuditLoggerInterface`** — contract consumed by the new abstract filters (`logAuthorizationDeniedFromRequest`, `logAuthorizationDeniedFromContext`, `logRevokedTokenReuse`).
+- **`Services\Iam\AbstractIamAuthorizationService`** — hierarchical authorization rules (`assertNotSelf`, `isSuperAdmin`, `actorPermissions`, `assertCanGrantPermissions/Roles`, `assertCanModifyRole`, `assertCanActOnSubject`, `assertSuperAdmin`) with three storage hooks (`loadRoleSystemFlag`, `resolvePermissionCodes`, `resolveRolePermissionCodes`). The superadmin permission code, default application id, and i18n key prefix are all overrideable via hook methods.
+- **`Commands\EnvCheck`** — bundled spark command. Validates required env vars, secret strength (`JWT_SECRET_KEY` ≥ 64 bytes, `encryption.key` ≥ 32 bytes), and production-only requirements (`CORS_ALLOWED_ORIGINS`). Subclassable via `protected` properties (`$required`, `$recommended`, `$secrets`) and the `minSecretLength()` hook.
+- **`Commands\QueueWork`** — bundled spark command. Generic worker for the bundled `QueueManager` (`--once`, `--queue`, `--max-jobs`, `--sleep`, `--job-delay`).
+- **`Config\Api` is now heredable** with `protected envValue()` and a self-hydrating `__construct()`. Consumers can extend via `class Api extends \dcardenasl\Ci4ApiCore\Config\Api { ... }` instead of copying every field. Falls back to declared defaults when run outside CI4 bootstrap (tests). Set `protected bool $hydrateFromEnv = false` in a subclass to keep declared defaults exactly.
+- **`Config\Audit::$entityTypeAliases`** plus actor-table metadata properties (`actorTable`, `actorEmailColumn`, `actorNameColumns`, `actorTargetPrefix`).
+- **`composer analyse:baseline`** script for emitting `phpstan-baseline.neon`.
+- **`php spark core:install`** wiring command (was previously [Unreleased] under v0.3 — now hardened with markers, backup, idempotency, and fail-safe; no longer touches scaffolding config).
+- **`NullAuditService`** — no-op `AuditServiceInterface` implementation (was previously [Unreleased]).
+- **Package-owned `Config/` and `Language/` files** — canonical defaults consumers inherit (was previously [Unreleased]).
+- **`AuditableModelInterface::auditActionName()`** and **`BaseRepository::withAuditAction(string $action)`** — operation-level audit action override (was previously [Unreleased]).
+
+### Fixed
+
+- **`RequestDtoFactory`** auto-resolves `InputValidationService` when not explicitly injected (was previously [Unreleased]).
+
 ## [0.3.0] - 2026-05-08
 
 ### Removed (BC break — bump to v0.3.0)
@@ -102,11 +138,11 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 - **CI PHP CS Fixer step** simplified to `composer cs-check` — no longer needs an inline guard to install the tool.
 
 ### Changed (CORE-011, 2026-05-07)
-- **PHPStan upgraded from 1.12 to 2.x** (`composer.json`: `phpstan/phpstan: ^1.10` → `^2.0`). Aligns the package with `ci4-api-starter` (already on 2.x) and unlocks list types, level 10, and `@phpstan-pure` enforcement. Five real type-safety fixes in flight:
+- **PHPStan upgraded from 1.12 to 2.x** (`composer.json`: `phpstan/phpstan: ^1.10` → `^2.0`). Unlocks list types, level 10, and `@phpstan-pure` enforcement. Five real type-safety fixes in flight:
   - `Core/TypeMapper::knownTypes()` and `Http/ApiRequest::setAuthContext()`: removed redundant `array_values()` calls on values already typed as `list<string>` (PHPStan 2.x flags this as `arrayValues.list`).
   - `Models/Auditable::initAuditable()`: removed five `property_exists($this, 'beforeUpdate' | 'beforeDelete' | 'afterInsert' | 'afterUpdate' | 'afterDelete')` checks. The trait is only used by `BaseAuditableModel`, which extends `\CodeIgniter\Model` — those properties are guaranteed by the parent, so the guards were dead code (`function.alreadyNarrowedType` in PHPStan 2.x). Behaviour unchanged.
 - **`phpstan.neon` migrated to identifier-based suppressions.** PHPStan 2.x renamed several diagnostics — the "Else branch unreachable because ternary operator condition is always true" message became `instanceof.alwaysTrue`. The suppression for `ApiController`'s defensive ternaries now uses `identifier: instanceof.alwaysTrue` instead of a regex on the human-readable message.
-- **New suppression for `trait.unused`** on `Models/Traits/Filterable.php` and `Models/Traits/Searchable.php`. PHPStan 2.x analyses traits only in the context of their users; the package's `src/` has no users (these traits are part of the public API consumed by models in `ci4-api-starter`, `ci4-domain-starter`, and generated apps), so the package-side analysis correctly reports them as unused. The suppression is documented inline with a link to https://phpstan.org/blog/how-phpstan-analyses-traits
+- **New suppression for `trait.unused`** on `Models/Traits/Filterable.php` and `Models/Traits/Searchable.php`. PHPStan 2.x analyses traits only in the context of their users; the package's `src/` has no users (these traits are part of the public API consumed by models in downstream consumer projects), so the package-side analysis correctly reports them as unused. The suppression is documented inline with a link to https://phpstan.org/blog/how-phpstan-analyses-traits
 
 ### Changed (CORE-010, 2026-05-07)
 - **`phpstan-baseline.neon` removed.** The 71 baseline entries inherited from CORE-002 (port of base classes) are eliminated by adding pragmatic PHPDoc `@param`/`@return` annotations across 13 files in `src/Dto/`, `src/Exceptions/`, `src/Http/`, `src/Models/`, `src/Repositories/`, `src/Services/`, `src/Support/`. Convention: `array<string, mixed>` for free-form payloads, `list<T>` for sequential collections, `array<string, list<string>>` for CI4 validation-error shapes; strict `array{...}` shapes only in `PaginatedResponseDTO::toArray()`, `ApiException::toArray()`, `RepositoryInterface::paginateCriteria()` (return), and `ExceptionFormatter::resolveDebugInfo()`.
@@ -115,8 +151,8 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ### Added (vanilla-consumer fixes, 2026-05-07)
 - **`src/DataCasts/DecimalCast.php`** (B1) — string-backed CI4 DataCast for `DECIMAL` columns. CI4 4.7's native `DataCaster` does not recognize `decimal`, so the previous `ModelEntityGenerator` output crashed (`InvalidArgumentException: No such handler for "price". Invalid type: decimal`) on the first read of any decimal field. The cast preserves precision by round-tripping through `string` (e.g. `'19.99'` in → `'19.99'` out), avoiding the float-rounding bug that `'price' => 'float'` would have introduced. `ModelEntityGenerator` now emits `protected $castHandlers = ['decimal' => DecimalCast::class]` only when the resource has at least one decimal field.
-- **`src/Models/Traits/{Filterable,Searchable}.php`** (B3) — moved from ci4-api-starter's `App\Traits\`. Pre-fix the generators emitted `use App\Traits\Filterable; use App\Traits\Searchable;`, breaking any consumer that wasn't ci4-api-starter (`Trait App\Traits\Filterable not found`). Now bundled in core under `dcardenasl\Ci4ApiCore\Models\Traits\`.
-- **`src/Filters/{FilterParser,FilterOperatorApplier,SearchQueryApplier,QueryBuilder}.php`** (B3) — moved from ci4-api-starter's `App\Libraries\Query\`. `QueryBuilder` typehints `dcardenasl\Ci4ApiCore\Repositories\RepositoryInterface` instead of the consumer one. `SearchQueryApplier` and `QueryBuilder` read `config('Api')` knobs through a coalescing helper that falls back to safe defaults when the consumer hasn't shipped a `Config\Api` class — so the search and pagination paths work out of the box on a vanilla CI4 install.
+- **`src/Models/Traits/{Filterable,Searchable}.php`** — bundled in core under `dcardenasl\Ci4ApiCore\Models\Traits\`. Generators no longer emit consumer-side `use App\Traits\…` imports, so they work out of the box on any CI4 install.
+- **`src/Filters/{FilterParser,FilterOperatorApplier,SearchQueryApplier,QueryBuilder}.php`** — query plumbing for the `Filterable` / `Searchable` traits. `QueryBuilder` typehints `dcardenasl\Ci4ApiCore\Repositories\RepositoryInterface`. `SearchQueryApplier` and `QueryBuilder` read `config('Api')` knobs through a coalescing helper that falls back to safe defaults when the consumer hasn't shipped a `Config\Api` class — so search and pagination paths work out of the box on a vanilla CI4 install.
 - **5th runtime contract item** in `CLAUDE.md` documenting the optional `config('Api')` keys (`searchEnabled`, `searchUseFulltext`, `searchMinLength`, `paginationDefaultLimit`, `paginationMaxLimit`) and their default fallbacks.
 - **`ScaffoldingConfig::filterableTraitFqcn`** and **`searchableTraitFqcn`** — explicit FQCNs for the Filterable/Searchable traits the model generator emits, defaulting to the bundled core traits. Consumers that prefer their own implementation can override without forking the generator.
 
@@ -131,7 +167,7 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 ### Added
 - **`.github/workflows/ci.yml`** (audit B5.4, 2026-05-06) — first CI/CD pipeline for the package. Matrix on PHP 8.2 / 8.3 with `composer validate --strict`, `composer install`, PHP CS-Fixer dry-run, PHPStan analyse, PHPUnit, and `composer audit` (soft-fail). Closes the "Composer package shipping without automated tests" CRITICAL gap from the May 2026 audit.
 - **`.github/dependabot.yml`** (audit B5.4) — weekly Composer + GitHub Actions dependency updates with `chore(deps)` / `chore(ci)` commit prefixes.
-- **`.php-cs-fixer.dist.php`** (audit B5.4) — strict ruleset adopted from `ci4-admin-starter` (`@PSR12`, `declare_strict_types`, `strict_comparison`, `void_return`, `ordered_imports`, `array_syntax=short`).
+- **`.php-cs-fixer.dist.php`** (audit B5.4) — strict ruleset (`@PSR12`, `declare_strict_types`, `strict_comparison`, `void_return`, `ordered_imports`, `array_syntax=short`).
 - **`CLAUDE.md`** + **`TASKS.md`** (audit B6.3) — onboarding and canonical task tracker.
 - **`CONTRIBUTING.md`** (audit B6.3) — branching, PR checklist, release flow, quality gates, architecture pointers.
 - **`composer.json` script aliases** — `cs-check`, `cs-fix`, `quality` (alias for `analyse + test`).
@@ -145,7 +181,7 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 - **`composer.lock`** is now **committed** (audit B6.2). Removes "lock not up to date" warnings from `composer validate --strict` and gives CI reproducible installs across the matrix.
 - **`composer.json`**: `analyse` script no longer hardcodes `--level=5` (level lives in `phpstan.neon`).
 - **`.gitignore`**: `composer.lock` removed; `.php-cs-fixer.cache` added.
-- **`ScaffoldingConfig::defaults()` default permission** changed from `permission:iam.admin-access` (deprecated and actively deleted by `RbacBootstrapSeeder` in ci4-api-starter) to `permission:iam.superadmin-access`. New scaffolds are reachable by superadmins only by default — secure-by-default. Loosen per-resource by editing the generated route file or by overriding `protectedRouteFilters` in the consumer's `App\Config\Scaffolding`.
+- **`ScaffoldingConfig::defaults()` default permission** changed from `permission:iam.admin-access` (deprecated) to `permission:iam.superadmin-access`. New scaffolds are reachable by superadmins only by default — secure-by-default. Loosen per-resource by editing the generated route file or by overriding `protectedRouteFilters` in the consumer's `App\Config\Scaffolding`.
 - **`ConfigWireman::wire()`** verifies after each injection step (require_once + use trait + service factory) and throws `WiringFailedException` carrying the manual recovery snippet via `describe()`. The spark command catches this and prints the snippet — consumers no longer end up with half-wired modules when their `Services.php` layout doesn't match the expected pattern.
 - **`ForeignKeyValidator::validate()`** is **strict by default** when the database is unreachable AND the schema declares FK fields. Set `skipOnDbUnreachable: true` (or pass `make:crud --skip-fk-validation`) to fall back to the historical "warn and continue" behavior.
 - **`bin/validate-crud.sh`** derives the table name from `StringHelper::pluralize()` (PHP) instead of the naive `${RESOURCE%y}` bash trick. Resources with irregular plurals (`Person → People`, `Goose → Geese`) and same-prefix neighbors (`User` vs `UserRole`) now resolve to the correct migration file on the first match.
@@ -169,7 +205,7 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ### Added
 - Package skeleton: `composer.json`, `src/` tree, `tests/` tree, `README.md`, `LICENSE`, `CHANGELOG.md`, `.gitignore`, PHPUnit and PHPStan config.
-- Framework-agnostic core extracted from `ci4-api-starter`: `Core\StringHelper`, `Core\Field`, `Core\ResourceSchema`, `Core\TypeMapper`, `Core\Fqcn`.
+- Framework-agnostic core: `Core\StringHelper`, `Core\Field`, `Core\ResourceSchema`, `Core\TypeMapper`, `Core\Fqcn`.
 - `Validators\FieldStringParser`, `Validators\FieldNameValidator`, `Validators\ForeignKeyValidator` — field string parsing and upfront rejection of PHP keywords, MySQL reserved words, and audit columns.
 - `Config\BaseScaffoldingConfig` — abstract base the consumer's `App\Config\Scaffolding` extends; `build()` returns a fully-typed `ScaffoldingConfig` so renames surface as IDE errors.
 - `Config\ScaffoldingConfig` + `Config\ScaffoldingPaths` — value objects centralizing every consumer-side convention (base classes, paths, route filters, app namespace). Zero hardcoded `App\…` references in generators.

@@ -106,6 +106,11 @@ final class PivotRepositoryInterfaceTest extends TestCase
                 return false;
             }
 
+            public function withAuditAction(string $action): static
+            {
+                return $this;
+            }
+
             public function getModel(): Model
             {
                 throw new \RuntimeException('not implemented');

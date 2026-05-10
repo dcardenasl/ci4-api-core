@@ -37,18 +37,18 @@ interface AuditServiceInterface
      *
      * @param array<string, mixed> $data
      */
-    public function logCreate(string $entityType, int $entityId, array $data, ?SecurityContext $context = null): void;
+    public function logCreate(string $entityType, int $entityId, array $data, ?SecurityContext $context = null, ?string $action = null): void;
 
     /**
      * @param array<string, mixed> $oldValues
      * @param array<string, mixed> $newValues
      */
-    public function logUpdate(string $entityType, int $entityId, array $oldValues, array $newValues, ?SecurityContext $context = null): void;
+    public function logUpdate(string $entityType, int $entityId, array $oldValues, array $newValues, ?SecurityContext $context = null, ?string $action = null): void;
 
     /**
      * @param array<string, mixed> $data
      */
-    public function logDelete(string $entityType, int $entityId, array $data, ?SecurityContext $context = null): void;
+    public function logDelete(string $entityType, int $entityId, array $data, ?SecurityContext $context = null, ?string $action = null): void;
 
     /**
      * List audit logs (API)
