@@ -38,7 +38,7 @@ abstract class AbstractIamAuthorizationService
     ) {
     }
 
-    public function isSuperAdmin(?SecurityContext $context, int $applicationId = null): bool
+    public function isSuperAdmin(?SecurityContext $context, ?int $applicationId = null): bool
     {
         $applicationId ??= $this->defaultApplicationId();
 
@@ -60,7 +60,7 @@ abstract class AbstractIamAuthorizationService
     /**
      * @return list<string>
      */
-    public function actorPermissions(?SecurityContext $context, int $applicationId = null): array
+    public function actorPermissions(?SecurityContext $context, ?int $applicationId = null): array
     {
         $applicationId ??= $this->defaultApplicationId();
 
@@ -78,7 +78,7 @@ abstract class AbstractIamAuthorizationService
     /**
      * @return list<string>
      */
-    public function subjectPermissions(int $subjectUserId, int $applicationId = null): array
+    public function subjectPermissions(int $subjectUserId, ?int $applicationId = null): array
     {
         $applicationId ??= $this->defaultApplicationId();
 
@@ -90,7 +90,7 @@ abstract class AbstractIamAuthorizationService
      *
      * @param array<int, int> $permissionIds
      */
-    public function assertCanGrantPermissions(?SecurityContext $context, array $permissionIds, int $applicationId = null): void
+    public function assertCanGrantPermissions(?SecurityContext $context, array $permissionIds, ?int $applicationId = null): void
     {
         $applicationId ??= $this->defaultApplicationId();
 
@@ -115,7 +115,7 @@ abstract class AbstractIamAuthorizationService
      *
      * @param array<int, int> $roleIds
      */
-    public function assertCanGrantRoles(?SecurityContext $context, array $roleIds, int $applicationId = null): void
+    public function assertCanGrantRoles(?SecurityContext $context, array $roleIds, ?int $applicationId = null): void
     {
         $applicationId ??= $this->defaultApplicationId();
 
@@ -135,7 +135,7 @@ abstract class AbstractIamAuthorizationService
         }
     }
 
-    public function assertCanModifyRole(?SecurityContext $context, int $roleId, int $applicationId = null): void
+    public function assertCanModifyRole(?SecurityContext $context, int $roleId, ?int $applicationId = null): void
     {
         $applicationId ??= $this->defaultApplicationId();
 
@@ -159,7 +159,7 @@ abstract class AbstractIamAuthorizationService
         }
     }
 
-    public function assertCanActOnSubject(?SecurityContext $context, int $subjectUserId, int $applicationId = null): void
+    public function assertCanActOnSubject(?SecurityContext $context, int $subjectUserId, ?int $applicationId = null): void
     {
         $applicationId ??= $this->defaultApplicationId();
 
@@ -176,14 +176,14 @@ abstract class AbstractIamAuthorizationService
     /**
      * Convenience for the common "modifying user/membership X" flow.
      */
-    public function assertCanModifySubject(?SecurityContext $context, int $subjectUserId, int $applicationId = null): void
+    public function assertCanModifySubject(?SecurityContext $context, int $subjectUserId, ?int $applicationId = null): void
     {
         $applicationId ??= $this->defaultApplicationId();
         $this->assertNotSelf($context, $subjectUserId);
         $this->assertCanActOnSubject($context, $subjectUserId, $applicationId);
     }
 
-    public function assertSuperAdmin(?SecurityContext $context, int $applicationId = null): void
+    public function assertSuperAdmin(?SecurityContext $context, ?int $applicationId = null): void
     {
         $applicationId ??= $this->defaultApplicationId();
 
