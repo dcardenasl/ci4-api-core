@@ -78,6 +78,36 @@ final class CoreInstallTest extends TestCase
         $this->assertStringContainsString('public static function request', $snippet);
     }
 
+    // ─── Routes.php / health route tests ─────────────────────────────────────
+
+    public function testApplyHealthPatchInjectsMarkersAndRoute(): void
+    {
+        $patched = $this->invokePrivate('applyHealthPatch', [$this->cleanRoutesFile()]);
+
+        $this->assertStringContainsString('// ci4-api-core: health route start', $patched);
+        $this->assertStringContainsString('// ci4-api-core: health route end', $patched);
+        $this->assertStringContainsString('HealthChecker', $patched);
+        $this->assertStringContainsString("routes->get('health'", $patched);
+        $this->assertStringContainsString('checkAll()', $patched);
+        $this->assertStringContainsString('getOverallStatus', $patched);
+        $this->assertStringContainsString('503', $patched);
+    }
+
+    public function testApplyHealthPatchPreservesExistingContent(): void
+    {
+        $patched = $this->invokePrivate('applyHealthPatch', [$this->cleanRoutesFile()]);
+
+        $this->assertStringContainsString("\$routes->get('/', 'Home::index')", $patched);
+    }
+
+    public function testApplyHealthPatchReturns503ForUnhealthyStatus(): void
+    {
+        $patched = $this->invokePrivate('applyHealthPatch', [$this->cleanRoutesFile()]);
+
+        // The closure must return 503 when status is 'unhealthy'
+        $this->assertStringContainsString("'unhealthy' ? 503 : 200", $patched);
+    }
+
     /**
      * Helper that calls the private `applyPatch()` with the fixture file
      * computed `lastBrace` position, mimicking the production call site.
@@ -116,6 +146,18 @@ class Services extends BaseService
 {
     // empty
 }
+PHP;
+    }
+
+    private function cleanRoutesFile(): string
+    {
+        return <<<'PHP'
+<?php
+
+use CodeIgniter\Router\RouteCollection;
+
+/** @var RouteCollection $routes */
+$routes->get('/', 'Home::index');
 PHP;
     }
 }

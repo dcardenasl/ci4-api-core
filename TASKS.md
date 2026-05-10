@@ -21,6 +21,11 @@
 
 ## ✅ Completadas
 
+### CORE-009 — `core:install` inyecta GET /health en Routes.php
+- **Qué**: `core:install` ahora parchea `app/Config/Routes.php` con un endpoint `/health` backed por `HealthChecker::checkAll()`. HTTP 200 para healthy/degraded, 503 para unhealthy. Idempotente con markers; detecta edición manual y emite snippet de recuperación. `validate()` incluye el check; `printNextSteps()` muestra el endpoint.
+- **Por qué**: `ci4-api-core-example` documentaba que un proyecto fresh no tiene `/health` accesible tras `core:install`. El plan de `ci4-api-scaffolding` (glob loader) depende del `Routes.php` que este comando produce.
+- **Verificado**: `composer quality` limpio — PHPStan L8, CS-Fixer, 193 tests / 369 assertions.
+
 ### CORE-008 — `php spark core:install` + `NullAuditService`
 - **Qué**: Agregado `NullAuditService` (no-op de `AuditServiceInterface`) y comando `core:install` que genera `ApiCoreServices.php`, parchea `Services.php`, y opcionalmente genera `Config/Scaffolding.php` cuando `ci4-api-scaffolding` está instalado.
 - **Por qué**: Un proyecto CI4 limpio no tenía camino documentado ni automatizado para instalar `ci4-api-core`. El patch es idempotente y valida contra el contenido del archivo (no `method_exists`) para evitar falsos negativos al correr en el mismo proceso de CI4.

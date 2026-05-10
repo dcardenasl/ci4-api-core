@@ -114,7 +114,7 @@ The engine was being copied between projects manually, leading to drift. Extract
 | **Models** | `BaseAuditableModel`, `Auditable` trait, `Filterable` trait, `Searchable` trait, `DecimalCast` |
 | **Query layer** | `FilterParser`, `FilterOperatorApplier`, `SearchQueryApplier`, `QueryBuilder` |
 | **Exceptions** | `ApiException` + `NotFoundException`, `ValidationException`, `BadRequestException`, `AuthenticationException`, `AuthorizationException`, `ConflictException`, `ServiceUnavailableException`, `TooManyRequestsException` |
-| **Support** | `OperationResult`, `OperationState` enum, `ApiResult`, `ExceptionFormatter`, `ApiConfigFacade` |
+| **Support** | `OperationResult`, `OperationState` enum, `ApiResult`, `ExceptionFormatter`, `ApiConfigFacade` · `RelationLabelLoader` (batch label loading, no N+1) · `CacheHelper` (cache-aside in one line) · `DateHelper` (null-safe date normalisation) — see [`docs/SUPPORT_UTILITIES.md`](docs/SUPPORT_UTILITIES.md) |
 | **Security** | `Security\Hasher`, `Security\Token`, `Security\Mask` |
 | **Queue** | `QueueManager`, `SyncQueueManager`, `Job` base, `WriteAuditLogJob`, `LogRequestJob` |
 | **Logging** | `JsonFormatter`, `MonologHandler` |
@@ -398,6 +398,7 @@ The commands fall back to `--no-wire` behaviour if they cannot locate the trait 
 
 - [`docs/ARCHITECTURE_CONTRACT.md`](docs/ARCHITECTURE_CONTRACT.md) — non-negotiable layer rules for modules built on this package.
 - [`docs/CRUD_FROM_ZERO.md`](docs/CRUD_FROM_ZERO.md) — step-by-step playbook for scaffolding a module from a blank field spec.
+- [`docs/SUPPORT_UTILITIES.md`](docs/SUPPORT_UTILITIES.md) — `RelationLabelLoader`, `CacheHelper`, `DateHelper`: benefits, usage guide, and API reference.
 - [`docs/EXTENDING_IAM.md`](docs/EXTENDING_IAM.md) — plug in any identity provider (Shield, OAuth, Keycloak, …).
 - [`docs/EXTENDING_THROTTLE.md`](docs/EXTENDING_THROTTLE.md) — custom rate-limit strategies.
 - [`docs/EXTENDING_QUEUE.md`](docs/EXTENDING_QUEUE.md) — alternative queue backends.

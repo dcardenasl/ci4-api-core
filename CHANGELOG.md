@@ -4,6 +4,12 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-05-10
+
+### Added
+
+- **`core:install` now injects `GET /health` into `app/Config/Routes.php`** — on first run the command appends a health route backed by `HealthChecker` (returns JSON with individual check results + overall `healthy`/`degraded`/`unhealthy` status; 200 or 503). Idempotent via `// ci4-api-core: health route start/end` markers; fail-safe when `/health` already exists without the marker (prints recovery snippet instead of overwriting). The `validate` step at the end of `core:install` now also verifies this marker is present.
+
 ## [0.4.0] - 2026-05-09
 
 This release tightens the boundary between **runtime foundation** (this package) and **CRUD scaffolding** (`ci4-api-scaffolding`), externalises consumer-specific knobs that were hardcoded in core helpers, and publishes generic abstract bases for HTTP filters and IAM that consumers can extend instead of reimplementing. `ci4-api-core` remains autonomous — installable and usable without `ci4-api-scaffolding`.
@@ -13,6 +19,23 @@ This release tightens the boundary between **runtime foundation** (this package)
 - **`AuditService` no longer hardcodes entity-type aliases** — the previous `'user' => 'users'`, `'api-key' => 'api_keys'`, `'file' => 'files'` mapping is now read from `Config\Audit::$entityTypeAliases` (default: empty array). Consumers that depend on the legacy mapping must declare it in their own `app/Config/Audit.php`.
 - **`AuditService::enrichEntities()` actor table is now configurable via `Config\Audit`** — `actorTable`, `actorEmailColumn`, `actorNameColumns`, `actorTargetPrefix`. Defaults preserve the previous behaviour (`users` / `email` / `[first_name, last_name]` / `user`), so consumers using a `users` table are unaffected. Consumers with a different actor schema should override these in their `app/Config/Audit.php`.
 - **`RelationLabelLoader::attachUserLabels()` is deprecated** in favour of the generic `attachActorLabels(entities, sourceField, table, emailColumn?, nameColumns?, targetPrefix?, relatedKey?)`. The deprecated method delegates to the generic one with the legacy `users`/`email`/`first_name,last_name`/`user` arguments. Will be removed in v1.0.
+
+  **Migration** — replace any call to `attachUserLabels()` with the explicit form:
+  ```php
+  // Before (deprecated):
+  $loader->attachUserLabels($entities, 'user_id');
+
+  // After:
+  $loader->attachActorLabels(
+      entities:      $entities,
+      sourceField:   'user_id',
+      relatedTable:  'users',
+      emailColumn:   'email',
+      nameColumns:   ['first_name', 'last_name'],
+      targetPrefix:  'user',
+  );
+  ```
+  The attached fields (`user_email`, `user_full_name`, `user_label`) are identical; only the call site changes.
 - **`CoreInstall` is now idempotent and fail-safe** — wiring writes are bracketed by `// ci4-api-core: <section> start/end` markers; re-running the command is a no-op when those markers exist. A `Services.php.bak` backup is written before any modification. If the file is hand-edited or non-standard (anchors not found), the command refuses to write and prints a recovery snippet instead of corrupting the file. The previous "also generate Config/Scaffolding.php if scaffolding is installed" branch is removed (cross-package responsibility); use `dcardenasl\Ci4ApiScaffolding\Commands\ScaffoldCheck` and copy the bundled `docs/Scaffolding.php.example` instead.
 
 ### Added
