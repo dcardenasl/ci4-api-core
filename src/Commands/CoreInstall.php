@@ -40,6 +40,8 @@ class CoreInstall extends BaseCommand
     private const MARKER_TRAIT_END     = '// ci4-api-core: trait end';
     private const MARKER_REQUEST_START = '// ci4-api-core: request override start';
     private const MARKER_REQUEST_END   = '// ci4-api-core: request override end';
+    private const MARKER_HEALTH_START  = '// ci4-api-core: health route start';
+    private const MARKER_HEALTH_END    = '// ci4-api-core: health route end';
 
     /**
      * @param array<int|string, string|null> $params
@@ -53,6 +55,7 @@ class CoreInstall extends BaseCommand
 
         $this->generateApiCoreServices();
         $this->patchServicesPhp();
+        $this->patchRoutesPhp();
         $this->validate();
         $this->printNextSteps();
     }
@@ -243,6 +246,78 @@ class Services extends BaseService
 TEXT;
     }
 
+    private function patchRoutesPhp(): void
+    {
+        $path = APPPATH . 'Config/Routes.php';
+
+        if (! file_exists($path)) {
+            CLI::error('app/Config/Routes.php not found. Is this a CodeIgniter 4 project?');
+            CLI::newLine();
+            exit(1);
+        }
+
+        $raw = file_get_contents($path);
+        if ($raw === false) {
+            CLI::error('Could not read app/Config/Routes.php.');
+            CLI::newLine();
+            exit(1);
+        }
+
+        if (str_contains($raw, self::MARKER_HEALTH_START)) {
+            CLI::write('  ' . CLI::color('~', 'yellow') . '  app/Config/Routes.php already wired — skipped');
+
+            return;
+        }
+
+        // Fail-safe: /health route exists without our marker means hand-edited.
+        if (str_contains($raw, "'health'") || str_contains($raw, '"health"')) {
+            CLI::newLine();
+            CLI::error('Cannot patch app/Config/Routes.php automatically.');
+            CLI::write('Reason: a /health route exists without the ci4-api-core marker — hand-edited file.', 'yellow');
+            CLI::newLine();
+            CLI::write('Apply the following snippet manually at the end of app/Config/Routes.php:', 'cyan');
+            CLI::newLine();
+            CLI::write($this->healthRouteSnippet());
+            CLI::newLine();
+
+            return;
+        }
+
+        $this->backup($path, $raw);
+
+        $patched = $this->applyHealthPatch($raw);
+
+        if (file_put_contents($path, $patched) === false) {
+            CLI::error('Failed to write app/Config/Routes.php. Backup is at ' . $path . '.bak');
+            CLI::newLine();
+            exit(1);
+        }
+
+        CLI::write('  ' . CLI::color('✓', 'green') . '  Patched  app/Config/Routes.php (backup: Routes.php.bak)');
+    }
+
+    private function applyHealthPatch(string $content): string
+    {
+        return rtrim($content) . "\n\n" . $this->healthRouteSnippet() . "\n";
+    }
+
+    private function healthRouteSnippet(): string
+    {
+        return self::MARKER_HEALTH_START . "\n"
+            . '$routes->get(\'health\', static function () {' . "\n"
+            . '    $checker = new \\dcardenasl\\Ci4ApiCore\\Monitoring\\HealthChecker();' . "\n"
+            . '    $checks  = $checker->checkAll();' . "\n"
+            . '    $status  = $checker->getOverallStatus($checks);' . "\n"
+            . "\n"
+            . '    return response()->setJSON([' . "\n"
+            . "        'status'    => \$status," . "\n"
+            . "        'checks'    => \$checks," . "\n"
+            . "        'timestamp' => date('Y-m-d H:i:s')," . "\n"
+            . '    ])->setStatusCode($status === \'unhealthy\' ? 503 : 200);' . "\n"
+            . '});' . "\n"
+            . self::MARKER_HEALTH_END;
+    }
+
     private function validate(): void
     {
         CLI::newLine();
@@ -262,10 +337,18 @@ TEXT;
             }
         }
 
+        $routesContent = $this->readFileContent(APPPATH . 'Config/Routes.php');
+        if (str_contains($routesContent, self::MARKER_HEALTH_START)) {
+            CLI::write('  ' . CLI::color('✓', 'green') . '  Routes.php: GET /health');
+        } else {
+            CLI::write('  ' . CLI::color('✗', 'red') . '  Routes.php: GET /health — MISSING');
+            $failures++;
+        }
+
         if ($failures > 0) {
             CLI::newLine();
-            CLI::error("Installation incomplete: {$failures} factories not detected after patching.");
-            CLI::write('Check app/Config/Services.php and app/Config/ApiCoreServices.php manually.');
+            CLI::error("Installation incomplete: {$failures} checks failed after patching.");
+            CLI::write('Check app/Config/Services.php, app/Config/ApiCoreServices.php, and app/Config/Routes.php manually.');
             CLI::newLine();
             exit(1);
         }
@@ -293,6 +376,7 @@ TEXT;
         CLI::write('    2. php spark migrate');
         CLI::write('    3. php spark core:check       (verify wiring)');
         CLI::write('    4. php spark serve');
+        CLI::write('    5. curl http://localhost:8080/health');
         CLI::newLine();
         CLI::write('  ' . CLI::color('Note:', 'yellow') . ' auditService() uses NullAuditService — write events are silently');
         CLI::write('        dropped, read operations throw. Upgrade when audit infrastructure is ready.');
