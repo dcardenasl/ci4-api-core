@@ -158,6 +158,72 @@ Default config lives at `src/Config/Audit.php`. Override in the consumer's `app/
 | `entityTypeAliases` | `[]` | Normalise free-form entity types (`'user' → 'users'`) |
 | `actorTable` / `actorEmailColumn` / `actorNameColumns` / `actorTargetPrefix` | `users` / `email` / `[first_name, last_name]` / `user` | Used by `enrichEntities()` to attach actor labels onto returned audit rows |
 
+### 8. `RelationLabelLoader` — enriching audit rows with human-readable labels
+
+The default `AuditService` stores raw FK values (`user_id`, `role_id`, …) in the audit log. When a read endpoint returns those rows, `enrichEntities()` uses `RelationLabelLoader` to **batch-attach display-friendly siblings** before the rows reach the Response DTO — one SQL query per relation, regardless of page size (no N+1 lookups).
+
+#### Configuring via `Config\Audit` (no code change required)
+
+The `actorTable`, `actorEmailColumn`, `actorNameColumns`, and `actorTargetPrefix` knobs in `Config\Audit` (section 7 above) drive what `enrichEntities()` attaches. With the defaults (`users` / `email` / `[first_name, last_name]` / `user`), each returned audit row gains:
+
+| Attached field | Source |
+|---|---|
+| `user_email` | `users.email` for the FK |
+| `user_full_name` | `first_name` + `' '` + `last_name` |
+| `user_label` | `"full_name (email)"` |
+
+Override these properties in `app/Config/Audit.php` when your actor table has a different schema.
+
+#### Using `RelationLabelLoader` directly
+
+Inject or instantiate it when you need label loading outside the audit pipeline (e.g. in a custom list endpoint):
+
+```php
+use dcardenasl\Ci4ApiCore\Support\RelationLabelLoader;
+
+$loader = new RelationLabelLoader();
+
+// Attach a single label column from any related table
+$entities = $loader->attachLabel(
+    entities:     $entities,
+    sourceField:  'role_id',       // FK column on the entity
+    targetField:  'role_name',     // synthetic field to attach
+    relatedTable: 'roles',
+    relatedLabel: 'name',          // column to copy from roles table
+);
+
+// Attach actor labels (email + full_name + label) from any actor table
+$entities = $loader->attachActorLabels(
+    entities:     $entities,
+    sourceField:  'created_by',
+    relatedTable: 'staff',
+    emailColumn:  'work_email',
+    nameColumns:  ['display_name'],
+    targetPrefix: 'creator',
+);
+// → each entity gains: creator_email, creator_full_name, creator_label
+```
+
+> **`attachUserLabels()` is deprecated since 0.4** — it hard-wires the `users` table layout.
+> Migrate to `attachActorLabels()` with explicit table/column arguments. See `CHANGELOG.md [0.4.0]` for the one-to-one migration snippet.
+
+#### Injecting a custom loader into `AuditService`
+
+The default `AuditService` constructs a `RelationLabelLoader` internally when one is not injected. Pass an explicit instance only if you need to override its behaviour (e.g. subclass it to add caching):
+
+```php
+public static function auditService(): AuditServiceInterface
+{
+    return static::getSharedInstance('auditService') ?? new AuditService(
+        auditRepository: static::auditRepository(),
+        responseMapper:  new DtoResponseMapper(AuditResponseDTO::class),
+        auditWriter:     static::auditWriter(),
+        queueManager:    static::queueManager(),
+        labels:          new RelationLabelLoader(),  // omit to use the internal default
+    );
+}
+```
+
 ---
 
 ## How to plug in another audit pipeline (step by step)

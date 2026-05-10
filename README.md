@@ -114,7 +114,7 @@ The engine was being copied between projects manually, leading to drift. Extract
 | **Models** | `BaseAuditableModel`, `Auditable` trait, `Filterable` trait, `Searchable` trait, `DecimalCast` |
 | **Query layer** | `FilterParser`, `FilterOperatorApplier`, `SearchQueryApplier`, `QueryBuilder` |
 | **Exceptions** | `ApiException` + `NotFoundException`, `ValidationException`, `BadRequestException`, `AuthenticationException`, `AuthorizationException`, `ConflictException`, `ServiceUnavailableException`, `TooManyRequestsException` |
-| **Support** | `OperationResult`, `OperationState` enum, `ApiResult`, `ExceptionFormatter`, `ApiConfigFacade` |
+| **Support** | `OperationResult`, `OperationState` enum, `ApiResult`, `ExceptionFormatter`, `ApiConfigFacade`, `RelationLabelLoader`, `CacheHelper`, `DateHelper`, `RequestDataCollector` |
 | **Security** | `Security\Hasher`, `Security\Token`, `Security\Mask` |
 | **Queue** | `QueueManager`, `SyncQueueManager`, `Job` base, `WriteAuditLogJob`, `LogRequestJob` |
 | **Logging** | `JsonFormatter`, `MonologHandler` |

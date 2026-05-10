@@ -6,6 +6,12 @@ namespace dcardenasl\Ci4ApiCore\Support;
 
 use CodeIgniter\I18n\Time;
 
+/**
+ * Date/time utilities that work with PHP timestamps, date strings, and CI4's `Time`
+ * objects. All methods are null-safe: missing or empty values return `null` / `true` / `0`
+ * rather than throwing. Outputs are always MySQL-compatible strings (`Y-m-d H:i:s`) or
+ * ISO 8601 (`c`), never locale-dependent formats.
+ */
 final class DateHelper
 {
     public static function toTimestamp(mixed $datetime): ?int
