@@ -4,11 +4,19 @@
   "type": "library",
   "keywords": [
     "codeigniter4",
+    "codeigniter",
+    "ci4",
     "api",
-    "dto",
+    "rest-api",
     "rest",
+    "dto",
+    "dto-first",
     "foundation",
-    "base-classes"
+    "base-classes",
+    "audit",
+    "queue",
+    "repository-pattern",
+    "service-layer"
   ],
   "homepage": "https://github.com/dcardenasl/ci4-api-core",
   "license": "MIT",
