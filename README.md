@@ -3,8 +3,10 @@
 [![CI](https://github.com/dcardenasl/ci4-api-core/actions/workflows/ci.yml/badge.svg)](https://github.com/dcardenasl/ci4-api-core/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/dcardenasl/ci4-api-core/branch/main/graph/badge.svg)](https://codecov.io/gh/dcardenasl/ci4-api-core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Latest Stable Version](https://poser.pugx.org/dcardenasl/ci4-api-core/v)](https://packagist.org/packages/dcardenasl/ci4-api-core)
+[![Total Downloads](https://poser.pugx.org/dcardenasl/ci4-api-core/downloads)](https://packagist.org/packages/dcardenasl/ci4-api-core)
 
-DTO-first API runtime foundation for CodeIgniter 4: base classes, HTTP layer, services, repositories, filters, audit chain, and queue. Drop into any CodeIgniter 4 project. Pair with [`dcardenasl/ci4-api-scaffolding`](https://github.com/dcardenasl/ci4-api-scaffolding) for CRUD generation.
+Production-ready REST API foundation for CodeIgniter 4. Drop it into any CI4 project to get a DTO-first architecture, JWT-ready HTTP layer, audit trail, queue, RBAC-ready filters, and a repository pattern — without writing boilerplate. Pair with [`dcardenasl/ci4-api-scaffolding`](https://github.com/dcardenasl/ci4-api-scaffolding) to scaffold full CRUD modules in one command.
 
 > **Status:** `v0.4.x` (pre-release) — published on Packagist. APIs may still change before `1.0.0`. Pin to `~0.4.0` or an exact version in production until 1.0.
 
@@ -393,6 +395,10 @@ Never skip with `--no-verify`.
 
 **Auto-wiring silently skipped**
 The commands fall back to `--no-wire` behaviour if they cannot locate the trait import line. Check the output — it will print the snippet for manual paste. Use `--no-wire` explicitly if your `Services.php` layout differs from the default.
+
+## Example Project
+
+[**ci4-api-core-example**](https://github.com/dcardenasl/ci4-api-core-example) is a complete, runnable Catalog API (Categories + Products) built entirely with scaffolding — minimal hand-written code. Each step is a separate git commit so you can trace exactly what gets generated, from a blank CI4 project to a production-ready API with filtering, searching, pagination, and OpenAPI docs.
 
 ## See also
 
