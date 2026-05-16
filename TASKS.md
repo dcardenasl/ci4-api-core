@@ -21,6 +21,12 @@
 
 ## ✅ Completadas
 
+### BFF-111 — Sentry breadcrumbs en `AbstractServiceClient`
+- **Qué**: Nuevo hook `protected function recordBreadcrumb(method, url, status, durationMs, attempt)` invocado por `dispatch()` después de cada intento (incluyendo network errors → `status: null`). Default impl forwardea a `\Sentry\addBreadcrumb` si `function_exists()` lo encuentra; no-op cuando Sentry no está cargado. Nivel `warning` para 5xx/network, `info` para 2xx-4xx. Subclases pueden overridear el hook para OpenTelemetry/tracers propios sin tocar dispatch.
+- **Por qué**: cierra la última pieza del milestone "ci4-bff-starter v1.1 Architecture Hardening" del root TASKS.md (P2.3 del audit plan). Da observabilidad de outbound calls a cualquier consumer del core que tenga Sentry instalado, sin imponer la dependencia.
+- **Verificado**: `sentry/sentry` añadido a `suggest` en `composer.json` (no es `require`). 3 unit tests nuevos en `AbstractServiceClientTest` (subclase override captura breadcrumbs: success, retry-emite-dos, network→status null). `composer quality` limpio — PHPStan L8, CS-Fixer, 219 tests / 425 assertions.
+- **Cross-repo**: BFF y domain consumen el hook gratis al heredar de `AbstractServiceClient`. Sentry SDK ya es dependencia del BFF, así que los breadcrumbs de proxy/aggregator endpoints empiezan a fluir sin más wiring.
+
 ### BFF-101.b — Promover `AbstractServiceClient::forward()` a `public`
 - **Qué**: Cambiada visibilidad de `forward()` de `protected` a `public` en `src/Http/Client/AbstractServiceClient.php`. Comentario en el test wrapper actualizado.
 - **Por qué**: BFF-103 introduce `BaseProxyController::proxy()` que delega a `$client->forward()`. Mantener `forward()` como protected obligaría a cada subclase de client a exponer su propio wrapper público — boilerplate sin valor. `forward()` es semánticamente la superficie pública para casos proxy.

@@ -267,6 +267,56 @@ final class AbstractServiceClientTest extends TestCase
         $client->callForward($this->makeIncomingRequest(), '/x');
     }
 
+    public function testRecordsBreadcrumbOnSuccessfulCall(): void
+    {
+        $http   = $this->mockHttp([$this->jsonResponse(200, ['data' => []])]);
+        $client = $this->makeClient($http, retries: 0);
+
+        $client->callRequest('GET', '/x');
+
+        self::assertCount(1, $client->breadcrumbs);
+        self::assertSame('GET', $client->breadcrumbs[0]['method']);
+        self::assertSame('http://hub.local/x', $client->breadcrumbs[0]['url']);
+        self::assertSame(200, $client->breadcrumbs[0]['status']);
+        self::assertSame(1, $client->breadcrumbs[0]['attempt']);
+        self::assertGreaterThanOrEqual(0.0, $client->breadcrumbs[0]['duration_ms']);
+    }
+
+    public function testRecordsOneBreadcrumbPerAttemptOn5xxRetry(): void
+    {
+        $http = $this->mockHttp([
+            $this->jsonResponse(503, ['message' => 'flaking']),
+            $this->jsonResponse(200, ['data' => ['ok' => true]]),
+        ]);
+        $client = $this->makeClient($http, retries: 1, retryDelayMs: 0);
+
+        $client->callRequest('GET', '/x');
+
+        self::assertCount(2, $client->breadcrumbs);
+        self::assertSame(503, $client->breadcrumbs[0]['status']);
+        self::assertSame(1, $client->breadcrumbs[0]['attempt']);
+        self::assertSame(200, $client->breadcrumbs[1]['status']);
+        self::assertSame(2, $client->breadcrumbs[1]['attempt']);
+    }
+
+    public function testRecordsBreadcrumbWithNullStatusOnNetworkError(): void
+    {
+        $http = $this->createMock(CURLRequest::class);
+        $http->method('request')->willThrowException(new RuntimeException('connection refused'));
+
+        $client = $this->makeClient($http, retries: 0);
+
+        try {
+            $client->callRequest('GET', '/x');
+            self::fail('Expected ServiceUnavailableException');
+        } catch (ServiceUnavailableException) {
+            // expected
+        }
+
+        self::assertCount(1, $client->breadcrumbs);
+        self::assertNull($client->breadcrumbs[0]['status']);
+    }
+
     // -- Helpers ----------------------------------------------------------
 
     /**
@@ -340,10 +390,15 @@ final class AbstractServiceClientTest extends TestCase
 
 /**
  * Concrete subclass exposing the protected request() entrypoint so tests can
- * drive it directly. forward() is already public on the base class.
+ * drive it directly. forward() is already public on the base class. The
+ * recordBreadcrumb() hook is intercepted so tests can inspect attempt-level
+ * telemetry without depending on Sentry being installed.
  */
 final class TestableServiceClient extends AbstractServiceClient
 {
+    /** @var list<array{method: string, url: string, status: ?int, duration_ms: float, attempt: int}> */
+    public array $breadcrumbs = [];
+
     /**
      * @param array<string, mixed> $options
      * @return array<string, mixed>
@@ -356,5 +411,16 @@ final class TestableServiceClient extends AbstractServiceClient
     public function callForward(IncomingRequest $incoming, string $upstreamPath): ResponseInterface
     {
         return $this->forward($incoming, $upstreamPath);
+    }
+
+    protected function recordBreadcrumb(string $method, string $url, ?int $status, float $durationMs, int $attempt): void
+    {
+        $this->breadcrumbs[] = [
+            'method'      => $method,
+            'url'         => $url,
+            'status'      => $status,
+            'duration_ms' => $durationMs,
+            'attempt'     => $attempt,
+        ];
     }
 }

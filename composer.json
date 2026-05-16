@@ -46,7 +46,8 @@
   "suggest": {
     "monolog/monolog": "Required for JSON structured logging via JsonFormatter / MonologHandler (^3.5)",
     "zircote/swagger-php": "Required to auto-generate OpenAPI specs from DTO/Controller annotations (^4.10 || ^5.0 || ^6.0)",
-    "ext-redis": "Required to use RedisQueueManager as an alternative to the DB-backed QueueManager"
+    "ext-redis": "Required to use RedisQueueManager as an alternative to the DB-backed QueueManager",
+    "sentry/sentry": "Records outbound HTTP breadcrumbs in AbstractServiceClient (^4.0). No-op when absent."
   },
   "autoload": {
     "psr-4": {

@@ -108,12 +108,22 @@ abstract class AbstractServiceClient
 
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {
             $lastException = null;
+            $startedAt     = microtime(true);
+
             try {
                 $lastResponse = $this->http->request($method, $url, $options);
             } catch (Throwable $e) {
                 $lastException = $e;
                 $lastResponse  = null;
             }
+
+            $this->recordBreadcrumb(
+                $method,
+                $url,
+                $lastResponse?->getStatusCode(),
+                (microtime(true) - $startedAt) * 1000,
+                $attempt,
+            );
 
             if ($lastResponse !== null && $lastResponse->getStatusCode() < 500) {
                 return $lastResponse;
@@ -245,6 +255,43 @@ abstract class AbstractServiceClient
 
         /** @var array<string, mixed> */
         return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Record one breadcrumb per outbound attempt. Default implementation
+     * forwards to Sentry's `addBreadcrumb()` when the SDK is installed —
+     * otherwise this is a no-op. Subclasses can override to push to a
+     * different observability backend (OpenTelemetry, custom tracer) without
+     * touching {@see dispatch()}.
+     *
+     * `sentry/sentry` is a `suggest` dep of `ci4-api-core`, not a hard one,
+     * so consumers without Sentry pay nothing.
+     *
+     * @param int|null $status Upstream HTTP status, or null when the call failed before getting a response.
+     * @param float    $durationMs Time spent on this attempt in milliseconds.
+     * @param int      $attempt 1-indexed attempt number (1 = first try, > 1 = retry).
+     */
+    protected function recordBreadcrumb(string $method, string $url, ?int $status, float $durationMs, int $attempt): void
+    {
+        if (! function_exists('\\Sentry\\addBreadcrumb') || ! class_exists('\\Sentry\\Breadcrumb')) {
+            return;
+        }
+
+        $level = ($status === null || $status >= 500)
+            ? \Sentry\Breadcrumb::LEVEL_WARNING
+            : \Sentry\Breadcrumb::LEVEL_INFO;
+
+        \Sentry\addBreadcrumb(new \Sentry\Breadcrumb(
+            $level,
+            \Sentry\Breadcrumb::TYPE_HTTP,
+            'http.outbound',
+            sprintf('%s %s', $method, $url),
+            [
+                'status'      => $status,
+                'duration_ms' => round($durationMs, 2),
+                'attempt'     => $attempt,
+            ],
+        ));
     }
 
     /**
