@@ -3,7 +3,7 @@
 > Fuente de verdad para trabajo en este repo.
 > Historial de completadas: ver `TASKS_ARCHIVE.md`.
 > Cross-repo: ver `../TASKS.md` (CORE-007 pendiente — actualizar kickstart tras extracción de scaffolding).
-> Última actualización: 2026-05-08 (v0.3.0 + scaffolding extraído a ci4-api-scaffolding)
+> Última actualización: 2026-05-16 (BFF-101 ✅ completado — `AbstractServiceClient` en `src/Http/Client/`, listo para que BFF-102 y BFF-107 hereden de él)
 
 ---
 
@@ -20,6 +20,17 @@
 ---
 
 ## ✅ Completadas
+
+### BFF-101.b — Promover `AbstractServiceClient::forward()` a `public`
+- **Qué**: Cambiada visibilidad de `forward()` de `protected` a `public` en `src/Http/Client/AbstractServiceClient.php`. Comentario en el test wrapper actualizado.
+- **Por qué**: BFF-103 introduce `BaseProxyController::proxy()` que delega a `$client->forward()`. Mantener `forward()` como protected obligaría a cada subclase de client a exponer su propio wrapper público — boilerplate sin valor. `forward()` es semánticamente la superficie pública para casos proxy.
+- **Verificado**: `composer quality` limpio — 216 tests / 411 assertions.
+
+### BFF-101 — `AbstractServiceClient` en `ci4-api-core`
+- **Qué**: Nuevo `src/Http/Client/AbstractServiceClient.php` (~245 líneas) con `request()` (JSON estructurado, devuelve `data` decodificado o throw) y `forward()` (proxy transparente, devuelve `ResponseInterface` upstream sin tocar). Retry 1× sobre 5xx/network con backoff lineal, propagación de `X-Request-Id` desde `RequestIdHolder`, `Accept: application/json` por defecto, `http_errors=false`, y mapeo de status upstream a excepciones canónicas (400→BadRequest, 401→Authentication, 403→Authorization, 404→NotFound, 409→Conflict, 422→Validation, 429→TooManyRequests, 5xx/network→ServiceUnavailable). `Config\Api` extendido con `outboundHttpTimeout/Retries/RetryDelayMs` + env (`OUTBOUND_HTTP_TIMEOUT`, etc.). Tests unitarios en `tests/Unit/Http/Client/AbstractServiceClientTest.php`: 23 tests / 42 assertions cubriendo error mapping, retry, X-Request-Id, header allow-list, query string forwarding.
+- **Por qué**: HubClient duplicado en BFF y domain con drift latente; sin esta base, BFF-102/107 (refactor de cada HubClient) tendrían que reimplementar la misma lógica. Cierra también P0.3 del plan (X-Request-Id downstream) y P0.5 (mapeo canónico de errores), que el plan marcó como propiedades emergentes.
+- **Verificado**: `composer quality` limpio — PHPStan L8 sin errores, CS-Fixer sin diffs, security audit ok, 216 tests / 411 assertions.
+- **Cross-repo**: desbloquea BFF-102 (refactor del HubClient del BFF), BFF-107 (refactor del HubClient del domain) y BFF-111 (Sentry breadcrumbs).
 
 ### CORE-009 — `core:install` inyecta GET /health en Routes.php
 - **Qué**: `core:install` ahora parchea `app/Config/Routes.php` con un endpoint `/health` backed por `HealthChecker::checkAll()`. HTTP 200 para healthy/degraded, 503 para unhealthy. Idempotente con markers; detecta edición manual y emite snippet de recuperación. `validate()` incluye el check; `printNextSteps()` muestra el endpoint.
