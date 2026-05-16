@@ -4,6 +4,26 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-16
+
+This release introduces a generic outbound HTTP base class for service-to-service calls — the foundation for the new BFF gateway and domain app's hub clients — plus optional Sentry breadcrumb observability. All changes are additive; no breaking changes for existing consumers.
+
+### Added
+
+- **`Http\Client\AbstractServiceClient`** — generic base for service-to-service HTTP calls. Two operation modes:
+  - `request(method, path, options)` returns the decoded JSON `data` payload or throws a canonical `ApiException` subtype. Suitable for typed client wrappers (e.g. a `HubClient` that returns DTOs).
+  - `forward(method, path, options)` returns the upstream `ResponseInterface` untouched. Suitable for transparent proxy controllers (e.g. a BFF gateway endpoint).
+
+  Built-in behaviour: 1× retry on 5xx and network errors with linear backoff; automatic propagation of `X-Request-Id` from `RequestIdHolder`; `Accept: application/json` by default; `http_errors=false`; canonical mapping of upstream status codes to `ApiException` subtypes (400 → `BadRequestException`, 401 → `AuthenticationException`, 403 → `AuthorizationException`, 404 → `NotFoundException`, 409 → `ConflictException`, 422 → `ValidationException`, 429 → `TooManyRequestsException`, 5xx/network → `ServiceUnavailableException`). Subclasses inject the upstream base URL via the constructor and may override the header allow-list and breadcrumb hook.
+- **`Config\Api` outbound HTTP knobs** — `outboundHttpTimeout` (default `5` seconds), `outboundHttpRetries` (default `1`), `outboundHttpRetryDelayMs` (default `250` ms). Each is overridable via env (`OUTBOUND_HTTP_TIMEOUT`, `OUTBOUND_HTTP_RETRIES`, `OUTBOUND_HTTP_RETRY_DELAY_MS`).
+- **`AbstractServiceClient::recordBreadcrumb()`** hook — invoked after every dispatch attempt (including network errors → `status: null`). Default implementation forwards to `\Sentry\addBreadcrumb()` when the function is available; no-op otherwise. Level `warning` for 5xx/network failures, `info` for 2xx–4xx responses. Subclasses can override to forward to OpenTelemetry or any other tracer without modifying `dispatch()`.
+- **`sentry/sentry`** added to `composer suggest` — required only if you want Sentry breadcrumbs from `AbstractServiceClient`; the hook is a no-op when the SDK is absent.
+
+### Changed
+
+- **README** — sharpened intro ("Production-ready REST API foundation … without writing boilerplate"), added Packagist version + download badges, and a dedicated "Example Project" section linking to `dcardenasl/ci4-api-core-example` (the runnable Catalog API reference).
+- **Packagist keywords expanded** — `composer.json` now declares `codeigniter`, `ci4`, `rest-api`, `dto-first`, `audit`, `queue`, `repository-pattern`, `service-layer` in addition to the existing set, improving discoverability on Packagist search.
+
 ## [0.4.1] - 2026-05-10
 
 ### Added

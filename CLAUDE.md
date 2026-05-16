@@ -18,7 +18,7 @@ For cross-repo context (current milestone, blocked tasks), read `../TASKS.md`.
 
 **ci4-api-core** is a Composer package providing the **runtime foundation** for CodeIgniter 4 API projects: base classes, HTTP layer, services, repositories, models, filters, audit chain, queue, and security utilities. Designed to drop into any CodeIgniter 4 application via Packagist (`dcardenasl/ci4-api-core`).
 
-**Current version:** v0.4.1 — published on Packagist. APIs may still change before 1.0.0.
+**Current version:** v0.5.0 — published on Packagist. APIs may still change before 1.0.0.
 
 For release history see `CHANGELOG.md`. Current state of this package:
 

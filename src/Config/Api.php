@@ -69,6 +69,11 @@ class Api extends BaseConfig
     public int $slowQueryThreshold = 1000;
     public int $sloP95TargetMs = 500;
 
+    // Outbound HTTP (service client defaults — read by AbstractServiceClient subclasses)
+    public int $outboundHttpTimeout = 5;
+    public int $outboundHttpRetries = 1;
+    public int $outboundHttpRetryDelayMs = 250;
+
     /**
      * Routes (path-only, leading slash optional) that authenticate normally
      * via JWT but skip post-auth access policy checks such as email verification.
@@ -156,6 +161,10 @@ class Api extends BaseConfig
         $this->requestLoggingEnabled = (bool) filter_var($this->envValue('REQUEST_LOGGING_ENABLED', $this->requestLoggingEnabled), FILTER_VALIDATE_BOOLEAN);
         $this->slowQueryThreshold    = (int) $this->envValue('SLOW_QUERY_THRESHOLD', $this->slowQueryThreshold);
         $this->sloP95TargetMs        = (int) $this->envValue('SLO_API_P95_TARGET_MS', $this->sloP95TargetMs);
+
+        $this->outboundHttpTimeout      = (int) $this->envValue('OUTBOUND_HTTP_TIMEOUT', $this->outboundHttpTimeout);
+        $this->outboundHttpRetries      = (int) $this->envValue('OUTBOUND_HTTP_RETRIES', $this->outboundHttpRetries);
+        $this->outboundHttpRetryDelayMs = (int) $this->envValue('OUTBOUND_HTTP_RETRY_DELAY_MS', $this->outboundHttpRetryDelayMs);
     }
 
     /**
