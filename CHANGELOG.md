@@ -4,6 +4,10 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+### Changed
+
+- **CodeIgniter requirement widened to `^4.7`** — locks the package to CI4 4.7.x (current stable, v4.7.2). CI4 4.6.x is no longer accepted; consumers on 4.6 must upgrade before pulling this version. README requirements and the scaffolding compatibility matrix updated accordingly.
+
 ## [0.5.0] - 2026-05-16
 
 This release introduces a generic outbound HTTP base class for service-to-service calls — the foundation for the new BFF gateway and domain app's hub clients — plus optional Sentry breadcrumb observability. All changes are additive; no breaking changes for existing consumers.
