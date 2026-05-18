@@ -35,7 +35,7 @@ Production-ready REST API foundation for CodeIgniter 4. Drop it into any CI4 pro
 
 ```bash
 # Runtime foundation
-composer require dcardenasl/ci4-api-core:^0.4
+composer require dcardenasl/ci4-api-core:^0.5
 
 # Scaffolding engine (dev-only — provides make-crud.sh and spark commands)
 composer require --dev dcardenasl/ci4-api-scaffolding:dev-main
@@ -129,7 +129,7 @@ The engine was being copied between projects manually, leading to drift. Extract
 ## Installation
 
 ```bash
-composer require dcardenasl/ci4-api-core:^0.4
+composer require dcardenasl/ci4-api-core:^0.5
 ```
 
 ## Configure
