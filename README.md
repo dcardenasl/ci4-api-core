@@ -124,7 +124,7 @@ The engine was being copied between projects manually, leading to drift. Extract
 ## Requirements
 
 - PHP `^8.2`
-- CodeIgniter 4 `^4.6`
+- CodeIgniter 4 `^4.7`
 
 ## Installation
 
