@@ -112,7 +112,7 @@ These are not enforced at install time — a missing factory (factories 1–4) w
 CRUD scaffolding (generators, spark commands, `make-crud.sh`) lives in the sibling Composer package `dcardenasl/ci4-api-scaffolding`. Add it to `require-dev` in consumer projects:
 
 ```bash
-composer require --dev dcardenasl/ci4-api-scaffolding:dev-main
+composer require --dev dcardenasl/ci4-api-scaffolding:^0.4
 ```
 
 See that package's README for field syntax, scaffolding contract, customization, and troubleshooting.
