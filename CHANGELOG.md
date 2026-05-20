@@ -4,6 +4,8 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-20
+
 ### Added
 
 - **`Http\Client\IntrospectResult`** — canonical value object for `/api/v1/auth/introspect` responses (`valid`, `uid`, `permissions[]`, `exp`, `error`). Promoted from verbatim copies in `ci4-bff-starter` and `ci4-domain-starter`; both now import from this package.
