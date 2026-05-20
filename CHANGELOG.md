@@ -4,6 +4,14 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-20
+
+### Added
+
+- **`Http\Client\IntrospectResult`** — canonical value object for `/api/v1/auth/introspect` responses (`valid`, `uid`, `permissions[]`, `exp`, `error`). Promoted from verbatim copies in `ci4-bff-starter` and `ci4-domain-starter`; both now import from this package.
+- **`Http\Filters\AbstractIntrospectionFilter`** — abstract auth filter for BFF and domain apps that delegate JWT validation to a hub introspect endpoint. Subclasses implement only `introspect(string $token): IntrospectResult`; Bearer extraction, context population, and 401 responses are handled by the parent `AbstractJwtAuthFilter`. Reduces `DomainAuthFilter` from 77 lines to ~12 lines of custom code.
+- **`Contracts\HubClientInterface`** — contract for hub HTTP clients (`introspect`, `getServiceToken`, `registerPermission`, `getUser`). Both `ci4-bff-starter` and `ci4-domain-starter` `HubClient` implementations now declare this interface.
+
 ## [0.6.0] - 2026-05-17
 
 ### Changed
