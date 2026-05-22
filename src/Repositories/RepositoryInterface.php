@@ -58,6 +58,14 @@ interface RepositoryInterface
     public function findByIds(array $ids): array;
 
     /**
+     * Find a single record by a column value.
+     *
+     * Prefer this over `getModel()->where($col, $val)->first()` to get a narrow
+     * `?object` return type that satisfies PHPStan level 8 without `@var` casts.
+     */
+    public function findBy(string $column, mixed $value): ?object;
+
+    /**
      * Insert a new record
      *
      * @param array<string, mixed>|object $data

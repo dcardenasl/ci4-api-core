@@ -4,6 +4,12 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-05-22
+
+### Added
+
+- `RepositoryInterface::findBy(string $column, mixed $value): ?object` and its implementation in `BaseRepository`. Provides a type-safe single-record lookup by any column without exposing the raw query builder. Eliminates the `getModel()->where()->first()` workaround that PHPStan level 8 rejects.
+
 ## [0.7.0] - 2026-05-20
 
 ### Added
