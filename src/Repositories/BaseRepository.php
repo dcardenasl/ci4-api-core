@@ -94,6 +94,14 @@ abstract class BaseRepository implements RepositoryInterface
         return is_array($result) ? $result : [];
     }
 
+    public function findBy(string $column, mixed $value): ?object
+    {
+        /** @var object|null $result */
+        $result = $this->model->where($column, $value)->first();
+
+        return $result;
+    }
+
     /**
      * @param array<string, mixed>|object $data
      */

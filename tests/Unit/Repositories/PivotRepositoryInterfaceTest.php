@@ -29,6 +29,22 @@ final class PivotRepositoryInterfaceTest extends TestCase
         $this->assertSame('ids', $method->getParameters()[0]->getName());
     }
 
+    public function testFindByIsRequiredOnRepositoryInterface(): void
+    {
+        $reflection = new \ReflectionClass(RepositoryInterface::class);
+
+        $this->assertTrue(
+            $reflection->hasMethod('findBy'),
+            'RepositoryInterface must expose findBy(string, mixed): ?object.',
+        );
+
+        $method = $reflection->getMethod('findBy');
+        $params = $method->getParameters();
+        $this->assertCount(2, $params);
+        $this->assertSame('column', $params[0]->getName());
+        $this->assertSame('value', $params[1]->getName());
+    }
+
     public function testPivotRepositoryInterfaceExtendsRepositoryInterface(): void
     {
         $reflection = new \ReflectionClass(PivotRepositoryInterface::class);
@@ -84,6 +100,11 @@ final class PivotRepositoryInterfaceTest extends TestCase
             public function findByIds(array $ids): array
             {
                 return [];
+            }
+
+            public function findBy(string $column, mixed $value): ?object
+            {
+                return null;
             }
 
             public function insert(array|object $data, bool $returnID = true): int|string|bool
