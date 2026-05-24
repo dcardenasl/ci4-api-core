@@ -4,6 +4,12 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+## [0.7.2] — 2026-05-24
+
+### Changed
+
+- README status badge updated from `v0.6.x` to `v0.7.x`; install examples updated to `^0.7`.
+
 ## [0.7.1] - 2026-05-22
 
 ### Added
