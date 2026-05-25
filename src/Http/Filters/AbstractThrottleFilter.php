@@ -10,7 +10,7 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 use dcardenasl\Ci4ApiCore\Http\ApiRequest;
-use dcardenasl\Ci4ApiCore\Http\ApiResponse;
+use dcardenasl\Ci4ApiCore\Http\Filters\Concerns\RateLimitResponseHelpers;
 
 /**
  * Abstract Throttle Filter — generic per-bucket rate limiting.
@@ -32,6 +32,8 @@ use dcardenasl\Ci4ApiCore\Http\ApiResponse;
  */
 abstract class AbstractThrottleFilter implements FilterInterface
 {
+    use RateLimitResponseHelpers;
+
     /**
      * @param  array<int, string>|null $arguments
      * @return RequestInterface|ResponseInterface
@@ -169,50 +171,14 @@ abstract class AbstractThrottleFilter implements FilterInterface
         return $limit - $current - 1;
     }
 
-    /**
-     * @param array{limit:int,remaining:int,reset:int} $info
-     */
-    protected function attachRateLimitHeaders(ResponseInterface $response, array $info): void
-    {
-        $response->setHeader('X-RateLimit-Limit', (string) $info['limit']);
-        $response->setHeader('X-RateLimit-Remaining', (string) $info['remaining']);
-        $response->setHeader('X-RateLimit-Reset', (string) $info['reset']);
-    }
-
     protected function rateLimitExceeded(ResponseInterface $response, int $maxRequests, int $window): ResponseInterface
     {
-        $retryAfter = $window;
-        $message    = $this->langOrDefault('Auth.rateLimitExceeded', 'Rate limit exceeded');
-        $detail     = $this->langOrDefault('Auth.tooManyRequests', sprintf('Too many requests (%d in %ds)', $maxRequests, $window), [$maxRequests, $window]);
-
-        $body = array_merge(
-            ApiResponse::error(['rate_limit' => $detail], $message, 429),
-            ['retry_after' => $retryAfter]
+        return $this->buildRateLimitExceededResponse(
+            $response,
+            $maxRequests,
+            $window,
+            'Auth.tooManyRequests',
+            [$maxRequests, $window]
         );
-
-        $response->setStatusCode(429);
-        $response->setHeader('Retry-After', (string) $retryAfter);
-        $this->attachRateLimitHeaders($response, [
-            'limit'     => $maxRequests,
-            'remaining' => 0,
-            'reset'     => time() + $retryAfter,
-        ]);
-        $response->setJSON($body);
-
-        return $response;
-    }
-
-    /**
-     * @param array<int|string, mixed> $params
-     */
-    private function langOrDefault(string $key, string $default, array $params = []): string
-    {
-        if (! function_exists('lang')) {
-            return $default;
-        }
-
-        $translated = (string) lang($key, $params);
-
-        return $translated === '' || $translated === $key ? $default : $translated;
     }
 }

@@ -30,10 +30,11 @@ abstract class AbstractIntrospectionFilter extends AbstractJwtAuthFilter
             return null;
         }
 
-        $decoded        = new stdClass();
-        $decoded->uid   = $result->uid ?? 0;
-        $decoded->scope = $result->permissions;
-        $decoded->jti   = null;
+        $decoded         = new stdClass();
+        $decoded->uid    = $result->uid ?? 0;
+        $decoded->scope  = $result->permissions;
+        $decoded->app_id = $result->app_id;
+        $decoded->jti    = null;
 
         return $decoded;
     }

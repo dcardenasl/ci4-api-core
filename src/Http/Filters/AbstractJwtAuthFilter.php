@@ -108,9 +108,10 @@ abstract class AbstractJwtAuthFilter implements FilterInterface
         // null so downstream consumers (PermissionFilter, audit context)
         // can decide whether to allow the M2M caller.
         $contextUserId = $userId > 0 ? $userId : null;
+        $appId         = isset($decoded->app_id) ? (int) $decoded->app_id : null;
 
         if ($request instanceof ApiRequest) {
-            $request->setAuthContext($contextUserId, $permissions);
+            $request->setAuthContext($contextUserId, $permissions, $appId);
         }
 
         ContextHolder::set(
