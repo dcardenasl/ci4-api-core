@@ -6,6 +6,7 @@ namespace dcardenasl\Ci4ApiCore\Support;
 
 use CodeIgniter\HTTP\RequestInterface;
 use dcardenasl\Ci4ApiCore\Dto\SecurityContext;
+use dcardenasl\Ci4ApiCore\Http\ApiRequest;
 
 /**
  * Builds consistent audit context metadata from HTTP requests.
@@ -29,6 +30,10 @@ class RequestAuditContextFactory
             'request_id' => $requestId,
         ];
 
+        if ($request instanceof ApiRequest && ($appId = $request->getAppId()) !== null) {
+            $metadata['app_id'] = $appId;
+        }
+
         if (method_exists($request, 'getLocale')) {
             $metadata['locale'] = (string) $request->getLocale();
         }
@@ -42,10 +47,13 @@ class RequestAuditContextFactory
      */
     public function createContext(RequestInterface $request, ?int $userId = null, array $overrides = [], array $permissions = []): SecurityContext
     {
+        $appId = ($request instanceof ApiRequest) ? $request->getAppId() : null;
+
         return new SecurityContext(
             $userId,
             $this->buildMetadata($request, $overrides),
-            $permissions
+            $permissions,
+            $appId
         );
     }
 
