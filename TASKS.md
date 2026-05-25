@@ -21,6 +21,20 @@
 
 ## ✅ Completadas
 
+### CORE-011 — Unificación de throttling y RateLimitResponseHelpers
+- **Qué**: Promovido trait `RateLimitResponseHelpers` a `src/Http/Filters/Concerns/`. `AbstractThrottleFilter` actualizado para usarlo. Centraliza la construcción de respuestas 429 estandarizadas (JSON + headers `X-RateLimit-*` y `Retry-After`).
+- **Por qué**: (BFF-M1) Eliminar duplicación de lógica de throttling entre Hub, BFF y Dominios. Cualquier cambio en la wire-shape de errores de límite de tasa se hace ahora en un solo lugar.
+- **Verificado**: `php -l` limpio. Consumers (`ci4-api-starter`, `ci4-bff-starter`, `ci4-domain-starter`) actualizados para importar desde el core.
+
+### CORE-010 — App-Awareness end-to-end (app_id propagation)
+- **Qué**: 
+  - `ApiRequest`: Añadida propiedad `appId` y métodos `setAppId()` / `getAppId()`. `setAuthContext` ahora acepta un tercer parámetro opcional `$app_id`.
+  - `SecurityContext`: Añadida propiedad `app_id` (opcional).
+  - `RequestAuditContextFactory`: `buildMetadata` y `createContext` ahora extraen y propagan el `app_id` desde el `ApiRequest`.
+  - `IntrospectResult`: Añadido campo `app_id` para reflejar la aplicación contra la cual se validaron los permisos.
+  - `AbstractIntrospectionFilter` y `AbstractJwtAuthFilter` actualizados para propagar el `app_id` al request y al contexto de seguridad.
+- **Por qué**: Permitir que el sistema (especialmente el Hub en operaciones delegadas) sepa qué aplicación está realizando la llamada basándose en la API Key o el token, facilitando auditorías y automatización de permisos.
+
 ### BFF-111 — Sentry breadcrumbs en `AbstractServiceClient`
 - **Qué**: Nuevo hook `protected function recordBreadcrumb(method, url, status, durationMs, attempt)` invocado por `dispatch()` después de cada intento (incluyendo network errors → `status: null`). Default impl forwardea a `\Sentry\addBreadcrumb` si `function_exists()` lo encuentra; no-op cuando Sentry no está cargado. Nivel `warning` para 5xx/network, `info` para 2xx-4xx. Subclases pueden overridear el hook para OpenTelemetry/tracers propios sin tocar dispatch.
 - **Por qué**: cierra la última pieza del milestone "ci4-bff-starter v1.1 Architecture Hardening" del root TASKS.md (P2.3 del audit plan). Da observabilidad de outbound calls a cualquier consumer del core que tenga Sentry instalado, sin imponer la dependencia.
