@@ -23,6 +23,8 @@ use dcardenasl\Ci4ApiCore\Support\RelationLabelLoader;
  * Inherits BaseCrudService for automated index and show operations.
  *
  * @extends BaseCrudService<object>
+ * @phpstan-import-type AuditValues from \dcardenasl\Ci4ApiCore\Services\AuditServiceInterface
+ * @phpstan-import-type AuditMetadata from \dcardenasl\Ci4ApiCore\Services\AuditServiceInterface
  */
 class AuditService extends BaseCrudService implements \dcardenasl\Ci4ApiCore\Services\AuditServiceInterface
 {
@@ -79,6 +81,10 @@ class AuditService extends BaseCrudService implements \dcardenasl\Ci4ApiCore\Ser
 
     /**
      * Log an audit event
+     *
+     * @param AuditValues   $oldValues
+     * @param AuditValues   $newValues
+     * @param AuditMetadata $metadata
      */
     public function log(
         string $action,
@@ -146,6 +152,8 @@ class AuditService extends BaseCrudService implements \dcardenasl\Ci4ApiCore\Ser
 
     /**
      * Log a create action
+     *
+     * @param AuditValues $data
      */
     public function logCreate(string $entityType, int $entityId, array $data, ?SecurityContext $context = null, ?string $action = null): void
     {
@@ -154,6 +162,9 @@ class AuditService extends BaseCrudService implements \dcardenasl\Ci4ApiCore\Ser
 
     /**
      * Log an update action
+     *
+     * @param AuditValues $oldValues
+     * @param AuditValues $newValues
      */
     public function logUpdate(string $entityType, int $entityId, array $oldValues, array $newValues, ?SecurityContext $context = null, ?string $action = null): void
     {
@@ -167,6 +178,8 @@ class AuditService extends BaseCrudService implements \dcardenasl\Ci4ApiCore\Ser
 
     /**
      * Log a delete action
+     *
+     * @param AuditValues $data
      */
     public function logDelete(string $entityType, int $entityId, array $data, ?SecurityContext $context = null, ?string $action = null): void
     {
@@ -193,9 +206,9 @@ class AuditService extends BaseCrudService implements \dcardenasl\Ci4ApiCore\Ser
     }
 
     /**
-     * @param array<string, mixed> $oldValues
-     * @param array<string, mixed> $newValues
-     * @param array<string, mixed> $metadata
+     * @param AuditValues   $oldValues
+     * @param AuditValues   $newValues
+     * @param AuditMetadata $metadata
      */
     private function buildEvent(
         string $action,

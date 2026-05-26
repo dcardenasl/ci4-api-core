@@ -20,13 +20,18 @@ use dcardenasl\Ci4ApiCore\Services\AuditServiceInterface;
  * require an audit repository that does not exist in a null-audit setup.
  * Upgrade the `auditService()` factory in app/Config/ApiCoreServices.php
  * to the full AuditService when audit log querying is needed.
+ *
+ * @phpstan-import-type AuditValues from \dcardenasl\Ci4ApiCore\Services\AuditServiceInterface
+ * @phpstan-import-type AuditMetadata from \dcardenasl\Ci4ApiCore\Services\AuditServiceInterface
  */
 class NullAuditService implements AuditServiceInterface
 {
     /**
-     * @param array<string, mixed> $oldValues
-     * @param array<string, mixed> $newValues
-     * @param array<string, mixed> $metadata
+     * Log an audit event (discarded)
+     *
+     * @param AuditValues   $oldValues
+     * @param AuditValues   $newValues
+     * @param AuditMetadata $metadata
      */
     public function log(
         string $action,
@@ -43,22 +48,32 @@ class NullAuditService implements AuditServiceInterface
         // intentionally no-op
     }
 
-    /** @param array<string, mixed> $data */
+    /**
+     * Log a create action (discarded)
+     *
+     * @param AuditValues $data
+     */
     public function logCreate(string $entityType, int $entityId, array $data, ?SecurityContext $context = null, ?string $action = null): void
     {
         // intentionally no-op
     }
 
     /**
-     * @param array<string, mixed> $oldValues
-     * @param array<string, mixed> $newValues
+     * Log an update action (discarded)
+     *
+     * @param AuditValues $oldValues
+     * @param AuditValues $newValues
      */
     public function logUpdate(string $entityType, int $entityId, array $oldValues, array $newValues, ?SecurityContext $context = null, ?string $action = null): void
     {
         // intentionally no-op
     }
 
-    /** @param array<string, mixed> $data */
+    /**
+     * Log a delete action (discarded)
+     *
+     * @param AuditValues $data
+     */
     public function logDelete(string $entityType, int $entityId, array $data, ?SecurityContext $context = null, ?string $action = null): void
     {
         // intentionally no-op

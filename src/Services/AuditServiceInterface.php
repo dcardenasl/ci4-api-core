@@ -9,15 +9,18 @@ use dcardenasl\Ci4ApiCore\Dto\SecurityContext;
 
 /**
  * Audit Service Interface
+ *
+ * @phpstan-type AuditValues array<string, mixed>
+ * @phpstan-type AuditMetadata array<string, mixed>
  */
 interface AuditServiceInterface
 {
     /**
      * Log an audit event (Internal)
      *
-     * @param array<string, mixed> $oldValues
-     * @param array<string, mixed> $newValues
-     * @param array<string, mixed> $metadata
+     * @param AuditValues   $oldValues
+     * @param AuditValues   $newValues
+     * @param AuditMetadata $metadata
      */
     public function log(
         string $action,
@@ -35,18 +38,18 @@ interface AuditServiceInterface
     /**
      * Log structured events (Internal)
      *
-     * @param array<string, mixed> $data
+     * @param AuditValues $data
      */
     public function logCreate(string $entityType, int $entityId, array $data, ?SecurityContext $context = null, ?string $action = null): void;
 
     /**
-     * @param array<string, mixed> $oldValues
-     * @param array<string, mixed> $newValues
+     * @param AuditValues $oldValues
+     * @param AuditValues $newValues
      */
     public function logUpdate(string $entityType, int $entityId, array $oldValues, array $newValues, ?SecurityContext $context = null, ?string $action = null): void;
 
     /**
-     * @param array<string, mixed> $data
+     * @param AuditValues $data
      */
     public function logDelete(string $entityType, int $entityId, array $data, ?SecurityContext $context = null, ?string $action = null): void;
 
