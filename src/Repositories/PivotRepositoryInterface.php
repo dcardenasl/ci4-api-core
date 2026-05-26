@@ -17,6 +17,8 @@ namespace dcardenasl\Ci4ApiCore\Repositories;
  * `id`, the parent foreign key, `file_id` (or equivalent), `sort_order`,
  * `is_active`. The parent FK column name is implementation-specific and
  * resolved by the concrete repository.
+ *
+ * @extends RepositoryInterface<object>
  */
 interface PivotRepositoryInterface extends RepositoryInterface
 {

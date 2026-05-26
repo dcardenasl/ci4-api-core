@@ -18,13 +18,15 @@ use dcardenasl\Ci4ApiCore\Repositories\RepositoryInterface;
  *
  * Provides automated, generic CRUD operations for all services.
  * Implements transaction safety and automatic Response DTO mapping.
+ *
+ * @template T of object
  */
 abstract class BaseCrudService implements CrudServiceContract
 {
     use HandlesTransactions;
 
     /**
-     * @param RepositoryInterface $repository The primary repository for this service
+     * @param RepositoryInterface<T> $repository The primary repository for this service
      * @param ResponseMapperInterface $responseMapper Mapper responsible for turning entities into DTOs
      */
     public function __construct(

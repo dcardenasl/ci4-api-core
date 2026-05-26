@@ -21,6 +21,8 @@ use dcardenasl\Ci4ApiCore\Support\RelationLabelLoader;
  *
  * Handles automated trail logging and provides queryable access to logs.
  * Inherits BaseCrudService for automated index and show operations.
+ *
+ * @extends BaseCrudService<object>
  */
 class AuditService extends BaseCrudService implements \dcardenasl\Ci4ApiCore\Services\AuditServiceInterface
 {
