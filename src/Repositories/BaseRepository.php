@@ -14,11 +14,18 @@ use dcardenasl\Ci4ApiCore\Filters\QueryBuilder;
  * Implements the Repository pattern by wrapping a CodeIgniter Model.
  * Encapsulates the QueryBuilder logic, keeping Services completely
  * decoupled from database-specific mechanisms.
+ *
+ * @template TEntity of object
+ * @implements RepositoryInterface<TEntity>
  */
 abstract class BaseRepository implements RepositoryInterface
 {
+    /** @var Model */
     protected Model $model;
 
+    /**
+     * @param Model $model
+     */
     public function __construct(Model $model)
     {
         $this->model = $model;
@@ -32,9 +39,12 @@ abstract class BaseRepository implements RepositoryInterface
         return $this->model->errors();
     }
 
+    /**
+     * @return TEntity|null
+     */
     public function find(int|string $id): ?object
     {
-        /** @var object|null $result */
+        /** @var TEntity|null $result */
         $result = $this->model->find($id);
 
         return $result;
@@ -43,7 +53,7 @@ abstract class BaseRepository implements RepositoryInterface
     /**
      * Set the current entity state to avoid redundant DB lookups in auditable models.
      *
-     * @param object|array<string, mixed> $entity
+     * @param TEntity|array<string, mixed> $entity
      */
     final public function setEntityContext(int|string $id, object|array $entity): void
     {
@@ -66,11 +76,11 @@ abstract class BaseRepository implements RepositoryInterface
     }
 
     /**
-     * @return list<object>
+     * @return list<TEntity>
      */
     public function findAll(int $limit = 0, int $offset = 0): array
     {
-        /** @var list<object> $result */
+        /** @var list<TEntity> $result */
         $result = $this->model->findAll($limit, $offset);
 
         return $result;
@@ -78,7 +88,7 @@ abstract class BaseRepository implements RepositoryInterface
 
     /**
      * @param  list<int|string> $ids
-     * @return list<object>
+     * @return list<TEntity>
      */
     public function findByIds(array $ids): array
     {
@@ -88,22 +98,25 @@ abstract class BaseRepository implements RepositoryInterface
 
         // CI4's Model::find() accepts an array and returns the matching rows
         // honoring the model's configured returnType.
-        /** @var list<object>|object|null $result */
+        /** @var list<TEntity>|TEntity|null $result */
         $result = $this->model->find($ids);
 
         return is_array($result) ? $result : [];
     }
 
+    /**
+     * @return TEntity|null
+     */
     public function findBy(string $column, mixed $value): ?object
     {
-        /** @var object|null $result */
+        /** @var TEntity|null $result */
         $result = $this->model->where($column, $value)->first();
 
         return $result;
     }
 
     /**
-     * @param array<string, mixed>|object $data
+     * @param array<string, mixed>|TEntity $data
      */
     public function insert(array|object $data, bool $returnID = true): int|string|bool
     {
@@ -112,7 +125,7 @@ abstract class BaseRepository implements RepositoryInterface
 
     /**
      * @param int|string|list<int|string>|null $id
-     * @param array<string, mixed>|object|null $data
+     * @param array<string, mixed>|TEntity|null $data
      */
     public function update(int|string|array|null $id = null, array|object|null $data = null): bool
     {
@@ -152,7 +165,7 @@ abstract class BaseRepository implements RepositoryInterface
     /**
      * @param  array<string, mixed> $criteria DTO criteria as an array
      * @param  callable|null        $baseCriteria Optional callback to apply security/base constraints
-     * @return array{data: list<mixed>, total: int, page: int, per_page: int, last_page: int, from: int, to: int}
+     * @return array{data: list<TEntity>, total: int, page: int, per_page: int, last_page: int, from: int, to: int}
      */
     final public function paginateCriteria(array $criteria, int $page = 1, int $perPage = 20, ?callable $baseCriteria = null): array
     {

@@ -21,12 +21,13 @@ final readonly class IntrospectResult
         public array $permissions,
         public ?int $exp,
         public ?string $error,
+        public ?int $app_id = null,
     ) {
     }
 
     public static function invalid(?string $error = 'invalid_or_expired'): self
     {
-        return new self(false, null, [], null, $error);
+        return new self(false, null, [], null, $error, null);
     }
 
     /**
@@ -37,6 +38,7 @@ final readonly class IntrospectResult
         $valid       = (bool) ($payload['valid'] ?? false);
         $uid         = $payload['uid'] ?? null;
         $exp         = $payload['exp'] ?? null;
+        $appId       = $payload['app_id'] ?? null;
         $permissions = $payload['permissions'] ?? [];
 
         return new self(
@@ -47,6 +49,7 @@ final readonly class IntrospectResult
                 : [],
             exp: is_numeric($exp) ? (int) $exp : null,
             error: isset($payload['error']) ? (string) $payload['error'] : null,
+            app_id: is_numeric($appId) ? (int) $appId : null,
         );
     }
 }

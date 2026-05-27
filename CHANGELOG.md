@@ -4,6 +4,20 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-05-27
+
+### Added
+
+- **`Http\Filters\Concerns\RateLimitResponseHelpers`** — trait that centralises rate-limit header attachment (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`) and the `429 Too Many Requests` response. Extracted from duplicated implementations in consumer throttle filters; `AbstractThrottleFilter` now uses it directly.
+- **`app_id` awareness** — `ApiRequest::setAppId()/getAppId()` and `SecurityContext::$app_id` expose the application identifier resolved from an API key. Consumers that resolve an application from the incoming request can now propagate it through the security context without custom subclasses.
+- `RepositoryInterfaceTest` and `AuditServiceInterfaceTest` added to the Unit suite, covering the generic contracts introduced in this release.
+
+### Changed
+
+- **Generic typing across repositories and services** — `RepositoryInterface`, `BaseRepository`, `GenericRepository`, `AuditRepositoryInterface`, `PivotRepositoryInterface`, `AuditService`, `NullAuditService`, `AuditServiceInterface`, `BaseCrudService`, and `RequestAuditContextFactory` now carry explicit generic type parameters. PHPStan level-8 consumers benefit immediately; no runtime behaviour changes.
+- **`ApiController` and `ApiResponse` typing tightened** — return types and generics aligned with the repository/service layer. No behavioural changes.
+- **CodeIgniter 4 updated to v4.7.3** (`composer.lock`).
+
 ## [0.7.2] — 2026-05-24
 
 ### Changed

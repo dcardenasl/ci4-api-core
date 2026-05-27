@@ -22,7 +22,8 @@ readonly class SecurityContext
     public function __construct(
         public ?int $user_id = null,
         public array $metadata = [],
-        public array $permissions = []
+        public array $permissions = [],
+        public ?int $app_id = null
     ) {
         foreach ($metadata as $key => $value) {
             if ($value !== null && !is_scalar($value)) {

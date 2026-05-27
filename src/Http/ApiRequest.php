@@ -21,6 +21,8 @@ class ApiRequest extends IncomingRequest
     private ?array $authRateLimitInfo = null;
     /** ID of the resolved API key (set by ThrottleFilter when X-App-Key is valid) */
     private ?int $appKeyId = null;
+    /** ID of the application resolved from the API key */
+    private ?int $appId = null;
 
     public function __construct(App $config, URI $uri, $body = 'php://input', ?UserAgent $userAgent = null)
     {
@@ -30,10 +32,11 @@ class ApiRequest extends IncomingRequest
     /**
      * @param list<string> $permissions
      */
-    public function setAuthContext(?int $user_id, array $permissions = []): void
+    public function setAuthContext(?int $user_id, array $permissions = [], ?int $app_id = null): void
     {
         $this->authUserId = $user_id;
         $this->authPermissions = $permissions;
+        $this->appId = $app_id;
     }
 
     public function getAuthUserId(): ?int
@@ -47,6 +50,16 @@ class ApiRequest extends IncomingRequest
     public function getAuthPermissions(): array
     {
         return $this->authPermissions;
+    }
+
+    public function setAppId(?int $id): void
+    {
+        $this->appId = $id;
+    }
+
+    public function getAppId(): ?int
+    {
+        return $this->appId;
     }
 
     public function setRequestStartTime(float $value): void

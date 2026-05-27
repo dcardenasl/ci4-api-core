@@ -10,18 +10,22 @@ namespace dcardenasl\Ci4ApiCore\Repositories;
  * Defines the standard contract for data persistence.
  * By typing against this interface, services become agnostic
  * to the underlying database or ORM implementation.
+ *
+ * @template TEntity of object
  */
 interface RepositoryInterface
 {
     /**
      * Find a record by its primary key
+     *
+     * @return TEntity|null
      */
     public function find(int|string $id): ?object;
 
     /**
      * Set the current entity state to avoid redundant DB lookups in auditable models.
      *
-     * @param object|array<string, mixed> $entity
+     * @param TEntity|array<string, mixed> $entity
      */
     public function setEntityContext(int|string $id, object|array $entity): void;
 
@@ -41,7 +45,7 @@ interface RepositoryInterface
     /**
      * Find all records matching criteria
      *
-     * @return list<object>
+     * @return list<TEntity>
      */
     public function findAll(int $limit = 0, int $offset = 0): array;
 
@@ -53,7 +57,7 @@ interface RepositoryInterface
      * pivot entries) without falling back to direct Model access.
      *
      * @param  list<int|string>  $ids
-     * @return list<object>      records keyed sequentially; empty list if `$ids` is empty
+     * @return list<TEntity>      records keyed sequentially; empty list if `$ids` is empty
      */
     public function findByIds(array $ids): array;
 
@@ -62,13 +66,15 @@ interface RepositoryInterface
      *
      * Prefer this over `getModel()->where($col, $val)->first()` to get a narrow
      * `?object` return type that satisfies PHPStan level 8 without `@var` casts.
+     *
+     * @return TEntity|null
      */
     public function findBy(string $column, mixed $value): ?object;
 
     /**
      * Insert a new record
      *
-     * @param array<string, mixed>|object $data
+     * @param array<string, mixed>|TEntity $data
      * @return int|string|bool The insert ID on success, false on failure
      */
     public function insert(array|object $data, bool $returnID = true): int|string|bool;
@@ -77,7 +83,7 @@ interface RepositoryInterface
      * Update an existing record
      *
      * @param int|string|list<int|string>|null $id
-     * @param array<string, mixed>|object|null $data
+     * @param array<string, mixed>|TEntity|null $data
      */
     public function update(int|string|array|null $id = null, array|object|null $data = null): bool;
 
@@ -107,7 +113,7 @@ interface RepositoryInterface
      * @param int   $page     Current page
      * @param int   $perPage  Items per page
      * @param callable|null $baseCriteria Optional callback to apply security/base constraints
-     * @return array{data: list<mixed>, total: int, page: int, per_page: int, last_page: int, from: int, to: int}
+     * @return array{data: list<TEntity>, total: int, page: int, per_page: int, last_page: int, from: int, to: int}
      */
     public function paginateCriteria(array $criteria, int $page = 1, int $perPage = 20, ?callable $baseCriteria = null): array;
 }

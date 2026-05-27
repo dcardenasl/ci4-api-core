@@ -15,6 +15,9 @@ use JsonSerializable;
  *
  * Centralizes API response format for consistency.
  * Provides static methods for building success and error responses.
+ *
+ * @phpstan-type ResponseArray array<string, mixed>
+ * @phpstan-type StatusCodes array<string, int>
  */
 class ApiResponse
 {
@@ -79,7 +82,7 @@ class ApiResponse
     /**
      * Create a standard response object from any service result
      *
-     * @param array<string, int> $statusCodes
+     * @param StatusCodes $statusCodes
      */
     public static function fromResult(mixed $result, string $methodName = '', array $statusCodes = []): ApiResult
     {
@@ -147,7 +150,7 @@ class ApiResponse
     }
 
     /**
-     * @param array<string, mixed> $result
+     * @param ResponseArray $result
      */
     private static function handleArray(array $result, int $status): ApiResult
     {

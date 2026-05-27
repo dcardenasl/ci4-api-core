@@ -32,6 +32,9 @@ class QueryBuilder
 
     protected ?string $searchQuery = null;
 
+    /**
+     * @param Model|RepositoryInterface<object> $target
+     */
     public function __construct(Model|RepositoryInterface $target)
     {
         if ($target instanceof RepositoryInterface) {

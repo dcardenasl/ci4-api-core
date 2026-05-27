@@ -10,6 +10,8 @@ namespace dcardenasl\Ci4ApiCore\Repositories;
  * Specialised query contract for audit logs, on top of the generic
  * RepositoryInterface. Implementations live in the consumer project
  * because they bind to the project's `audit_logs` table conventions.
+ *
+ * @extends RepositoryInterface<object>
  */
 interface AuditRepositoryInterface extends RepositoryInterface
 {
