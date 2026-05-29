@@ -9,7 +9,11 @@
 
 ## 🔴 En progreso
 
-*(vacío)*
+### CORE-016 — HubClient concreto compartido en el core (cierra BFF-M1)
+- **Qué**: Promover la implementación concreta de `HubClient` (los 4 métodos compartidos `introspect`, `getServiceToken`, `registerPermission`, `getUser` + `appKeyHeaders()`) a `src/Http/Client/HubClient.php`, desacoplada de `Config\Hub` mediante un value object readonly `HubClientConfig`. `ci4-bff-starter` resuelve el HubClient del core directamente; `ci4-domain-starter` lo extiende añadiendo `findRoleByCode()` / `attachPermissionsToRole()`.
+- **Por qué**: F4 del audit de coherencia (2026-05-28). Elimina la duplicación entre el HubClient del BFF y el del dominio (drift latente: el dominio tenía 2 métodos extra). Completa BFF-M1; BFF-101 (`AbstractServiceClient`) y v0.7.0 (`HubClientInterface`) ya dejaron la base.
+- **Incluye (mismo repo)**: F1 (`phpstan/phpstan` → `^2.1`), F2 (`phpunit/phpunit` → `^11.0`), branch-alias `0.7.x-dev` → `0.9.x-dev`, corregir la línea "v0.5.0" obsoleta en `CLAUDE.md`.
+- **Release**: feature aditivo → bump **0.9.0** (encabeza la cascada Packagist hacia los consumers).
 
 ---
 
