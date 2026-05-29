@@ -8,7 +8,7 @@
 
 Production-ready REST API foundation for CodeIgniter 4. Drop it into any CI4 project to get a DTO-first architecture, JWT-ready HTTP layer, audit trail, queue, RBAC-ready filters, and a repository pattern — without writing boilerplate. Pair with [`dcardenasl/ci4-api-scaffolding`](https://github.com/dcardenasl/ci4-api-scaffolding) to scaffold full CRUD modules in one command.
 
-> **Status:** `v0.8.x` (pre-release) — published on Packagist. APIs may still change before `1.0.0`. Pin to `~0.8.0` or an exact version in production until 1.0.
+> **Status:** `v0.9.x` (pre-release) — published on Packagist. APIs may still change before `1.0.0`. Pin to `~0.9.0` or an exact version in production until 1.0.
 
 ## Contents
 
@@ -35,7 +35,7 @@ Production-ready REST API foundation for CodeIgniter 4. Drop it into any CI4 pro
 
 ```bash
 # Runtime foundation
-composer require dcardenasl/ci4-api-core:^0.8
+composer require dcardenasl/ci4-api-core:^0.9
 
 # Scaffolding engine (dev-only — provides make-crud.sh and spark commands)
 composer require --dev dcardenasl/ci4-api-scaffolding:^0.6
@@ -129,7 +129,7 @@ The engine was being copied between projects manually, leading to drift. Extract
 ## Installation
 
 ```bash
-composer require dcardenasl/ci4-api-core:^0.8
+composer require dcardenasl/ci4-api-core:^0.9
 ```
 
 ## Configure
