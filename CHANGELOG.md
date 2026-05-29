@@ -4,6 +4,14 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+## [0.9.1] — 2026-05-29
+
+### Added
+
+- **`Http\HealthCheckController`** — standard health check controller delegatable from consumer projects; exposes `GET /health` reporting database, disk space, and (if available) Redis status.
+- **`Exceptions\BaseExceptionHandler`** — abstract base class consumers extend to implement CI4's `Config\Exceptions::handler()` contract for uniform exception mapping.
+- **`Dto\ApiResponseDTO`**, **`Dto\CollectionResponseDTO`**, **`Dto\ErrorResponseDTO`** — generic typed response DTOs for standardised API response envelopes.
+
 ## [0.9.0] — 2026-05-28
 
 ### Added

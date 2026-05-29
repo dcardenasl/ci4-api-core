@@ -9,11 +9,7 @@
 
 ## 🔴 En progreso
 
-### CORE-016 — HubClient concreto compartido en el core (cierra BFF-M1)
-- **Qué**: Promover la implementación concreta de `HubClient` (los 4 métodos compartidos `introspect`, `getServiceToken`, `registerPermission`, `getUser` + `appKeyHeaders()`) a `src/Http/Client/HubClient.php`, desacoplada de `Config\Hub` mediante un value object readonly `HubClientConfig`. `ci4-bff-starter` resuelve el HubClient del core directamente; `ci4-domain-starter` lo extiende añadiendo `findRoleByCode()` / `attachPermissionsToRole()`.
-- **Por qué**: F4 del audit de coherencia (2026-05-28). Elimina la duplicación entre el HubClient del BFF y el del dominio (drift latente: el dominio tenía 2 métodos extra). Completa BFF-M1; BFF-101 (`AbstractServiceClient`) y v0.7.0 (`HubClientInterface`) ya dejaron la base.
-- **Incluye (mismo repo)**: F1 (`phpstan/phpstan` → `^2.1`), F2 (`phpunit/phpunit` → `^11.0`), branch-alias `0.7.x-dev` → `0.9.x-dev`, corregir la línea "v0.5.0" obsoleta en `CLAUDE.md`.
-- **Release**: feature aditivo → bump **0.9.0** (encabeza la cascada Packagist hacia los consumers).
+*(vacío)*
 
 ---
 
@@ -24,6 +20,11 @@
 ---
 
 ## ✅ Completadas
+
+### CORE-016 — HubClient concreto compartido en el core (F4 / cierra BFF-M1)
+- **Qué**: Nuevos `src/Http/Client/HubClient.php` (cliente concreto: `introspect`, `getServiceToken`, `registerPermission`, `getUser`) y `src/Http/Client/HubClientConfig.php` (value object readonly que desacopla del `Config\Hub` del consumer). 14 unit tests nuevos. F1 (`phpstan ^2.1`), F2 (`phpunit ^11` + migración de metadata doc-comment a atributos `#[DataProvider]`), branch-alias `0.9.x-dev`, línea de versión de `CLAUDE.md` corregida.
+- **Por qué**: F4 del audit de coherencia (2026-05-28). Elimina la duplicación BFF/dominio del HubClient. La adopción en consumers (BFF usa el del core, dominio lo extiende) se rastrea en BFF-112 / DOM-109 (Tier 3).
+- **Verificado**: `composer quality` limpio — PHPStan L8, CS-Fixer, security, 239 tests / 517 assertions, 0 deprecations (PHPUnit 11.5). **Released v0.9.0** (PR #18 → main → tag → Packagist + GitHub Release ok).
 
 ### CORE-011 — Unificación de throttling y RateLimitResponseHelpers
 - **Qué**: Promovido trait `RateLimitResponseHelpers` a `src/Http/Filters/Concerns/`. `AbstractThrottleFilter` actualizado para usarlo. Centraliza la construcción de respuestas 429 estandarizadas (JSON + headers `X-RateLimit-*` y `Retry-After`).
