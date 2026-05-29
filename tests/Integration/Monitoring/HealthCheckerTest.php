@@ -110,4 +110,15 @@ final class HealthCheckerTest extends TestCase
 
         $this->assertSame('unhealthy', $this->checker->getOverallStatus($checks));
     }
+
+    public function testGetOverallStatusIsDegradedWhenOneCheckIsCritical(): void
+    {
+        $checks = [
+            'database' => ['status' => 'healthy'],
+            'disk'     => ['status' => 'critical'],
+            'writable' => ['status' => 'healthy'],
+        ];
+
+        $this->assertSame('degraded', $this->checker->getOverallStatus($checks));
+    }
 }
