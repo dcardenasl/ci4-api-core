@@ -6,6 +6,7 @@ namespace Tests\Unit\Filters;
 
 use CodeIgniter\Database\BaseBuilder;
 use dcardenasl\Ci4ApiCore\Filters\SearchQueryApplier;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -59,9 +60,7 @@ final class SearchQueryApplierTest extends TestCase
         SearchQueryApplier::applyLike($builder, 'bar', ['name']);
     }
 
-    /**
-     * @dataProvider booleanModeOperatorProvider
-     */
+    #[DataProvider('booleanModeOperatorProvider')]
     public function testSanitizeFulltextQueryStripsOperators(string $input, string $expected): void
     {
         $this->assertSame($expected, SearchQueryApplier::sanitizeFulltextQuery($input));

@@ -18,6 +18,7 @@ use dcardenasl\Ci4ApiCore\Exceptions\TooManyRequestsException;
 use dcardenasl\Ci4ApiCore\Exceptions\ValidationException;
 use dcardenasl\Ci4ApiCore\Http\Client\AbstractServiceClient;
 use dcardenasl\Ci4ApiCore\Http\RequestIdHolder;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -99,9 +100,7 @@ final class AbstractServiceClientTest extends TestCase
         self::assertSame('caller-wins', $capturedOptions['headers']['X-Request-Id']);
     }
 
-    /**
-     * @dataProvider statusToExceptionProvider
-     */
+    #[DataProvider('statusToExceptionProvider')]
     public function testRequestMapsUpstreamStatusToCanonicalException(int $status, string $expected): void
     {
         $http   = $this->mockHttp([$this->jsonResponse($status, ['message' => 'upstream said no'])]);
