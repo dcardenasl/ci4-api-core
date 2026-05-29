@@ -38,7 +38,7 @@ Production-ready REST API foundation for CodeIgniter 4. Drop it into any CI4 pro
 composer require dcardenasl/ci4-api-core:^0.9
 
 # Scaffolding engine (dev-only — provides make-crud.sh and spark commands)
-composer require --dev dcardenasl/ci4-api-scaffolding:^0.6
+composer require --dev dcardenasl/ci4-api-scaffolding:^0.7
 
 # Scaffold a CRUD module
 bash vendor/bin/make-crud.sh Product Catalog \
