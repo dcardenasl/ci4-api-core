@@ -4,6 +4,8 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+## [0.9.2] — 2026-05-29
+
 ### Fixed
 
 - **`Exceptions\BaseExceptionHandler`** — corrected method signature to match CI4's `ExceptionHandlerInterface` (`handle(Throwable, RequestInterface, ResponseInterface, int, int): void`). The previous signature (`handle(Throwable): ResponseInterface`) was incompatible with the interface, making any consumer subclass silently non-functional as a CI4 exception handler.
