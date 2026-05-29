@@ -268,13 +268,13 @@ class HealthChecker
     public function getOverallStatus(array $checks): string
     {
         foreach ($checks as $check) {
-            if (isset($check['status']) && in_array($check['status'], ['unhealthy', 'critical'], true)) {
+            if (isset($check['status']) && $check['status'] === 'unhealthy') {
                 return 'unhealthy';
             }
         }
 
         foreach ($checks as $check) {
-            if (isset($check['status']) && $check['status'] === 'warning') {
+            if (isset($check['status']) && in_array($check['status'], ['warning', 'critical'], true)) {
                 return 'degraded';
             }
         }

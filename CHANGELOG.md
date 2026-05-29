@@ -4,6 +4,17 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-05-28
+
+### Added
+
+- **`Http\Client\HubClient`** — concrete, shared hub HTTP client implementing `Contracts\HubClientInterface` on top of `AbstractServiceClient`. Carries the four hub operations (`introspect`, `getServiceToken`, `registerPermission`, `getUser`) previously duplicated — with latent drift — in `ci4-bff-starter` and `ci4-domain-starter`. The BFF now resolves this class directly; domain apps subclass it to add hub endpoints exposed only to them (IAM role management). Closes the HubClient half of the BFF duplication audit (BFF-M1).
+- **`Http\Client\HubClientConfig`** — immutable value object (url, apiKey, endpoint paths, TTLs, timeout) that decouples `HubClient` from a consumer's framework `Config\Hub`. Consumers map their config into it inside the `Services::hubClient()` factory, so core depends only on this package.
+
+### Changed
+
+- **Dev tooling aligned with the rest of the platform:** `phpunit/phpunit` `^10.5` → `^11.0` (suite migrated off deprecated doc-comment metadata to PHPUnit attributes) and `phpstan/phpstan` `^2.0` → `^2.1`.
+
 ## [0.8.0] — 2026-05-27
 
 ### Added
