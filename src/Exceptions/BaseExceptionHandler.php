@@ -4,22 +4,29 @@ declare(strict_types=1);
 
 namespace dcardenasl\Ci4ApiCore\Exceptions;
 
+use CodeIgniter\Debug\ExceptionHandlerInterface;
+use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Throwable;
 
-abstract class BaseExceptionHandler
+abstract class BaseExceptionHandler implements ExceptionHandlerInterface
 {
-    public function handle(Throwable $exception): ResponseInterface
-    {
-        // Default mapping
-        $code = 500;
-        $message = 'An unexpected error occurred.';
+    public function handle(
+        Throwable $exception,
+        RequestInterface $request,
+        ResponseInterface $response,
+        int $statusCode,
+        int $exitCode,
+    ): void {
+        $response
+            ->setStatusCode($statusCode)
+            ->setContentType('application/json')
+            ->setBody((string) json_encode([
+                'success' => false,
+                'message' => $exception->getMessage() ?: 'An unexpected error occurred.',
+            ], JSON_THROW_ON_ERROR))
+            ->send();
 
-        // Custom mapping logic here
-
-        return service('response')->setJSON([
-            'success' => false,
-            'message' => $message,
-        ])->setStatusCode($code);
+        exit($exitCode);
     }
 }
