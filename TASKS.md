@@ -3,7 +3,7 @@
 > Fuente de verdad para trabajo en este repo.
 > Historial de completadas: ver `TASKS_ARCHIVE.md`.
 > Cross-repo: ver `../TASKS.md` (CORE-007 pendiente — actualizar kickstart tras extracción de scaffolding).
-> Última actualización: 2026-05-16 (BFF-101 ✅ completado — `AbstractServiceClient` en `src/Http/Client/`, listo para que BFF-102 y BFF-107 hereden de él)
+> Última actualización: 2026-05-29 (CORE-017 ✅ completado — `BaseExceptionHandler` firma corregida + `HealthCheckController` removido del core. Released v0.9.2)
 
 ---
 
@@ -20,6 +20,11 @@
 ---
 
 ## ✅ Completadas
+
+### CORE-017 — Corregir `BaseExceptionHandler` (firma CI4 compatible) · Released v0.9.2
+- **Qué**: Corregida firma de `handle()` en `BaseExceptionHandler` para coincidir con `ExceptionHandlerInterface` de CI4 (`handle(Throwable, RequestInterface, ResponseInterface, int, int): void`). Eliminado `Http\HealthCheckController` del core — tenía lógica específica de app (audit config, disk-pressure policy) que no puede ser satisfecha por una base genérica. `Monitoring\HealthChecker` permanece en el core; los consumers implementan su propio controller.
+- **Por qué**: La firma anterior hacía que cualquier subclase del consumer fuera silenciosamente no-funcional como CI4 exception handler (el framework la ignoraba). HealthCheckController en el core creaba acoplamiento a decisiones de app.
+- **Verificado**: `composer quality` limpio — 239 tests / 517 assertions. CI verde en PHP 8.2/8.3/8.4 × CI4 4.6/4.7. **Released v0.9.2** (PR #20 → main → tag → GitHub Release ok).
 
 ### CORE-016 — HubClient concreto compartido en el core (F4 / cierra BFF-M1)
 - **Qué**: Nuevos `src/Http/Client/HubClient.php` (cliente concreto: `introspect`, `getServiceToken`, `registerPermission`, `getUser`) y `src/Http/Client/HubClientConfig.php` (value object readonly que desacopla del `Config\Hub` del consumer). 14 unit tests nuevos. F1 (`phpstan ^2.1`), F2 (`phpunit ^11` + migración de metadata doc-comment a atributos `#[DataProvider]`), branch-alias `0.9.x-dev`, línea de versión de `CLAUDE.md` corregida.
