@@ -4,6 +4,8 @@ All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-c
 
 ## [Unreleased]
 
+## [0.9.3] — 2026-06-01
+
 ### Changed
 
 - **`HubClient::registerPermission()`** — enhanced to accept optional `applicationId` parameter, enabling domain apps to register permissions scoped to their own application in the hub. Backward compatible; existing calls work unchanged.
