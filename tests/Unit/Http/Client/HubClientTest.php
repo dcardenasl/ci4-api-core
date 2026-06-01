@@ -236,6 +236,34 @@ final class HubClientTest extends TestCase
         $this->assertTrue($created);
         $this->assertSame('Bearer admin-jwt', $captured['headers']['Authorization'] ?? null);
         $this->assertSame('test-key', $captured['headers']['X-App-Key'] ?? null);
+        $this->assertArrayHasKey('json', $captured);
+        $this->assertNull($captured['json']['application_id'] ?? null);
+    }
+
+    public function testRegisterPermissionForwardsApplicationIdWhenProvided(): void
+    {
+        $captured = null;
+
+        $cache = $this->createMock(CacheInterface::class);
+        $http  = $this->createMock(CURLRequest::class);
+        $http->expects($this->once())
+            ->method('request')
+            ->willReturnCallback(function (string $method, string $url, array $options) use (&$captured): ResponseInterface {
+                $captured = $options;
+
+                return $this->jsonResponse(201, ['data' => ['id' => 1]]);
+            });
+
+        $client = new HubClient($this->makeConfig(), $http, $cache);
+
+        $created = $client->registerPermission(
+            ['code' => 'items.read', 'resource' => 'items', 'action' => 'read'],
+            'admin-jwt',
+            1,
+        );
+
+        $this->assertTrue($created);
+        $this->assertSame(1, $captured['json']['application_id'] ?? null);
     }
 
     public function testRegisterPermissionReturnsFalseOnConflict(): void

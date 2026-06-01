@@ -41,7 +41,7 @@ interface HubClientInterface
      * @throws AuthorizationException  When the admin token lacks the required permission.
      * @throws ServiceUnavailableException When the hub is unreachable.
      */
-    public function registerPermission(array $permission, string $bearerToken): bool;
+    public function registerPermission(array $permission, string $bearerToken, ?int $applicationId = null): bool;
 
     /**
      * Fetch a user profile from the hub.

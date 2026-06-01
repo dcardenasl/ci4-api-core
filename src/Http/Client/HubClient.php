@@ -135,14 +135,14 @@ class HubClient extends AbstractServiceClient implements HubClientInterface
      * @throws AuthorizationException When the admin token lacks `iam.superadmin-access`.
      * @throws ServiceUnavailableException When the hub is unreachable or fails unexpectedly.
      */
-    public function registerPermission(array $permission, string $bearerToken): bool
+    public function registerPermission(array $permission, string $bearerToken, ?int $applicationId = null): bool
     {
         $body = [
             'code'           => $permission['code'],
             'resource'       => $permission['resource'],
             'action'         => $permission['action'],
             'description'    => $permission['description'] ?? null,
-            'application_id' => null,
+            'application_id' => $applicationId,
         ];
 
         try {
