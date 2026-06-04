@@ -1,8 +1,15 @@
 # Changelog
 
-All notable changes to `dcardenasl/ci4-api-core` (formerly `dcardenasl/ci4-api-crud-maker`) will be documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/spec/v2.0.0.html) with the caveat that pre-1.0 releases may break.
+All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.0.0] — 2026-06-04
+
+### Added
+
+- **`HubClient::registerSelfPermissions()`** — new method that calls `POST /api/v1/iam/self-permissions` using only the domain's X-App-Key (no superadmin JWT). Returns a summary `{created, existing, rejected, errors}`. Domain apps use this for canonical permission registration so `application_id` is resolved from the key, not from JWT context.
+- **`HubClientConfig::$selfPermissionsPath`** — new config field defaulting to `/api/v1/iam/self-permissions`.
 
 ## [0.9.3] — 2026-06-01
 

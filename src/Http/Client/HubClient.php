@@ -160,6 +160,28 @@ class HubClient extends AbstractServiceClient implements HubClientInterface
     }
 
     /**
+     * Register a batch of permissions for this domain app using its own X-App-Key.
+     * No superadmin JWT required — the hub identifies the caller application from
+     * the key and assigns the correct `application_id` automatically.
+     *
+     * Idempotent: already-registered codes are counted as "existing" and skipped.
+     * Permission codes must be namespaced to the app's code (e.g. "catalog.*").
+     *
+     * @param list<array{code: string, resource: string, action: string, description?: string}> $permissions
+     *
+     * @return array<string, mixed> Shape: {created: int, existing: int, rejected: int, errors: string[]}
+     *
+     * @throws ServiceUnavailableException When the hub is unreachable or fails unexpectedly.
+     */
+    public function registerSelfPermissions(array $permissions): array
+    {
+        return $this->request('POST', $this->config->selfPermissionsPath, [
+            'headers' => $this->appKeyHeaders(),
+            'json'    => ['permissions' => $permissions],
+        ]);
+    }
+
+    /**
      * Fetch a user profile from the hub. Caller forwards a valid bearer token
      * (the hub enforces `users.read` on this endpoint).
      *

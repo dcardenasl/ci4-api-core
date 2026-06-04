@@ -44,6 +44,18 @@ interface HubClientInterface
     public function registerPermission(array $permission, string $bearerToken, ?int $applicationId = null): bool;
 
     /**
+     * Register a batch of permissions for this domain app using its own X-App-Key.
+     * No superadmin JWT required — the hub assigns the correct application_id from the key.
+     *
+     * @param list<array{code: string, resource: string, action: string, description?: string}> $permissions
+     *
+     * @return array<string, mixed> Shape: {created: int, existing: int, rejected: int, errors: string[]}
+     *
+     * @throws ServiceUnavailableException When the hub is unreachable.
+     */
+    public function registerSelfPermissions(array $permissions): array;
+
+    /**
      * Fetch a user profile from the hub.
      *
      * @return array<string, mixed>

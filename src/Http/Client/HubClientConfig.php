@@ -21,6 +21,7 @@ final readonly class HubClientConfig
         public string $introspectPath = '/api/v1/auth/introspect',
         public string $serviceTokenPath = '/api/v1/auth/service-token',
         public string $permissionsPath = '/api/v1/iam/permissions',
+        public string $selfPermissionsPath = '/api/v1/iam/self-permissions',
         public int $introspectCacheTtl = 60,
         public int $serviceTokenSafetyMargin = 30,
         public int $httpTimeout = 5,
