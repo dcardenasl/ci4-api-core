@@ -295,6 +295,39 @@ final class HubClientTest extends TestCase
     }
 
     // ---------------------------------------------------------------------
+    // registerSelfPermissions()
+    // ---------------------------------------------------------------------
+
+    public function testRegisterSelfPermissionsSendsOnlyAppKeyAndReturnsSummary(): void
+    {
+        $captured = null;
+
+        $cache = $this->createMock(CacheInterface::class);
+        $http  = $this->createMock(CURLRequest::class);
+        $http->expects($this->once())
+            ->method('request')
+            ->willReturnCallback(function (string $method, string $url, array $options) use (&$captured): ResponseInterface {
+                $captured = ['method' => $method, 'url' => $url, 'options' => $options];
+
+                return $this->jsonResponse(200, ['data' => ['created' => 2, 'existing' => 1, 'rejected' => 0, 'errors' => []]]);
+            });
+
+        $client = new HubClient($this->makeConfig(), $http, $cache);
+
+        $result = $client->registerSelfPermissions([
+            ['code' => 'catalog.read',  'resource' => 'catalog', 'action' => 'read'],
+            ['code' => 'catalog.write', 'resource' => 'catalog', 'action' => 'write'],
+            ['code' => 'catalog.read',  'resource' => 'catalog', 'action' => 'read'],
+        ]);
+
+        $this->assertSame(['created' => 2, 'existing' => 1, 'rejected' => 0, 'errors' => []], $result);
+        $this->assertSame('POST', $captured['method']);
+        $this->assertStringContainsString('/api/v1/iam/self-permissions', $captured['url']);
+        $this->assertSame('test-key', $captured['options']['headers']['X-App-Key'] ?? null);
+        $this->assertArrayNotHasKey('Authorization', $captured['options']['headers'] ?? []);
+    }
+
+    // ---------------------------------------------------------------------
     // getUser()
     // ---------------------------------------------------------------------
 
