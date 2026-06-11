@@ -106,7 +106,7 @@ class QueryBuilder
             return $this;
         }
 
-        $useFulltext = ApiConfigFacade::bool('searchEnabled', true);
+        $useFulltext = ApiConfigFacade::bool('searchUseFulltext', true);
 
         SearchQueryApplier::apply($this->model, $query, $searchableFields, $useFulltext);
 

@@ -4,6 +4,12 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-06-10
+
+### Fixed
+
+- **`Filters\QueryBuilder`** — correct config key from `searchEnabled` to `searchUseFulltext` when reading fulltext search toggle from `ApiConfigFacade`.
+
 ## [1.0.0] — 2026-06-04
 
 ### Added
