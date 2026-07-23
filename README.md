@@ -8,7 +8,7 @@
 
 Production-ready REST API foundation for CodeIgniter 4. Drop it into any CI4 project to get a DTO-first architecture, JWT-ready HTTP layer, audit trail, queue, RBAC-ready filters, and a repository pattern — without writing boilerplate. Pair with [`dcardenasl/ci4-api-scaffolding`](https://github.com/dcardenasl/ci4-api-scaffolding) to scaffold full CRUD modules in one command.
 
-> **Status:** `v1.0.0` — stable, published on Packagist. Semantic versioning applies from this release: `^1.0` is safe for production.
+> **Status:** `v1.1.0` — stable, published on Packagist. Semantic versioning applies from this release: `^1.0` is safe for production.
 
 ## Contents
 

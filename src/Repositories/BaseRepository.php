@@ -78,7 +78,7 @@ abstract class BaseRepository implements RepositoryInterface
     /**
      * @return list<TEntity>
      */
-    public function findAll(int $limit = 0, int $offset = 0): array
+    public function findAll(?int $limit = null, int $offset = 0): array
     {
         /** @var list<TEntity> $result */
         $result = $this->model->findAll($limit, $offset);

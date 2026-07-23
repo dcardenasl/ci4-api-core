@@ -4,6 +4,17 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-07-23
+
+### Added
+
+- **`Support\JsonCastNormalizer::toArray()`** — normalizes a value decoded from a CI4 Entity `json` cast into a plain, fully-array structure. CI4's `json` cast decodes to `stdClass` recursively at every nesting level, not just the top one; a naive `(array) $value` only casts the top level and silently leaves nested values as `stdClass`, which then fail `is_array()` checks downstream without raising an error. Round-trips through `json_encode()`/`json_decode(..., true)` to normalize every level at once.
+
+### Fixed
+
+- **`BaseRequestDTO` — false-positive validation on empty-array wildcard fields** — CodeIgniter's Validation engine can't tell "zero items to expand a wildcard rule over" apart from "field is missing entirely": for a field like `items.*.id` with `items` absent or present-but-empty, it synthesizes a single phantom value keyed by the literal, unexpanded field name and runs the per-item rules against it, so a rule like `required_with[items]` wrongly treats that synthetic `null` as "items is present" and fails even though there's nothing to violate. `BaseRequestDTO::validate()` now drops a wildcard rule entirely when its base field isn't a non-empty array before handing rules to the validator, sidestepping the framework's fallback. Rules with no wildcard children, and wildcard rules over arrays that do have items, are untouched.
+- **`Repositories\RepositoryInterface::findAll()` / `BaseRepository::findAll()`** — changed the `$limit` parameter from `int $limit = 0` to `?int $limit = null`, matching CI4's own `Model::findAll()` convention. The old `0` default was a landmine: any consumer app with `Config\Feature::$limitZeroAsAll = false` (both `ci4-website-builder-api` and `-domain` set this) would see `findAll()` called with no arguments silently return **zero rows** instead of "all records", because `0` was forwarded straight into CI4's ambiguous `limit(0)` semantics. `null` is unambiguous regardless of that config toggle. No call site in the consumer apps was passing default args at the time of the fix, so this closes the gap before it caused a real bug.
+
 ## [1.0.1] — 2026-06-10
 
 ### Fixed

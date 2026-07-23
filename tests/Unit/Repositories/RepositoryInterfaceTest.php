@@ -22,6 +22,22 @@ final class RepositoryInterfaceTest extends TestCase
         $this->assertStringContainsString('@return array{data: list<TEntity>', $paginateDoc);
     }
 
+    public function testFindAllLimitDefaultsToNullNotZero(): void
+    {
+        // Regression guard: a literal `0` default silently returns zero rows
+        // instead of "all records" in any consumer app that sets
+        // `Config\Feature::$limitZeroAsAll = false` (both
+        // ci4-website-builder-api and -domain do). `null` matches CI4's own
+        // `Model::findAll()` convention and is unambiguous regardless of that
+        // config toggle.
+        $reflection = new \ReflectionClass(RepositoryInterface::class);
+        $limitParam = $reflection->getMethod('findAll')->getParameters()[0];
+
+        $this->assertTrue($limitParam->allowsNull(), 'findAll($limit) must accept null.');
+        $this->assertTrue($limitParam->isDefaultValueAvailable());
+        $this->assertNull($limitParam->getDefaultValue(), 'findAll($limit) must default to null, not 0.');
+    }
+
     public function testAnonymousImplementationSatisfiesTheRepositoryContract(): void
     {
         $repository = new class () implements RepositoryInterface {
@@ -44,7 +60,7 @@ final class RepositoryInterfaceTest extends TestCase
                 return [];
             }
 
-            public function findAll(int $limit = 0, int $offset = 0): array
+            public function findAll(?int $limit = null, int $offset = 0): array
             {
                 return [];
             }
