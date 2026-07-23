@@ -43,11 +43,17 @@ interface RepositoryInterface
     public function errors(): array;
 
     /**
-     * Find all records matching criteria
+     * Find all records matching criteria.
+     *
+     * `$limit` defaults to `null` (return every record), matching CI4's own
+     * `Model::findAll()` convention. Do NOT default to `0` — combined with a
+     * consumer app's `Config\Feature::$limitZeroAsAll = false` (the value
+     * both `ci4-website-builder-api` and `-domain` use), a literal `0` limit
+     * silently returns zero rows instead of "all".
      *
      * @return list<TEntity>
      */
-    public function findAll(int $limit = 0, int $offset = 0): array;
+    public function findAll(?int $limit = null, int $offset = 0): array;
 
     /**
      * Find a batch of records by their primary keys.
