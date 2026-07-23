@@ -4,6 +4,8 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-07-23
+
 ### Added
 
 - **`Support\JsonCastNormalizer::toArray()`** — normalizes a value decoded from a CI4 Entity `json` cast into a plain, fully-array structure. CI4's `json` cast decodes to `stdClass` recursively at every nesting level, not just the top one; a naive `(array) $value` only casts the top level and silently leaves nested values as `stdClass`, which then fail `is_array()` checks downstream without raising an error. Round-trips through `json_encode()`/`json_decode(..., true)` to normalize every level at once.
