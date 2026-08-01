@@ -4,6 +4,13 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-08-01
+
+### Fixed
+
+- **`BaseCrudService::update()` — translations-only (or any fully-deferred) update rejected with 400** — the `empty($data)` guard ran *after* `beforeUpdate()`, so a consumer service whose `beforeUpdate()` legitimately extracts every key out of `$data` into a deferred slot (e.g. the "extract translations, persist them from `afterUpdate()`" pattern used by translatable CMS resources) always looked like an empty request and was rejected, even though real work still happened in `afterUpdate()`. The guard now runs against the *incoming* request payload before `beforeUpdate()` touches it (so a genuinely empty request is still rejected exactly as before), and the direct `repository->update()` write is skipped — without aborting the rest of the flow — when `beforeUpdate()` leaves nothing to write. `afterUpdate()` always still runs, so deferred-persistence patterns work correctly.
+- **`extra.branch-alias` in `composer.json`** — was still `"dev-main": "0.9.x-dev"` despite `main` being three minor releases past 1.0.0 (currently 1.1.0). Left as-is, any consumer temporarily pointing a path/VCS repository at this package (e.g. to test a fix pre-release) with a `^1.x` constraint would fail dependency resolution, since Composer would see `dev-main` aliased below `1.0`.
+
 ## [1.1.0] — 2026-07-23
 
 ### Added
