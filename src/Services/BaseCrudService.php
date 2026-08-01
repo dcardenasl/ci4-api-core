@@ -137,13 +137,22 @@ abstract class BaseCrudService implements CrudServiceContract
             $this->repository->setEntityContext($id, $entity);
 
             $data = $request->toArray();
-            $data = $this->beforeUpdate($id, $data, $context);
 
+            // Reject a genuinely empty request before beforeUpdate() runs. Checking
+            // *after* the hook would also reject payloads that beforeUpdate() legitimately
+            // consumed in full — e.g. a translations-only update, where a subclass's
+            // beforeUpdate() extracts `translations` into a deferred slot (persisted later
+            // from afterUpdate()) and leaves nothing for the direct column update. That is
+            // real work, not an empty request, and must not 400.
             if (empty($data)) {
                 throw new BadRequestException(lang('Api.noFieldsToUpdate'));
             }
 
-            if (!$this->repository->update($id, $data)) {
+            $data = $this->beforeUpdate($id, $data, $context);
+
+            // beforeUpdate() may have deferred everything (see above) — only touch the
+            // repository when there are still columns left to write.
+            if (!empty($data) && !$this->repository->update($id, $data)) {
                 throw new ValidationException(lang('Api.updateError'), $this->repository->errors());
             }
 
