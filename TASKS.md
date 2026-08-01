@@ -9,7 +9,17 @@
 
 ## 🔴 En progreso
 
-*(vacío)*
+- [ ] **CORE-018 — `BaseCrudService::update()` rechaza updates que `beforeUpdate()` deja
+  completamente diferidos (ej. solo-traducciones).** Encontrado 2026-08-01 en
+  `teatromuseo-cms-domain` corrigiendo el `featured_image` de una entrada CMS (ver
+  `LEGACY-MAP-020` en `../teatromuseo/teatromuseo-api/TASKS.md`). Fix implementado en
+  `fix/update-empty-data-after-deferred-fields` (rama basada en `dev`) + 3 tests nuevos +
+  branch-alias corregido (`0.9.x-dev` → `1.2.x-dev`, estaba desactualizado desde antes de la
+  serie 1.x). Verificado en vivo: reproducido el 400 con la versión publicada, confirmado 200
+  apuntando `teatromuseo-cms-domain` a esta rama vía path-repository temporal, suite completa
+  del consumer (522/522 tests) y `composer quality` de este paquete (255/255 tests, PHPStan L8,
+  CS-Fixer, security audit) en verde. PR abierto contra `dev`, pendiente merge + tag + release
+  antes de poder cerrar la tarea.
 
 ---
 

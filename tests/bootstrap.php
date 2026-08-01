@@ -48,6 +48,14 @@ if (!class_exists('Config\Audit')) {
     class_alias(\dcardenasl\Ci4ApiCore\Config\Audit::class, 'Config\Audit');
 }
 
+// HandlesTransactions::wrapInTransaction() (used by every BaseCrudService::store()/
+// update() success path) calls Config\Database::connect() unconditionally. There is no
+// real database or CI4 app here, so provide a minimal stand-in — otherwise no test can
+// exercise a successful store()/update() at all.
+if (!class_exists('Config\Database')) {
+    require_once __DIR__ . '/Support/DatabaseConfigStub.php';
+}
+
 // Stub CI4 global helpers that are not autoloaded when the framework runs without a full app.
 // These functions are defined in CI4's system/Common.php, which requires a running app context.
 if (!function_exists('lang')) {
