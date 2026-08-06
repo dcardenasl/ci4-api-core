@@ -4,6 +4,8 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-08-06
+
 ### Added
 
 - **`Http\Traits\HasCrudActions`** — standard `index/show/create/update/delete` controller actions
