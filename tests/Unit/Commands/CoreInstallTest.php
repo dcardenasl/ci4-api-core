@@ -117,6 +117,119 @@ final class CoreInstallTest extends TestCase
         $this->assertStringContainsString("'unhealthy' ? 503 : 200", $patched);
     }
 
+    // ─── Infrastructure migration publishing (CORE-023) ──────────────────────
+
+    public function testExistingMigrationClassesFindsClassRegardlessOfFilename(): void
+    {
+        $dir = sys_get_temp_dir() . '/ci4-core-install-test-' . uniqid() . '/';
+        mkdir($dir, 0777, true);
+        file_put_contents(
+            $dir . '2020-01-01-000000_SomeHandWrittenName.php',
+            "<?php\nnamespace App\\Database\\Migrations;\nuse CodeIgniter\\Database\\Migration;\nclass CreateJobsTable extends Migration {}\n"
+        );
+
+        $classes = $this->invokePrivate('existingMigrationClasses', [$dir]);
+
+        $this->assertContains('CreateJobsTable', $classes);
+
+        $this->removeDir($dir);
+    }
+
+    public function testExistingMigrationClassesEmptyForEmptyDirectory(): void
+    {
+        $dir = sys_get_temp_dir() . '/ci4-core-install-test-' . uniqid() . '/';
+        mkdir($dir, 0777, true);
+
+        $classes = $this->invokePrivate('existingMigrationClasses', [$dir]);
+
+        $this->assertSame([], $classes);
+
+        $this->removeDir($dir);
+    }
+
+    public function testMigrationContentForEachTableIsIdempotentAndMatchesSchema(): void
+    {
+        $jobs = $this->invokePrivate('migrationContent', ['jobs', 'CreateJobsTable']);
+        $this->assertStringContainsString('class CreateJobsTable extends Migration', $jobs);
+        $this->assertStringContainsString("tableExists('jobs')", $jobs);
+        $this->assertStringContainsString("'queue', 'reserved_at'", $jobs);
+
+        $requestLogs = $this->invokePrivate('migrationContent', ['request_logs', 'CreateRequestLogsTable']);
+        $this->assertStringContainsString('class CreateRequestLogsTable extends Migration', $requestLogs);
+        $this->assertStringContainsString("tableExists('request_logs')", $requestLogs);
+
+        $auditLogs = $this->invokePrivate('migrationContent', ['audit_logs', 'CreateAuditLogsTable']);
+        $this->assertStringContainsString('class CreateAuditLogsTable extends Migration', $auditLogs);
+        $this->assertStringContainsString("tableExists('audit_logs')", $auditLogs);
+        $this->assertStringContainsString('idx_audit_action_created_at', $auditLogs);
+        // No FK to `users` — most consumers don't own that table locally.
+        $this->assertStringNotContainsString('addForeignKey', $auditLogs);
+
+        $idempotency = $this->invokePrivate('migrationContent', ['idempotency_keys', 'CreateIdempotencyKeysTable']);
+        $this->assertStringContainsString('class CreateIdempotencyKeysTable extends Migration', $idempotency);
+        $this->assertStringContainsString("tableExists('idempotency_keys')", $idempotency);
+        $this->assertStringContainsString('addPrimaryKey', $idempotency);
+    }
+
+    public function testMigrationContentThrowsForUnknownTable(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->invokePrivate('migrationContent', ['not_a_real_table', 'SomeClass']);
+    }
+
+    public function testPublishMigrationsWritesAllFourWhenDirectoryIsEmpty(): void
+    {
+        $dir = sys_get_temp_dir() . '/ci4-core-install-test-' . uniqid() . '/';
+
+        $this->invokePrivate('publishMigrations', [$dir]);
+
+        $files = glob($dir . '*.php') ?: [];
+        $this->assertCount(4, $files);
+
+        $combined = implode('', array_map('file_get_contents', $files));
+        $this->assertStringContainsString('class CreateJobsTable', $combined);
+        $this->assertStringContainsString('class CreateRequestLogsTable', $combined);
+        $this->assertStringContainsString('class CreateAuditLogsTable', $combined);
+        $this->assertStringContainsString('class CreateIdempotencyKeysTable', $combined);
+
+        $this->removeDir($dir);
+    }
+
+    public function testPublishMigrationsSkipsTablesThatAlreadyHaveAMigration(): void
+    {
+        $dir = sys_get_temp_dir() . '/ci4-core-install-test-' . uniqid() . '/';
+        mkdir($dir, 0777, true);
+        file_put_contents(
+            $dir . '2020-01-01-000000_LegacyJobsTable.php',
+            "<?php\nnamespace App\\Database\\Migrations;\nuse CodeIgniter\\Database\\Migration;\nclass CreateJobsTable extends Migration {}\n"
+        );
+
+        $this->invokePrivate('publishMigrations', [$dir]);
+
+        $files = glob($dir . '*.php') ?: [];
+        // The pre-existing jobs migration plus 3 newly-published ones.
+        $this->assertCount(4, $files);
+
+        $combined = implode('', array_map('file_get_contents', $files));
+        $this->assertSame(1, substr_count($combined, 'class CreateJobsTable'));
+
+        $this->removeDir($dir);
+    }
+
+    private function removeDir(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        foreach (glob($dir . '*') ?: [] as $file) {
+            @unlink($file);
+        }
+
+        @rmdir($dir);
+    }
+
     /**
      * Helper that calls the private `applyPatch()` with the fixture file
      * computed `lastBrace` position, mimicking the production call site.

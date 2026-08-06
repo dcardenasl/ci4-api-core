@@ -44,6 +44,23 @@ class CoreInstall extends BaseCommand
     private const MARKER_HEALTH_END    = '// ci4-api-core: health route end';
 
     /**
+     * Table => migration class name for the infrastructure this package's
+     * runtime code assumes exists (QueueManager/HealthChecker for `jobs`,
+     * RequestLoggingFilter for `request_logs`, AuditRepositoryInterface
+     * implementations for `audit_logs`, IdempotencyFilter for
+     * `idempotency_keys`) but ships no migration for, since a Composer
+     * package cannot carry framework migrations on its own.
+     *
+     * @var array<string, string>
+     */
+    private const MIGRATION_TABLES = [
+        'jobs'             => 'CreateJobsTable',
+        'request_logs'     => 'CreateRequestLogsTable',
+        'audit_logs'       => 'CreateAuditLogsTable',
+        'idempotency_keys' => 'CreateIdempotencyKeysTable',
+    ];
+
+    /**
      * @param array<int|string, string|null> $params
      */
     public function run(array $params): void
@@ -56,8 +73,479 @@ class CoreInstall extends BaseCommand
         $this->generateApiCoreServices();
         $this->patchServicesPhp();
         $this->patchRoutesPhp();
+        $this->publishMigrations();
         $this->validate();
         $this->printNextSteps();
+    }
+
+    /**
+     * Writes a migration for each table in {@see MIGRATION_TABLES} that the
+     * consumer doesn't already have. Detected by class name (not filename or
+     * DB state — migrations haven't run yet at install time), so a
+     * hand-written or previously-generated migration for the same table is
+     * left alone and never duplicated.
+     */
+    private function publishMigrations(?string $dir = null): void
+    {
+        $dir ??= APPPATH . 'Database/Migrations/';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0777, true);
+        }
+
+        $existingClasses = $this->existingMigrationClasses($dir);
+        $timestamp = time();
+
+        foreach (self::MIGRATION_TABLES as $table => $className) {
+            if (in_array($className, $existingClasses, true)) {
+                CLI::write('  ' . CLI::color('~', 'yellow') . "  Migration for `{$table}` already present ({$className}) — skipped");
+
+                continue;
+            }
+
+            $filename = date('Y-m-d-His', $timestamp) . '_' . $className . '.php';
+            $timestamp++; // Keep filenames unique and ordered when several publish in the same run.
+
+            if (file_put_contents($dir . $filename, $this->migrationContent($table, $className)) === false) {
+                CLI::error("Failed to write migration {$filename}.");
+                CLI::newLine();
+                exit(1);
+            }
+
+            CLI::write('  ' . CLI::color('✓', 'green') . "  Created  app/Database/Migrations/{$filename}");
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function existingMigrationClasses(string $dir): array
+    {
+        $classes = [];
+
+        foreach (glob($dir . '*.php') ?: [] as $path) {
+            $content = file_get_contents($path);
+            if ($content === false) {
+                continue;
+            }
+
+            if (preg_match('/class\s+(\w+)\s+extends\s+Migration/', $content, $matches) === 1) {
+                $classes[] = $matches[1];
+            }
+        }
+
+        return $classes;
+    }
+
+    private function migrationContent(string $table, string $className): string
+    {
+        return match ($table) {
+            'jobs'             => $this->jobsMigrationContent($className),
+            'request_logs'     => $this->requestLogsMigrationContent($className),
+            'audit_logs'       => $this->auditLogsMigrationContent($className),
+            'idempotency_keys' => $this->idempotencyKeysMigrationContent($className),
+            default            => throw new \InvalidArgumentException("No migration template for table '{$table}'."),
+        };
+    }
+
+    private function jobsMigrationContent(string $className): string
+    {
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace App\Database\Migrations;
+
+use CodeIgniter\Database\Migration;
+
+/**
+ * Backs `dcardenasl\Ci4ApiCore\Queue\QueueManager` (DB-backed queue driver)
+ * and `Monitoring\HealthChecker::checkQueue()`. Published by `core:install`.
+ */
+class {$className} extends Migration
+{
+    public function up(): void
+    {
+        /** @var \CodeIgniter\Database\BaseConnection \$db */
+        \$db = \$this->db;
+
+        if (\$db->tableExists('jobs')) {
+            return;
+        }
+
+        \$this->forge->addField([
+            'id' => [
+                'type' => 'BIGINT',
+                'unsigned' => true,
+                'auto_increment' => true,
+            ],
+            'queue' => [
+                'type' => 'VARCHAR',
+                'constraint' => 255,
+                'default' => 'default',
+            ],
+            'payload' => [
+                'type' => 'TEXT',
+            ],
+            'attempts' => [
+                'type' => 'TINYINT',
+                'unsigned' => true,
+                'default' => 0,
+            ],
+            'reserved_at' => [
+                'type' => 'INT',
+                'unsigned' => true,
+                'null' => true,
+            ],
+            'available_at' => [
+                'type' => 'INT',
+                'unsigned' => true,
+            ],
+            'created_at' => [
+                'type' => 'INT',
+                'unsigned' => true,
+            ],
+        ]);
+
+        \$this->forge->addKey('id', true);
+        \$this->forge->addKey(['queue', 'reserved_at']);
+        \$this->forge->createTable('jobs');
+    }
+
+    public function down(): void
+    {
+        /** @var \CodeIgniter\Database\BaseConnection \$db */
+        \$db = \$this->db;
+
+        if (! \$db->tableExists('jobs')) {
+            return;
+        }
+
+        \$this->forge->dropTable('jobs', true);
+    }
+}
+
+PHP;
+    }
+
+    private function requestLogsMigrationContent(string $className): string
+    {
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace App\Database\Migrations;
+
+use CodeIgniter\Database\Migration;
+use CodeIgniter\Database\RawSql;
+
+/**
+ * Backs `dcardenasl\Ci4ApiCore\Http\Filters\RequestLoggingFilter` /
+ * `Queue\Jobs\LogRequestJob`. Published by `core:install`.
+ */
+class {$className} extends Migration
+{
+    public function up(): void
+    {
+        /** @var \CodeIgniter\Database\BaseConnection \$db */
+        \$db = \$this->db;
+
+        if (\$db->tableExists('request_logs')) {
+            return;
+        }
+
+        \$this->forge->addField([
+            'id' => [
+                'type' => 'BIGINT',
+                'unsigned' => true,
+                'auto_increment' => true,
+            ],
+            'method' => [
+                'type' => 'VARCHAR',
+                'constraint' => 10,
+            ],
+            'uri' => [
+                'type' => 'VARCHAR',
+                'constraint' => 500,
+            ],
+            'user_id' => [
+                'type' => 'INT',
+                'unsigned' => true,
+                'null' => true,
+            ],
+            'ip_address' => [
+                'type' => 'VARCHAR',
+                'constraint' => 45,
+            ],
+            'user_agent' => [
+                'type' => 'VARCHAR',
+                'constraint' => 500,
+                'null' => true,
+            ],
+            'response_code' => [
+                'type' => 'SMALLINT',
+                'unsigned' => true,
+            ],
+            'response_time' => [
+                'type' => 'INT',
+                'unsigned' => true,
+            ],
+            'created_at' => [
+                'type'    => 'DATETIME',
+                'null'    => false,
+                'default' => new RawSql('CURRENT_TIMESTAMP'),
+            ],
+        ]);
+
+        \$this->forge->addKey('id', true);
+        \$this->forge->addKey(['user_id', 'created_at']);
+        \$this->forge->addKey('created_at');
+        \$this->forge->createTable('request_logs');
+    }
+
+    public function down(): void
+    {
+        /** @var \CodeIgniter\Database\BaseConnection \$db */
+        \$db = \$this->db;
+
+        if (! \$db->tableExists('request_logs')) {
+            return;
+        }
+
+        \$this->forge->dropTable('request_logs', true);
+    }
+}
+
+PHP;
+    }
+
+    private function auditLogsMigrationContent(string $className): string
+    {
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace App\Database\Migrations;
+
+use CodeIgniter\Database\Migration;
+use CodeIgniter\Database\RawSql;
+
+/**
+ * Backs `dcardenasl\Ci4ApiCore\Repositories\AuditRepositoryInterface`
+ * implementations and `Models\BaseAuditableModel`. Published by
+ * `core:install`.
+ *
+ * No FK on `user_id` — most consumers of this package (domain apps behind
+ * a hub) don't own a local `users` table; `user_id` reflects whichever
+ * identity the app's own auth layer surfaces. Apps that DO own `users`
+ * locally (e.g. an auth hub) may add the FK in a follow-on migration.
+ */
+class {$className} extends Migration
+{
+    public function up(): void
+    {
+        /** @var \CodeIgniter\Database\BaseConnection \$db */
+        \$db = \$this->db;
+
+        if (\$db->tableExists('audit_logs')) {
+            return;
+        }
+
+        \$this->forge->addField([
+            'id' => [
+                'type' => 'BIGINT',
+                'unsigned' => true,
+                'auto_increment' => true,
+            ],
+            'user_id' => [
+                'type' => 'INT',
+                'unsigned' => true,
+                'null' => true,
+            ],
+            'action' => [
+                'type' => 'VARCHAR',
+                'constraint' => 50,
+            ],
+            'entity_type' => [
+                'type' => 'VARCHAR',
+                'constraint' => 50,
+            ],
+            'entity_id' => [
+                'type' => 'INT',
+                'unsigned' => true,
+                'null' => true,
+            ],
+            'old_values' => [
+                'type' => 'JSON',
+                'null' => true,
+            ],
+            'new_values' => [
+                'type' => 'JSON',
+                'null' => true,
+            ],
+            'ip_address' => [
+                'type' => 'VARCHAR',
+                'constraint' => 45,
+            ],
+            'user_agent' => [
+                'type' => 'VARCHAR',
+                'constraint' => 500,
+                'null' => true,
+            ],
+            'result' => [
+                'type' => 'VARCHAR',
+                'constraint' => 20,
+                'default' => 'success',
+            ],
+            'severity' => [
+                'type' => 'VARCHAR',
+                'constraint' => 20,
+                'default' => 'info',
+            ],
+            'request_id' => [
+                'type' => 'VARCHAR',
+                'constraint' => 64,
+                'null' => true,
+            ],
+            'metadata' => [
+                'type' => 'JSON',
+                'null' => true,
+            ],
+            'created_at' => [
+                'type'    => 'DATETIME',
+                'null'    => false,
+                'default' => new RawSql('CURRENT_TIMESTAMP'),
+            ],
+        ]);
+
+        \$this->forge->addKey('id', true);
+        \$this->forge->addKey(['user_id', 'entity_type', 'entity_id']);
+        \$this->forge->addKey('created_at');
+        \$this->forge->addKey(['action', 'created_at'], false, false, 'idx_audit_action_created_at');
+        \$this->forge->addKey(['severity', 'created_at'], false, false, 'idx_audit_severity_created_at');
+        \$this->forge->addKey(['result', 'created_at'], false, false, 'idx_audit_result_created_at');
+        \$this->forge->addKey('request_id', false, false, 'idx_audit_request_id');
+        \$this->forge->createTable('audit_logs');
+    }
+
+    public function down(): void
+    {
+        /** @var \CodeIgniter\Database\BaseConnection \$db */
+        \$db = \$this->db;
+
+        if (! \$db->tableExists('audit_logs')) {
+            return;
+        }
+
+        \$this->forge->dropTable('audit_logs', true);
+    }
+}
+
+PHP;
+    }
+
+    private function idempotencyKeysMigrationContent(string $className): string
+    {
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace App\Database\Migrations;
+
+use CodeIgniter\Database\Migration;
+use CodeIgniter\Database\RawSql;
+
+/**
+ * Backs `dcardenasl\Ci4ApiCore\Http\Filters\IdempotencyFilter`. Published by
+ * `core:install`.
+ *
+ * Each row records the response to replay for a given (Idempotency-Key,
+ * actor, endpoint) tuple. `request_hash` is a SHA-256 of the request body,
+ * so a retry with the same key but a different payload returns 409
+ * Conflict instead of replaying. `expires_at` backs a periodic cleanup job
+ * (e.g. a cron deleting `expires_at < NOW()`).
+ */
+class {$className} extends Migration
+{
+    public function up(): void
+    {
+        /** @var \CodeIgniter\Database\BaseConnection \$db */
+        \$db = \$this->db;
+
+        if (\$db->tableExists('idempotency_keys')) {
+            return;
+        }
+
+        \$this->forge->addField([
+            'idempotency_key' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 64,
+                'null'       => false,
+            ],
+            'actor_id' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'unsigned'   => true,
+                'null'       => true,
+            ],
+            'endpoint' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 255,
+                'null'       => false,
+            ],
+            'request_hash' => [
+                'type'       => 'CHAR',
+                'constraint' => 64,
+                'null'       => false,
+            ],
+            'response_status' => [
+                'type'       => 'SMALLINT',
+                'constraint' => 5,
+                'unsigned'   => true,
+                'null'       => false,
+            ],
+            'response_headers' => [
+                'type' => 'TEXT',
+                'null' => true,
+            ],
+            'response_body' => [
+                'type' => 'LONGTEXT',
+                'null' => true,
+            ],
+            'created_at' => [
+                'type'    => 'DATETIME',
+                'null'    => false,
+                'default' => new RawSql('CURRENT_TIMESTAMP'),
+            ],
+            'expires_at' => [
+                'type' => 'DATETIME',
+                'null' => false,
+            ],
+        ]);
+
+        \$this->forge->addPrimaryKey('idempotency_key');
+        \$this->forge->addKey('expires_at');
+        \$this->forge->addKey(['actor_id', 'endpoint']);
+        \$this->forge->createTable('idempotency_keys');
+    }
+
+    public function down(): void
+    {
+        /** @var \CodeIgniter\Database\BaseConnection \$db */
+        \$db = \$this->db;
+
+        if (! \$db->tableExists('idempotency_keys')) {
+            return;
+        }
+
+        \$this->forge->dropTable('idempotency_keys', true);
+    }
+}
+
+PHP;
     }
 
     private function generateApiCoreServices(): void
