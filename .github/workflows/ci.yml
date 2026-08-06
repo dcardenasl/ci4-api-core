@@ -14,22 +14,37 @@ jobs:
       matrix:
         php-version: ['8.2', '8.3', '8.4']
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ROOT_HOST: "%"
+          MYSQL_DATABASE: ci4_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
           coverage: ${{ matrix.php-version == '8.2' && 'xdebug' || 'none' }}
-          extensions: intl, mbstring, json, dom
+          extensions: mysqli, intl, mbstring, json, dom
 
       - name: Validate composer.json
         run: composer validate --strict --no-check-publish
 
       - name: Cache Composer dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: vendor
           key: ${{ runner.os }}-php-${{ matrix.php-version }}-${{ hashFiles('**/composer.lock') }}
@@ -39,6 +54,18 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -u root -proot --silent; then
+              echo "MySQL is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MySQL did not become ready in time" >&2
+          exit 1
+
       - name: PHP CS Fixer (dry-run)
         run: composer cs-check
 
@@ -46,7 +73,7 @@ jobs:
         run: composer analyse
 
       - name: PHPUnit
-        run: composer test -- --testsuite Unit,Integration ${{ matrix.php-version == '8.2' && '--coverage-clover coverage.xml' || '' }}
+        run: composer test -- --testsuite Unit,Integration,Database ${{ matrix.php-version == '8.2' && '--coverage-clover coverage.xml' || '' }}
 
       - name: Upload coverage to Codecov
         if: matrix.php-version == '8.2'
@@ -76,7 +103,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2

@@ -8,6 +8,7 @@ use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Config\App;
+use dcardenasl\Ci4ApiCore\Localization\RequestLocaleResolver;
 
 /**
  * Locale Filter
@@ -72,38 +73,24 @@ class LocaleFilter implements FilterInterface
      */
     protected function parseAcceptLanguage(string $acceptLanguage, array $supportedLocales): ?string
     {
-        // Parse the Accept-Language header
-        $languages = [];
-
-        foreach (explode(',', $acceptLanguage) as $item) {
-            $item = trim($item);
-
-            if (empty($item)) {
+        $supported = [];
+        foreach ($supportedLocales as $supportedLocale) {
+            if (! is_string($supportedLocale)) {
                 continue;
             }
 
-            // Check for quality value
-            if (preg_match('/^([a-zA-Z\-]+)(?:;q=([0-9.]+))?$/', $item, $matches)) {
-                $lang = strtolower($matches[1]);
-                $quality = isset($matches[2]) ? (float) $matches[2] : 1.0;
-                $languages[$lang] = $quality;
-            }
+            $normalized = strtolower(str_replace('_', '-', $supportedLocale));
+            $supported[$normalized] = $supportedLocale;
         }
 
-        // Sort by quality (highest first)
-        arsort($languages);
-
-        // Find best match
-        foreach (array_keys($languages) as $lang) {
-            // Exact match
-            if (in_array($lang, $supportedLocales, true)) {
-                return $lang;
+        foreach (RequestLocaleResolver::parse($acceptLanguage) as $locale) {
+            if (isset($supported[$locale])) {
+                return $supported[$locale];
             }
 
-            // Check for language without region (e.g., "es-MX" -> "es")
-            $baseLang = explode('-', $lang)[0];
-            if (in_array($baseLang, $supportedLocales, true)) {
-                return $baseLang;
+            $baseLocale = explode('-', $locale, 2)[0];
+            if (isset($supported[$baseLocale])) {
+                return $supported[$baseLocale];
             }
         }
 

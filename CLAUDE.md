@@ -18,7 +18,7 @@ For cross-repo context (current milestone, blocked tasks), read `../TASKS.md`.
 
 **ci4-api-core** is a Composer package providing the **runtime foundation** for CodeIgniter 4 API projects: base classes, HTTP layer, services, repositories, models, filters, audit chain, queue, and security utilities. Designed to drop into any CodeIgniter 4 application via Packagist (`dcardenasl/ci4-api-core`).
 
-**Current version:** v1.1.0 — published on Packagist.
+**Current version:** v1.1.1 — published on Packagist.
 
 For release history see `CHANGELOG.md`. Current state of this package:
 
@@ -32,7 +32,8 @@ For release history see `CHANGELOG.md`. Current state of this package:
 - **Query filters**: `FilterParser`, `FilterOperatorApplier`, `SearchQueryApplier`, `QueryBuilder`
 - **Logging / Monitoring / Queue**: `JsonFormatter`, `MonologHandler`, `HealthChecker`, `Queue\Job`, `QueueManager`, `SyncQueueManager`, `WriteAuditLogJob`, `LogRequestJob`
 - **Audit chain**: `AuditService`, `AuditWriter`, `AuditPayloadSanitizer`, `AuditEventDTO`, `PayloadResponseDTO`
-- **Models**: `BaseAuditableModel`, `Auditable` trait, `Filterable`, `Searchable` traits, `DecimalCast`
+- **Models**: `BaseAuditableModel`, `BaseTranslationModel`, `BasePublicSlugModel`, `Auditable` trait, `Filterable`, `Searchable` traits, `DecimalCast`
+- **Content localization**: `RequestLocaleResolver`, `SlugGenerator`, `LocalizedTranslationStore`, `PublicSlugStore`, `NormalizesLocalizedPayload`, `Config\Localization`, `HasLocalizedTranslations`, `HasPublicSlugs`
 - **Security**: `Security\Hasher`, `Security\Token`, `Security\Mask`
 - **Helpers**: `src/Helpers/date.php` (autoloaded via `composer files`)
 
@@ -41,7 +42,7 @@ For **CRUD generation** (scaffolding), use the companion package: `dcardenasl/ci
 ## Commands
 
 ```bash
-composer test       # PHPUnit (Unit suite)
+composer test       # PHPUnit (Unit, Integration, Database; Database needs MySQL)
 composer analyse    # PHPStan level 8
 composer cs-check   # PHP CS-Fixer dry-run
 composer cs-fix     # Apply PHP CS-Fixer style fixes
@@ -67,12 +68,14 @@ Scaffolding commands (`make:crud`, `make:crud:remove`, `module:check`, `swagger:
 |---|---|
 | `src/Http/` | `ApiController`, `ApiResponse`, `ApiRequest`, `ContextHolder`, `RequestIdHolder` (HTTP boundary base classes) |
 | `src/Http/Filters/` | 9 HTTP filters: `CorrelationIdFilter`, `CorsFilter`, `DeprecationHeadersFilter`, `FeatureToggleFilter`, `IdempotencyFilter`, `LocaleFilter`, `MaintenanceFilter`, `RequestLoggingFilter`, `SecurityHeadersFilter` |
-| `src/Services/` | `BaseCrudService`, `CrudServiceContract`, `HandlesTransactions` trait, `AuditServiceInterface`, `AuditService` (concrete), `AuditWriter`, `AuditPayloadSanitizer` |
-| `src/Models/` | `BaseAuditableModel` + `Auditable` trait (audit hooks for CI4 models) |
+| `src/Services/` | `BaseCrudService`, `CrudServiceContract`, `HandlesTransactions`, `HasLocalizedTranslations`, `HasPublicSlugs`, `AuditServiceInterface`, `AuditService` (concrete), `AuditWriter`, `AuditPayloadSanitizer` |
+| `src/Models/` | `BaseAuditableModel` + `Auditable` trait (audit hooks for CI4 models), `BaseTranslationModel`, `BasePublicSlugModel` |
 | `src/Models/Traits/` | `Filterable`, `Searchable` (model-level whitelisted query helpers) |
 | `src/Filters/` | `FilterParser`, `FilterOperatorApplier`, `SearchQueryApplier`, `QueryBuilder` (request → query plumbing the traits delegate to) |
 | `src/DataCasts/` | `DecimalCast` (string-backed CI4 Entity cast preserving DECIMAL precision) |
-| `src/Dto/` | `DataTransferObjectInterface`, `BaseRequestDTO`, `PaginatedResponseDTO`, `SecurityContext` |
+| `src/Dto/` | `DataTransferObjectInterface`, `BaseRequestDTO`, `PaginatedResponseDTO`, `SecurityContext`, `Concerns\NormalizesLocalizedPayload` |
+| `src/Localization/` | `RequestLocaleResolver`, `SlugGenerator`, `LocalizedTranslationStore`, `PublicSlugStore` |
+| `src/Config/` | `Api`, `Audit`, `Cors`, `FeatureFlags`, `Localization`, `Queue` |
 | `src/Repositories/` | `RepositoryInterface`, `BaseRepository`, `GenericRepository`, `AuditRepositoryInterface`, `PivotRepositoryInterface` |
 | `src/Mappers/` | `ResponseMapperInterface`, `DtoResponseMapper` (entity → DTO contract + default implementation) |
 | `src/Exceptions/` | `ApiException` base + 8 concrete exceptions + `HasStatusCode` trait |
@@ -83,7 +86,7 @@ Scaffolding commands (`make:crud`, `make:crud:remove`, `module:check`, `swagger:
 | `src/Logging/` | `JsonFormatter`, `MonologHandler` (structured JSON logging via monolog) |
 | `src/Monitoring/` | `HealthChecker` |
 | `src/Contracts/` | `AuditableModelInterface`, `PaginatableResponse` (marker interface for paginated DTOs) |
-| `docs/` | `ARCHITECTURE_CONTRACT.md` (non-negotiable layer rules for consumer modules) · `EXTENDING_IAM.md` (plug in another identity provider) · `EXTENDING_THROTTLE.md` (custom rate-limit strategy) · `EXTENDING_QUEUE.md` (alternative queue backend) · `EXTENDING_AUDIT.md` (replace or extend the audit pipeline) |
+| `docs/` | `ARCHITECTURE_CONTRACT.md` (non-negotiable layer rules for consumer modules) · `EXTENDING_IAM.md` (plug in another identity provider) · `EXTENDING_THROTTLE.md` (custom rate-limit strategy) · `EXTENDING_QUEUE.md` (alternative queue backend) · `EXTENDING_AUDIT.md` (replace or extend the audit pipeline) · `EXTENDING_LOCALIZATION.md` (localized content and public slugs) |
 
 ### Consumer requirements (runtime contract)
 
@@ -97,7 +100,20 @@ Classes under `src/Http/`, `src/Models/`, `src/Services/`, and `src/Filters/` re
 
 Plus standard CI4 globals: `lang()`, `service('validation')`, `Config\Database`, `ENVIRONMENT` constant.
 
+Consumers adopting localized content must additionally provide:
+
+- `Services::requestLocaleResolver()` → shared `dcardenasl\Ci4ApiCore\Localization\RequestLocaleResolver`
+  used by locale-aware stores; `LocaleFilter` uses the same parser contract for app-locale negotiation
+- `Services::localizedTranslationStore()` → `dcardenasl\Ci4ApiCore\Localization\LocalizedTranslationStore`
+  built with the consumer's `BaseTranslationModel` subclass
+- `Services::publicSlugStore()` → `dcardenasl\Ci4ApiCore\Localization\PublicSlugStore` built with the
+  consumer's `BasePublicSlugModel` subclass when public slugs are enabled
+- **`config('Localization')`** → consumer subclass of `dcardenasl\Ci4ApiCore\Config\Localization` with
+  `translatableFields` and `legacyFallbackLocale`
+
 These are not enforced at install time — a missing factory (factories 1–4) will surface as a `BadMethodCallException` on the first request that hits the corresponding code path. The optional `config('Api')` (5) silently coalesces to defaults.
+Localization factories and `config('Localization')` are likewise optional until a service composes the
+localization traits; at that point the consumer must wire the factories and registry described above.
 
 ## Key rules
 

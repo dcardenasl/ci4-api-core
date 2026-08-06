@@ -452,6 +452,15 @@ trait ApiCoreServices
         return new \dcardenasl\Ci4ApiCore\Support\ResponseDtoFactory();
     }
 
+    public static function requestLocaleResolver(bool $getShared = true): \dcardenasl\Ci4ApiCore\Localization\RequestLocaleResolver
+    {
+        if ($getShared) {
+            return static::getSharedInstance('requestLocaleResolver');
+        }
+
+        return new \dcardenasl\Ci4ApiCore\Localization\RequestLocaleResolver(service('request'));
+    }
+
     public static function queueManager(bool $getShared = true): \dcardenasl\Ci4ApiCore\Queue\QueueManager
     {
         if ($getShared) {

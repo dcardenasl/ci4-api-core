@@ -103,6 +103,9 @@ parameters:
                 - src/Models/Traits/Searchable.php
                 - src/Models/Traits/AppliesQueryOptions.php
                 - src/Support/ResolvesWebAppLinks.php
+                - src/Dto/Concerns/*
+                - src/Services/HasLocalizedTranslations.php
+                - src/Services/HasPublicSlugs.php
 
         # DtoResponseMapper does defensive instanceof checks on reflection results.
         -

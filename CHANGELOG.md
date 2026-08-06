@@ -4,6 +4,34 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-08-05
+
+### Added
+
+- **Content localization runtime** — added `RequestLocaleResolver`, `SlugGenerator`,
+  `LocalizedTranslationStore`, `PublicSlugStore`, `BaseTranslationModel`, `BasePublicSlugModel`,
+  `HasLocalizedTranslations`, `HasPublicSlugs`, and `NormalizesLocalizedPayload`. Consumers configure
+  translatable fields through `Config\Localization`, own the `translations`/`public_slugs` migrations,
+  and wire the stores with their concrete models. The canonical wire shape is a list of locale rows;
+  map and `{locale, fields}` payloads remain supported for compatibility.
+- **MySQL localization test harness** — added a real MySQL `Database` testsuite, collation/slug uniqueness
+  coverage, CI MySQL service configuration, and a regression test for translations-only updates.
+- **Localization documentation** — added ADR-0002 and `docs/EXTENDING_LOCALIZATION.md` covering sidecar
+  schema, factories, DTO normalization, service composition, fallback, slug stability, and testing.
+
+### Fixed
+
+- **Localized update lifecycle** — translations-only updates now retain the resource id for CI4 validation
+  rules using `{id}` and carry a valid legacy projection field through the base update, avoiding
+  `DataException::forEmptyDataset()` while persisting sidecar rows in the same transaction.
+- **Legacy slug preservation** — response enrichment no longer blanks a resource's base `slug` when no
+  public-slug sidecar rows exist.
+
+### Changed
+
+- **Development tooling and CI dependencies** — updated PHPStan to 2.2.7, PHP-CS-Fixer to 3.95.18,
+  Swagger PHP to 6.5.1, `actions/cache` to v6, and `actions/checkout` to v7.
+
 ## [1.1.1] — 2026-08-01
 
 ### Fixed

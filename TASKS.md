@@ -3,23 +3,16 @@
 > Fuente de verdad para trabajo en este repo.
 > Historial de completadas: ver `TASKS_ARCHIVE.md`.
 > Cross-repo: ver `../TASKS.md` (CORE-007 pendiente — actualizar kickstart tras extracción de scaffolding).
-> Última actualización: 2026-05-29 (CORE-017 ✅ completado — `BaseExceptionHandler` firma corregida + `HealthCheckController` removido del core. Released v0.9.2)
+> Última actualización: 2026-08-05 (LOC-001/002/003 ✅ completados — stack canónico de localización de contenido,
+> documentación y contratos de extensión;
+> CORE-018 ✅ completado — `BaseCrudService::update()` ya no
+> rechaza updates completamente diferidos por `beforeUpdate()`. Released v1.1.1)
 
 ---
 
 ## 🔴 En progreso
 
-- [ ] **CORE-018 — `BaseCrudService::update()` rechaza updates que `beforeUpdate()` deja
-  completamente diferidos (ej. solo-traducciones).** Encontrado 2026-08-01 en
-  `teatromuseo-cms-domain` corrigiendo el `featured_image` de una entrada CMS (ver
-  `LEGACY-MAP-020` en `../teatromuseo/teatromuseo-api/TASKS.md`). Fix implementado en
-  `fix/update-empty-data-after-deferred-fields` (rama basada en `dev`) + 3 tests nuevos +
-  branch-alias corregido (`0.9.x-dev` → `1.2.x-dev`, estaba desactualizado desde antes de la
-  serie 1.x). Verificado en vivo: reproducido el 400 con la versión publicada, confirmado 200
-  apuntando `teatromuseo-cms-domain` a esta rama vía path-repository temporal, suite completa
-  del consumer (522/522 tests) y `composer quality` de este paquete (255/255 tests, PHPStan L8,
-  CS-Fixer, security audit) en verde. PR abierto contra `dev`, pendiente merge + tag + release
-  antes de poder cerrar la tarea.
+*(vacío)*
 
 ---
 
@@ -30,6 +23,47 @@
 ---
 
 ## ✅ Completadas
+
+### LOC-003 — ADR y documentación del stack de localización
+- **Qué**: Añadidos ADR-0002 y `docs/EXTENDING_LOCALIZATION.md`; actualizados `README.md`, `CLAUDE.md`
+  y `CHANGELOG.md` con el runtime, el registry `Config\Localization`, las factorías, el esquema sidecar,
+  la composición de traits, el contrato de fallback y la prueba MySQL. ADR-0001 sigue vigente para
+  relaciones; se deja registrado que su primer trigger de reapertura ya se cumple en los consumidores
+  productivos, pero queda fuera de esta extracción.
+- **Verificado**: enlaces internos y rutas documentales comprobados; `git diff --check` limpio.
+
+### LOC-001/002 — Harness MySQL y stack runtime de localización de contenido
+- **Qué**: Añadido el harness `Database` con conexión MySQLi configurable, esquema aislado para
+  traducciones/slugs y artículos de regresión, servicio MySQL en CI e inclusión en Infection. Extraído
+  al core el parser de locales, generador y persistencia de traducciones/slugs, modelos base, traits de
+  ciclo de vida, normalizador DTO y `Config\Localization`; `LocaleFilter` consume el parser compartido.
+  La unión funcional conserva el `id` para validaciones `{id}` y mantiene una columna legacy válida en
+  updates solo con `translations`; los slugs conservan el valor legacy si no hay filas sidecar. El
+  normalizador y el trait preservan también la forma de mapa compatible.
+- **Verificado**: suite conjunta en PHP 8.2 con MySQL real: **271 tests / 588 assertions**, incluyendo
+  colación `utf8mb4_general_ci`, colisión `Hola`/`hola`, persistencia/fallback, slugs y update solo con
+  traducciones. Suite local PHP 8.5: 263/569. PHPStan L8, PHP lint, CS-Fixer y `composer audit`
+  limpios.
+
+### CORE-018 — `BaseCrudService::update()` rechazaba updates completamente diferidos por `beforeUpdate()` · Released v1.1.1
+- **Qué**: `empty($data)` se revisaba después de `beforeUpdate()`, así que un consumer cuyo
+  `beforeUpdate()` extrae legítimamente todos los campos hacia un slot diferido (ej. el patrón
+  "extraer `translations`, persistirlas desde `afterUpdate()`" usado por recursos CMS
+  traducibles) siempre parecía un request vacío y devolvía 400, aunque `afterUpdate()` sí hiciera
+  trabajo real. El guard ahora corre sobre el payload crudo antes de `beforeUpdate()` (un request
+  genuinamente vacío sigue rechazándose igual que antes), y el `repository->update()` directo se
+  salta — sin abortar el flujo — cuando `beforeUpdate()` no deja nada que escribir.
+  `afterUpdate()` siempre corre. También corregido `extra.branch-alias` (`0.9.x-dev` →
+  `1.2.x-dev`, desactualizado desde antes de la serie 1.x) y la nota de versión en `CLAUDE.md`.
+- **Por qué**: Encontrado 2026-08-01 en `teatromuseo-cms-domain` corrigiendo el `featured_image`
+  de una entrada CMS (ver `LEGACY-MAP-020` en `../teatromuseo/teatromuseo-api/TASKS.md`).
+- **Verificado**: 3 tests nuevos + stub `Config\Database` para el bootstrap del paquete (ningún
+  test anterior llegaba a un `store()`/`update()` exitoso). `composer quality` limpio (255/255
+  tests, PHPStan L8, CS-Fixer, security audit). **Verificado en vivo contra un consumer real**:
+  reproducido el 400 con la versión publicada v1.1.0, apuntado `teatromuseo-cms-domain` a la
+  rama fix vía path-repository temporal, confirmado 200, suite completa del consumer (522/522
+  tests) + PHPStan limpio sin regresiones, revertido al release fijado después. **Released
+  v1.1.1** (PR #45 → dev, PR #46 dev → main → tag → GitHub Release ok).
 
 ### CORE-017 — Corregir `BaseExceptionHandler` (firma CI4 compatible) · Released v0.9.2
 - **Qué**: Corregida firma de `handle()` en `BaseExceptionHandler` para coincidir con `ExceptionHandlerInterface` de CI4 (`handle(Throwable, RequestInterface, ResponseInterface, int, int): void`). Eliminado `Http\HealthCheckController` del core — tenía lógica específica de app (audit config, disk-pressure policy) que no puede ser satisfecha por una base genérica. `Monitoring\HealthChecker` permanece en el core; los consumers implementan su propio controller.

@@ -5,7 +5,7 @@
         "excludes": ["Language", "Helpers"]
     },
     "testFramework": "phpunit",
-    "testFrameworkOptions": "--testsuite Unit,Integration",
+    "testFrameworkOptions": "--testsuite Unit,Integration,Database",
     "minMsi": 60,
     "minCoveredMsi": 70,
     "logs": {
