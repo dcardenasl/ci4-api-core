@@ -78,6 +78,15 @@ final class CoreInstallTest extends TestCase
         $this->assertStringContainsString('public static function request', $snippet);
     }
 
+    public function testGeneratedServicesContainSharedLocaleResolverFactory(): void
+    {
+        $content = $this->invokePrivate('apiCoreServicesContent', []);
+
+        $this->assertStringContainsString('requestLocaleResolver', $content);
+        $this->assertStringContainsString('dcardenasl\\Ci4ApiCore\\Localization\\RequestLocaleResolver', $content);
+        $this->assertStringContainsString("service('request')", $content);
+    }
+
     // ─── Routes.php / health route tests ─────────────────────────────────────
 
     public function testApplyHealthPatchInjectsMarkersAndRoute(): void

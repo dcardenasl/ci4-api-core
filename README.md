@@ -16,6 +16,7 @@ Production-ready REST API foundation for CodeIgniter 4. Drop it into any CI4 pro
 - [What it does](#what-it-does)
 - [Why a package](#why-a-package)
 - [Runtime foundation](#runtime-foundation)
+- [Content localization](#content-localization)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Configure](#configure)
@@ -111,9 +112,10 @@ The engine was being copied between projects manually, leading to drift. Extract
 | **HTTP** | `ApiController` (`handleRequest()` pipeline), `ApiRequest`, `ApiResponse`, `ContextHolder`, `RequestIdHolder` |
 | **HTTP filters** | `CorsFilter`, `CorrelationIdFilter`, `IdempotencyFilter`, `LocaleFilter`, `MaintenanceFilter`, `RequestLoggingFilter`, `DeprecationHeadersFilter`, `FeatureToggleFilter` |
 | **DTOs** | `BaseRequestDTO` (auto-validation), `PaginatedResponseDTO`, `DataTransferObjectInterface`, `SecurityContext` |
-| **Services** | `BaseCrudService`, `CrudServiceContract`, `HandlesTransactions` trait, `AuditService`, `AuditServiceInterface`, `NullAuditService` |
+| **Services** | `BaseCrudService`, `CrudServiceContract`, `HandlesTransactions`, `HasLocalizedTranslations`, `HasPublicSlugs`, `AuditService`, `AuditServiceInterface`, `NullAuditService` |
 | **Repositories** | `RepositoryInterface`, `GenericRepository`, `BaseRepository`, `AuditRepositoryInterface` |
-| **Models** | `BaseAuditableModel`, `Auditable` trait, `Filterable` trait, `Searchable` trait, `DecimalCast` |
+| **Models** | `BaseAuditableModel`, `BaseTranslationModel`, `BasePublicSlugModel`, `Auditable` trait, `Filterable` trait, `Searchable` trait, `DecimalCast` |
+| **Content localization** | `RequestLocaleResolver`, `SlugGenerator`, `LocalizedTranslationStore`, `PublicSlugStore`, `Config\Localization`, `NormalizesLocalizedPayload` |
 | **Query layer** | `FilterParser`, `FilterOperatorApplier`, `SearchQueryApplier`, `QueryBuilder` |
 | **Exceptions** | `ApiException` + `NotFoundException`, `ValidationException`, `BadRequestException`, `AuthenticationException`, `AuthorizationException`, `ConflictException`, `ServiceUnavailableException`, `TooManyRequestsException` |
 | **Support** | `OperationResult`, `OperationState` enum, `ApiResult`, `ExceptionFormatter`, `ApiConfigFacade` · `RelationLabelLoader` (batch label loading, no N+1) · `CacheHelper` (cache-aside in one line) · `DateHelper` (null-safe date normalisation) — see [`docs/SUPPORT_UTILITIES.md`](docs/SUPPORT_UTILITIES.md) |
@@ -156,6 +158,35 @@ class Api extends BaseConfig
     public int  $paginationMaxLimit     = 100;
 }
 ```
+
+### Content localization
+
+For resources with localized business content, extend the core `Config\Localization` registry and provide consumer-owned
+`translations` and `public_slugs` tables. The runtime accepts the canonical list-of-rows payload, resolves
+`Accept-Language` with field-level fallback, and keeps generated public slugs unique per resource type and
+locale. See [`docs/EXTENDING_LOCALIZATION.md`](docs/EXTENDING_LOCALIZATION.md) for migrations, model and
+service factories, DTO normalization, service composition, and the MySQL testing contract.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Config;
+
+class Localization extends \dcardenasl\Ci4ApiCore\Config\Localization
+{
+    public array $translatableFields = [
+        'article' => ['title', 'summary'],
+    ];
+
+    public string $legacyFallbackLocale = 'es';
+}
+```
+
+The consumer registers `requestLocaleResolver()`, `localizedTranslationStore()`, and
+`publicSlugStore()` in `Config\Services`. `core:install` generates the shared locale-resolver factory;
+the two stores receive the consumer's concrete models by constructor.
 
 ### Scaffolding — `Config\Scaffolding` (`ci4-api-scaffolding`)
 
@@ -409,6 +440,8 @@ The commands fall back to `--no-wire` behaviour if they cannot locate the trait 
 - [`docs/EXTENDING_THROTTLE.md`](docs/EXTENDING_THROTTLE.md) — custom rate-limit strategies.
 - [`docs/EXTENDING_QUEUE.md`](docs/EXTENDING_QUEUE.md) — alternative queue backends.
 - [`docs/EXTENDING_AUDIT.md`](docs/EXTENDING_AUDIT.md) — replace or extend the audit pipeline.
+- [`docs/EXTENDING_LOCALIZATION.md`](docs/EXTENDING_LOCALIZATION.md) — add localized content and public slugs.
+- [`docs/adr/0002-translatable-and-sluggable-resources.md`](docs/adr/0002-translatable-and-sluggable-resources.md) — design decision for the localization sidecar.
 
 ## Toward 1.0
 

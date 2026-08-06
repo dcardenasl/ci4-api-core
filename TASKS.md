@@ -3,7 +3,9 @@
 > Fuente de verdad para trabajo en este repo.
 > Historial de completadas: ver `TASKS_ARCHIVE.md`.
 > Cross-repo: ver `../TASKS.md` (CORE-007 pendiente — actualizar kickstart tras extracción de scaffolding).
-> Última actualización: 2026-08-01 (CORE-018 ✅ completado — `BaseCrudService::update()` ya no
+> Última actualización: 2026-08-05 (LOC-001/002/003 ✅ completados — stack canónico de localización de contenido,
+> documentación y contratos de extensión;
+> CORE-018 ✅ completado — `BaseCrudService::update()` ya no
 > rechaza updates completamente diferidos por `beforeUpdate()`. Released v1.1.1)
 
 ---
@@ -21,6 +23,27 @@
 ---
 
 ## ✅ Completadas
+
+### LOC-003 — ADR y documentación del stack de localización
+- **Qué**: Añadidos ADR-0002 y `docs/EXTENDING_LOCALIZATION.md`; actualizados `README.md`, `CLAUDE.md`
+  y `CHANGELOG.md` con el runtime, el registry `Config\Localization`, las factorías, el esquema sidecar,
+  la composición de traits, el contrato de fallback y la prueba MySQL. ADR-0001 sigue vigente para
+  relaciones; se deja registrado que su primer trigger de reapertura ya se cumple en los consumidores
+  productivos, pero queda fuera de esta extracción.
+- **Verificado**: enlaces internos y rutas documentales comprobados; `git diff --check` limpio.
+
+### LOC-001/002 — Harness MySQL y stack runtime de localización de contenido
+- **Qué**: Añadido el harness `Database` con conexión MySQLi configurable, esquema aislado para
+  traducciones/slugs y artículos de regresión, servicio MySQL en CI e inclusión en Infection. Extraído
+  al core el parser de locales, generador y persistencia de traducciones/slugs, modelos base, traits de
+  ciclo de vida, normalizador DTO y `Config\Localization`; `LocaleFilter` consume el parser compartido.
+  La unión funcional conserva el `id` para validaciones `{id}` y mantiene una columna legacy válida en
+  updates solo con `translations`; los slugs conservan el valor legacy si no hay filas sidecar. El
+  normalizador y el trait preservan también la forma de mapa compatible.
+- **Verificado**: suite conjunta en PHP 8.2 con MySQL real: **271 tests / 588 assertions**, incluyendo
+  colación `utf8mb4_general_ci`, colisión `Hola`/`hola`, persistencia/fallback, slugs y update solo con
+  traducciones. Suite local PHP 8.5: 263/569. PHPStan L8, PHP lint, CS-Fixer y `composer audit`
+  limpios.
 
 ### CORE-018 — `BaseCrudService::update()` rechazaba updates completamente diferidos por `beforeUpdate()` · Released v1.1.1
 - **Qué**: `empty($data)` se revisaba después de `beforeUpdate()`, así que un consumer cuyo

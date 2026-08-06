@@ -18,9 +18,18 @@ if (!defined('APPPATH')) {
     define('APPPATH', sys_get_temp_dir() . '/ci4-scaffolding-test-app/');
 }
 
+$applicationConfigPath = APPPATH . 'Config/';
+if (!is_dir($applicationConfigPath)) {
+    @mkdir($applicationConfigPath, 0777, true);
+}
+if (!is_file($applicationConfigPath . 'Events.php')) {
+    file_put_contents($applicationConfigPath . 'Events.php', "<?php\n");
+}
+
 if (!defined('ROOTPATH')) {
     define('ROOTPATH', sys_get_temp_dir() . '/ci4-scaffolding-test-root/');
 }
+
 
 if (!defined('ENVIRONMENT')) {
     define('ENVIRONMENT', 'development');
@@ -48,12 +57,45 @@ if (!class_exists('Config\Audit')) {
     class_alias(\dcardenasl\Ci4ApiCore\Config\Audit::class, 'Config\Audit');
 }
 
+// Consumer apps extend this config in namespace Config. Keep the package
+// suite self-contained while preserving the same resolution path.
+if (!class_exists('Config\Localization')) {
+    class_alias(\dcardenasl\Ci4ApiCore\Config\Localization::class, 'Config\Localization');
+}
+
 // HandlesTransactions::wrapInTransaction() (used by every BaseCrudService::store()/
 // update() success path) calls Config\Database::connect() unconditionally. There is no
 // real database or CI4 app here, so provide a minimal stand-in — otherwise no test can
 // exercise a successful store()/update() at all.
 if (!class_exists('Config\Database')) {
     require_once __DIR__ . '/Support/DatabaseConfigStub.php';
+}
+
+// The real database/query-builder path calls config(Feature::class), while
+// the package suite intentionally does not load CI4's full Common.php (that
+// would install a service locator unavailable to the unit-test environment).
+require_once __DIR__ . '/../vendor/codeigniter4/framework/app/Config/Feature.php';
+if (!function_exists('config')) {
+    /** @return object|null */
+    function config(string $name, bool $getShared = true): ?object
+    {
+        static $instances = [];
+
+        if (!class_exists($name)) {
+            return null;
+        }
+
+        if ($getShared && isset($instances[$name])) {
+            return $instances[$name];
+        }
+
+        $instance = new $name();
+        if ($getShared) {
+            $instances[$name] = $instance;
+        }
+
+        return $instance;
+    }
 }
 
 // Stub CI4 global helpers that are not autoloaded when the framework runs without a full app.
