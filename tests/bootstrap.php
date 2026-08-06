@@ -113,3 +113,21 @@ if (!function_exists('log_message')) {
     {
     }
 }
+
+// CodeIgniter\CLI\CLI::init() (auto-run once the class is first loaded) calls
+// is_cli() from Common.php, which isn't loaded in this package's bootstrap.
+// Needed as soon as any test exercises a code path that calls CLI::write()
+// (e.g. Commands\CoreInstall::publishMigrations()).
+if (!function_exists('is_cli')) {
+    function is_cli(): bool
+    {
+        return true;
+    }
+}
+
+if (!function_exists('is_windows')) {
+    function is_windows(?bool $mock = null): bool
+    {
+        return DIRECTORY_SEPARATOR === '\\';
+    }
+}

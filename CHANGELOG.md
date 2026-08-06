@@ -4,6 +4,46 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-08-06
+
+### Added
+
+- **`Http\Traits\HasCrudActions`** — standard `index/show/create/update/delete` controller actions
+  delegating to `ApiController::handleRequest()` and `$defaultService`. Extracts a pattern that was
+  byte-identical across every consumer that scaffolds CRUD controllers.
+- **`Http\Filters\AbstractHubSignatureFilter`** — verifies an HMAC-SHA256 signature (`X-Hub-Timestamp`/
+  `X-Hub-Signature`, 300s clock skew tolerance) for apps that receive machine-to-machine calls *from*
+  a hub, complementing the existing `AbstractIntrospectionFilter` (calls a domain makes *to* a hub).
+  Subclasses implement only `hubSecret()`.
+- **`Http\Filters\AbstractWebAppKeyRequiredFilter`** — validates an `X-App-Key` header against a
+  configured shared key, failing closed (403) when unconfigured rather than silently letting every
+  request through. Subclasses implement only `webAppKey()`.
+- **`Http\Filters\AbstractPermissionFilter::superAdminBypassCode()`** — optional hook (default `null`,
+  fully backward compatible) letting a platform-level permission code satisfy any
+  `permission:<code>` requirement without needing the specific code. A route with no declared
+  permission code still always denies, bypass or not.
+- **`Language/{en,es}/Auth.php`** — default translations for the `Auth.*` keys already referenced by
+  `AbstractJwtAuthFilter`, `AbstractPermissionFilter`, and `AbstractThrottleFilter` (via
+  `RateLimitResponseHelpers`), none of which previously shipped with the package.
+- **`Models\Traits\AssertsEntityType::asEntities()`** — throws `UnexpectedValueException` on any row
+  that isn't an instance of the given entity class, instead of silently dropping it. For models with
+  `$returnType` fixed to a single entity, a mismatched row is always a bug; failing loud surfaces it
+  instead of masking potential data loss.
+- **`core:install` now publishes infrastructure migrations** — `jobs`, `request_logs`, `audit_logs`
+  (no FK to `users`; consumers that own a local `users` table add that FK in their own follow-on
+  migration), and `idempotency_keys`, each with idempotent `tableExists()`/`!tableExists()` guards.
+  Several package classes (`QueueManager`, `HealthChecker::checkQueue()`, `RequestLoggingFilter`,
+  `AuditRepositoryInterface` implementations, `IdempotencyFilter`) assumed these tables existed, but
+  the package shipped no migration for any of them — every consumer was hand-rolling its own, with
+  real schema drift between copies.
+
+### Fixed
+
+- **`Support\JsonCastNormalizer::toArray()`** — added a `string` branch (`json_decode($value, true)`,
+  falling back to `[]` on malformed JSON) alongside the existing array/stdClass handling. A raw JSON
+  string read via `getResultArray()` (bypassing an Entity's `json` cast entirely) previously returned
+  `[]` unconditionally, discarding its content silently.
+
 ## [1.2.0] — 2026-08-05
 
 ### Added

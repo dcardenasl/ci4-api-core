@@ -65,4 +65,27 @@ final class JsonCastNormalizerTest extends TestCase
     {
         $this->assertSame([], JsonCastNormalizer::toArray([]));
     }
+
+    public function testDecodesARawJsonString(): void
+    {
+        // A column read via getResultArray() (no Entity, so CI4's `json`
+        // cast never runs) hands this method the raw DB string instead of
+        // an already-decoded array/stdClass.
+        $result = JsonCastNormalizer::toArray('{"icon":"📄","nested":{"deep":true}}');
+
+        $this->assertSame(['icon' => '📄', 'nested' => ['deep' => true]], $result);
+    }
+
+    public function testMalformedJsonStringReturnsEmptyArray(): void
+    {
+        $this->assertSame([], JsonCastNormalizer::toArray('{"broken":'));
+    }
+
+    public function testJsonStringEncodingAScalarReturnsEmptyArray(): void
+    {
+        // Valid JSON, but decodes to a non-array (e.g. a bare number or
+        // string) — toArray() only ever returns an array.
+        $this->assertSame([], JsonCastNormalizer::toArray('42'));
+        $this->assertSame([], JsonCastNormalizer::toArray('"just a string"'));
+    }
 }
