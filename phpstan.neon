@@ -102,6 +102,7 @@ parameters:
                 - src/Models/Traits/Filterable.php
                 - src/Models/Traits/Searchable.php
                 - src/Models/Traits/AppliesQueryOptions.php
+                - src/Models/Traits/AssertsEntityType.php
                 - src/Support/ResolvesWebAppLinks.php
                 - src/Dto/Concerns/*
                 - src/Services/HasLocalizedTranslations.php
