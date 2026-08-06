@@ -3,10 +3,12 @@
 > Fuente de verdad para trabajo en este repo.
 > Historial de completadas: ver `TASKS_ARCHIVE.md`.
 > Cross-repo: ver `../TASKS.md` (CORE-007 pendiente — actualizar kickstart tras extracción de scaffolding).
-> Última actualización: 2026-08-05 (LOC-001/002/003 ✅ completados — stack canónico de localización de contenido,
-> documentación y contratos de extensión;
-> CORE-018 ✅ completado — `BaseCrudService::update()` ya no
-> rechaza updates completamente diferidos por `beforeUpdate()`. Released v1.1.1)
+> Última actualización: 2026-08-06 (CORE-019 a CORE-025 ✅ completados — extracción de infraestructura
+> duplicada de `../teatromuseo/TASKS.md` CORE-02/CORE-05: `JsonCastNormalizer` con strings JSON,
+> `HasCrudActions`, `AbstractHubSignatureFilter`, `AbstractWebAppKeyRequiredFilter`, migraciones de
+> infra vía `core:install`, bypass superadmin opt-in en `AbstractPermissionFilter` + `Language/Auth.php`,
+> `AssertsEntityType`. Sin publicar todavía — pendiente tu aprobación explícita para el release, ver
+> `../teatromuseo/TASKS.md` CORE-02/04/05/06)
 
 ---
 
@@ -20,9 +22,145 @@
 
 *(vacío — CORE-007 pendiente, vive en el root TASKS.md)*
 
+CORE-019 a CORE-025 (extracción de infraestructura duplicada de teatromuseo, ver sección Completadas)
+quedaron implementados y verificados en `dev`, pero **sin publicar**. Antes de tomar más tareas de esta
+serie, publicar una versión (probablemente v1.3.0 — todo aditivo) requiere tu aprobación explícita:
+afecta a `agua-verde-ci4`, `mononalorca-admin-ci4` y `multi-subscription-ci4` además de los 5 apps de
+teatromuseo. Ver el checklist de verificación pre-release en `../teatromuseo/TASKS.md` (Fase 3).
+
+Explícitamente fuera de alcance (decisión ya tomada): `HealthController` genérico (reabriría CORE-017,
+que lo retiró a propósito), throttling por API-key de `api` (feature genuinamente app-específica, sin
+consumidor hermano), `AuditRepository` concreto (el paquete ya documenta que solo expone la interfaz a
+propósito). `CORE-04` y `CORE-06` de `../teatromuseo/TASKS.md` no requieren cambios en este repo.
+
 ---
 
 ## ✅ Completadas
+
+### CORE-025 — `Models\Traits\AssertsEntityType` (helper de tipado, no `BaseAuditableModel`)
+- **Qué**: Nuevo trait `Models\Traits\AssertsEntityType` con `asEntities(array $rows, string $entityClass): array`
+  (throw-based vía `\UnexpectedValueException`, no silent-drop) — narrowing de un resultado
+  `findAll()` a una entidad tipada específica. **Cambio de ubicación respecto al plan original**: el
+  plan proponía `BaseAuditableModel::asEntities()`, pero al verificar el código real de teatromuseo,
+  `AuditLogModel` (el caso de uso original) extiende `CodeIgniter\Model` plano, no
+  `BaseAuditableModel` (auditar la propia tabla de auditoría sería recursivo/sin sentido). El home
+  correcto es un trait en `Models\Traits\`, exactamente el patrón que `AuditLogModel` ya usa para
+  `Filterable`/`Searchable` — mismo directorio, mismo estilo de composición.
+- **Por qué**: catalog-domain y event-domain de teatromuseo reimplementaron cada uno su propio helper
+  de narrowing con nombre y semántica distintos — `onlyEntities()` (catalog, descarta en silencio) vs
+  `asEntities()` (event, lanza excepción). Dado que `$returnType` está fijo a la entidad y ningún
+  caller cambia a `asArray()`/`asObject()`, una fila que no calza es siempre un bug — fallar ruidoso
+  (la semántica de event) es la correcta; el descarte silencioso de catalog puede esconder pérdida de
+  datos. Se estandariza en el comportamiento de event, con nombre `asEntities()` (más idiomático para
+  una aserción de tipo que `onlyEntities()`, que sugiere filtrado como feature).
+- **Verificado**: 4 tests nuevos en `tests/Unit/Models/Traits/AssertsEntityTypeTest.php` (todas las
+  filas calzan → las devuelve tal cual; array vacío → array vacío; una fila no-instancia → lanza; una
+  fila que es un array plano en vez de la entidad → lanza, en vez de perderse en silencio) — 4/4
+  verdes.
+
+### CORE-024 — `AbstractPermissionFilter`: bypass superadmin opt-in + Language/Auth.php
+- **Qué**: Nuevo hook `protected function superAdminBypassCode(): ?string` (default `null` — sin
+  cambio de comportamiento para consumidores existentes, incluido el propio hub que ya extiende esta
+  clase). Cuando un subclase lo sobreescribe (ej. `'iam.superadmin-access'`), un actor con ese código
+  en sus permisos efectivos satisface cualquier `permission:<code>` — salvo que la ruta no declare
+  ningún código (`$required === ''`), que sigue siendo 403 incondicional. De paso, extraído `deny()`
+  como hook `protected` (antes inline con `Services::response()` repetido dos veces) — permite testear
+  sin pasar por el service locator real de CI4, igual que `AbstractHubSignatureFilter`/
+  `AbstractWebAppKeyRequiredFilter`.
+- **Además**: creados `Language/{en,es}/Auth.php` — el paquete no traía ninguno pese a que
+  `AbstractJwtAuthFilter`, `AbstractThrottleFilter` (vía `RateLimitResponseHelpers`) y este filtro ya
+  referencian `Auth.authRequired`, `Auth.insufficientPermissions`, `Auth.headerMissing`,
+  `Auth.invalidFormat`, `Auth.invalidToken`, `Auth.tokenRevoked` y `Auth.rateLimitExceeded` — sin
+  crashear gracias a `langOrDefault()`/fallback inline, pero sin traducción real disponible por
+  defecto. Cierra la brecha completa, no solo las 2 claves de este filtro.
+- **Por qué**: Era el ítem que bloqueaba `CORE-02` en `../teatromuseo/TASKS.md` — "usarlo tal cual
+  obligaría a reimplementar `before()` entero, recreando la duplicación." Los 3 dominios de
+  teatromuseo (cms/catalog/event) reimplementan `PermissionFilter` inline con el bypass pero **sin**
+  el logging de auditoría al denegar y **sin** el manejo correcto de tokens de servicio que esta clase
+  ya tenía (un caller con `SecurityContext` poblado pero sin `user_id` debe recibir 403 por falta de
+  permiso, no 401 — el inline de los dominios lo trataba como no-autenticado).
+- **Verificado**: 10 tests nuevos en `tests/Unit/Http/Filters/AbstractPermissionFilterTest.php`
+  (sin contexto → 401; permiso faltante → 403; sin código declarado → 403; permiso presente → pasa;
+  bypass deshabilitado por defecto incluso con el código de superadmin en los permisos — fija el
+  comportamiento retrocompatible; bypass habilitado → pasa; bypass no rescata una ruta sin código
+  declarado; token de servicio sin `user_id` → 403 no 401; logger de auditoría invocado con los
+  argumentos correctos; `after()` no toca la respuesta) — 10/10 verdes, 0 tests previos existían
+  para esta clase.
+
+### CORE-023 — Publicar migraciones de infraestructura vía `core:install`
+- **Qué**: `core:install` ahora escribe migraciones para `jobs`, `request_logs`, `audit_logs` (sin FK a
+  `users` — la mayoría de consumidores no la tienen; el hub conserva la suya propia con FK sin
+  tocar) e `idempotency_keys` cuando el consumidor no tiene ya una clase con ese nombre (detectado por
+  nombre de clase, no de archivo ni estado de BD — las migraciones no han corrido aún al instalar).
+  Esquema tomado tal cual de la versión de cms-domain, que ya traía las guardas `tableExists()`/
+  `!tableExists()` idempotentes (más segura que las copias sin guardas de api/catalog/event) y el
+  esquema final convergido de `audit_logs` (incluye `result`/`severity`/`request_id`/`metadata` +
+  sus 4 índices, que en api/catalog/event llegan vía una migración de seguimiento separada).
+  `publishMigrations(?string $dir = null)` acepta un directorio explícito para poder testear sin
+  depender de `APPPATH`.
+- **Por qué**: `QueueManager`/`HealthChecker::checkQueue()`, `RequestLoggingFilter`, cualquier
+  implementación de `AuditRepositoryInterface`, e `IdempotencyFilter` asumen que estas 4 tablas
+  existen, pero el paquete no traía ninguna migración — cada consumidor las reimplementaba a mano,
+  con drift real entre copias (ver hallazgo de `CORE-02` en `../teatromuseo/TASKS.md`).
+- **Verificado**: 8 tests nuevos en `tests/Unit/Commands/CoreInstallTest.php` (detección de clase
+  existente por nombre independiente del archivo, contenido correcto por tabla, sin FK en
+  `audit_logs`, no duplica cuando ya existe una migración para esa tabla, escribe las 4 en un
+  directorio vacío) — 14/14 verdes en el archivo, 218/218 en toda la suite Unit. Añadidos polyfills
+  `is_cli()`/`is_windows()` a `tests/bootstrap.php` — necesarios la primera vez que un test de este
+  paquete ejercita `CLI::write()` (ningún test previo lo hacía).
+
+### CORE-022 — Extraer `Http\Filters\AbstractWebAppKeyRequiredFilter`
+- **Qué**: Nuevo `Http\Filters\AbstractWebAppKeyRequiredFilter` — compara `X-App-Key` contra un valor
+  configurado vía hook `webAppKey(): string`, fail-closed (403) si no está configurado, 401 si no
+  calza. Preservado el comentario de cms-domain que documenta el incidente real (`WEB_API_KEY` sin
+  configurar dejaba pasar todo antes del fix de fail-closed) — la única app que lo tenía, ahora vive
+  en la versión compartida en vez de perderse al colapsar las 3 copias.
+- **Por qué**: Ítem trivial de `CORE-02` — mismo comportamiento byte-a-byte en catalog/event, y cms
+  solo se diferenciaba por ese comentario.
+- **Verificado**: 4 tests nuevos en `tests/Unit/Http/Filters/AbstractWebAppKeyRequiredFilterTest.php`
+  (key vacía → 403, header ausente → 401, header incorrecto → 401, header correcto → pasa) — 4/4
+  verdes.
+
+### CORE-021 — Extraer `Http\Filters\AbstractHubSignatureFilter`
+- **Qué**: Nuevo `Http\Filters\AbstractHubSignatureFilter` — HMAC-SHA256 sobre `METHOD\nPATH\nTIMESTAMP`
+  vía `X-Hub-Timestamp`/`X-Hub-Signature`, con ventana de reloj de 300s. Único hook abstracto:
+  `hubSecret(): string` (de dónde sale el secreto compartido es config específica de cada app — no
+  algo que el paquete pueda empaquetar). `deny()` es `protected` (no `private`, a diferencia del
+  original) para permitir overridearlo en tests sin pasar por el service locator real de CI4.
+- **Por qué**: Ítem trivial de `CORE-02` — byte-idéntico en 3 apps de teatromuseo (cms/catalog/event),
+  sin ninguna base del paquete de la que colgar hoy (a diferencia de `DomainAuthFilter`/`ThrottleFilter`,
+  que ya son subclases delgadas de `AbstractIntrospectionFilter`/`AbstractThrottleFilter`).
+- **Verificado**: 6 tests nuevos en `tests/Unit/Http/Filters/AbstractHubSignatureFilterTest.php`
+  (secreto vacío → 403, headers ausentes → 401, timestamp obsoleto → 401, firma inválida → 401, firma
+  válida → pasa, firma atada a method+path específico) — 6/6 verdes.
+
+### CORE-020 — Extraer `Http\Traits\HasCrudActions`
+- **Qué**: Nuevo trait `Http\Traits\HasCrudActions` (`index/show/create/update/delete`, delegando a
+  `handleRequest()` de `ApiController` y a `$defaultService`) — idéntico en comportamiento a las 4
+  copias byte-idénticas de `app/Traits/Controllers/HasCrudActions.php` en teatromuseo (api/cms/
+  catalog/event). El trait no exige extender `ApiController` — solo requiere `handleRequest()` y
+  `$defaultService` en la clase consumidora, lo que permitió testearlo con clases anónimas ligeras
+  sin bootstrap de CI4.
+- **Por qué**: Ítem trivial de `CORE-02` de `../teatromuseo/TASKS.md` — sin decisiones de diseño, solo
+  duplicación byte-a-byte que ya tenía dónde vivir (`ApiController::handleRequest()` existe desde
+  antes; solo faltaba el trait de conveniencia con los 5 verbos REST estándar).
+- **Verificado**: 6 tests nuevos en `tests/Unit/Http/Traits/HasCrudActionsTest.php` (verifican que cada
+  verbo delega al método/target correcto de `$defaultService` con los argumentos correctos, y que los
+  DTOs opcionales se pasan o se omiten según corresponda) — 6/6 verdes.
+
+### CORE-019 — `JsonCastNormalizer` no maneja strings JSON crudos
+- **Qué**: Añadida la rama `is_string` a `Support\JsonCastNormalizer::toArray()` — decodifica el string
+  vía `json_decode($value, true)`, con fallback a `[]` si el JSON es inválido o decodifica a un
+  no-array (igual que las ramas array/stdClass existentes). Es un superset puro: ningún caller que pase
+  `array`/`stdClass`/`null`/`''` cambia de comportamiento.
+- **Por qué**: `teatromuseo-cms-domain` mantiene una copia local con esta rama porque dos call sites
+  reales dependen de ella (`RepairSlugs.php:189` lee `block_data` crudo desde `getResultArray()`, sin
+  pasar por el cast `json` de la Entity; `PublicEntryReader.php:481` recibe indistintamente `stdClass`
+  o el string crudo). La versión del core devolvía `[]` silenciosamente para cualquier string, incluida
+  una cadena JSON válida — bloqueaba CORE-05 de `../teatromuseo/TASKS.md`.
+- **Verificado**: 4 tests nuevos (`testDecodesARawJsonString`, `testMalformedJsonStringReturnsEmptyArray`,
+  `testJsonStringEncodingAScalarReturnsEmptyArray`, más el caso ya cubierto `not-json-related` en
+  `testScalarReturnsEmptyArray`) — 10 tests / 15 aserciones en el archivo, todos verdes.
 
 ### LOC-003 — ADR y documentación del stack de localización
 - **Qué**: Añadidos ADR-0002 y `docs/EXTENDING_LOCALIZATION.md`; actualizados `README.md`, `CLAUDE.md`
