@@ -28,7 +28,9 @@ use dcardenasl\Ci4ApiCore\Http\ContextHolder;
  *
  * Concrete subclasses must implement `getSecurityAuditLogger()` to inject
  * the consumer's audit logger. Override `unauthenticatedMessage()` and
- * `forbiddenMessage()` to customise the response payload.
+ * `forbiddenMessage()` to customise the response payload, and
+ * `superAdminBypassCode()` to let a platform-level role satisfy any
+ * `permission:<code>` requirement without needing the specific code.
  */
 abstract class AbstractPermissionFilter implements FilterInterface
 {
@@ -61,17 +63,16 @@ abstract class AbstractPermissionFilter implements FilterInterface
         if (! $isAuthenticated) {
             $logger?->logAuthorizationDeniedFromRequest($request, $required, null, null);
 
-            return Services::response()
-                ->setJSON(ApiResponse::unauthorized($this->unauthenticatedMessage()))
-                ->setStatusCode(ResponseInterface::HTTP_UNAUTHORIZED);
+            return $this->deny(ResponseInterface::HTTP_UNAUTHORIZED, $this->unauthenticatedMessage());
         }
 
-        if ($required === '' || ! in_array($required, $permissions, true)) {
+        $bypassCode = $this->superAdminBypassCode();
+        $hasBypass  = $bypassCode !== null && in_array($bypassCode, $permissions, true);
+
+        if ($required === '' || (! $hasBypass && ! in_array($required, $permissions, true))) {
             $logger?->logAuthorizationDeniedFromRequest($request, $required, null, $actorId);
 
-            return Services::response()
-                ->setJSON(ApiResponse::forbidden($this->forbiddenMessage()))
-                ->setStatusCode(ResponseInterface::HTTP_FORBIDDEN);
+            return $this->deny(ResponseInterface::HTTP_FORBIDDEN, $this->forbiddenMessage());
         }
 
         return null;
@@ -96,5 +97,27 @@ abstract class AbstractPermissionFilter implements FilterInterface
     protected function forbiddenMessage(): string
     {
         return function_exists('lang') ? (string) lang('Auth.insufficientPermissions') : 'Insufficient permissions';
+    }
+
+    /**
+     * A permission code that, when present in the caller's effective
+     * permissions, satisfies any `permission:<code>` requirement — a
+     * platform-level bypass for a superadmin-style role.
+     *
+     * Returns `null` by default: no bypass, every route enforces exactly
+     * the code it declares. Override to opt in (e.g. `'iam.superadmin-access'`).
+     */
+    protected function superAdminBypassCode(): ?string
+    {
+        return null;
+    }
+
+    protected function deny(int $status, string $message): ResponseInterface
+    {
+        $body = $status === ResponseInterface::HTTP_UNAUTHORIZED
+            ? ApiResponse::unauthorized($message)
+            : ApiResponse::forbidden($message);
+
+        return Services::response()->setJSON($body)->setStatusCode($status);
     }
 }
