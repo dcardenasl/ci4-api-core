@@ -4,6 +4,8 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-08-05
+
 ### Added
 
 - **Content localization runtime** — added `RequestLocaleResolver`, `SlugGenerator`,
@@ -24,6 +26,11 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
   `DataException::forEmptyDataset()` while persisting sidecar rows in the same transaction.
 - **Legacy slug preservation** — response enrichment no longer blanks a resource's base `slug` when no
   public-slug sidecar rows exist.
+
+### Changed
+
+- **Development tooling and CI dependencies** — updated PHPStan to 2.2.7, PHP-CS-Fixer to 3.95.18,
+  Swagger PHP to 6.5.1, `actions/cache` to v6, and `actions/checkout` to v7.
 
 ## [1.1.1] — 2026-08-01
 
