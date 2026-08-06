@@ -106,6 +106,7 @@ parameters:
                 - src/Dto/Concerns/*
                 - src/Services/HasLocalizedTranslations.php
                 - src/Services/HasPublicSlugs.php
+                - src/Http/Traits/HasCrudActions.php
 
         # DtoResponseMapper does defensive instanceof checks on reflection results.
         -
