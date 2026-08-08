@@ -85,6 +85,7 @@
         "dcardenasl\\Ci4ApiCore\\Commands\\CoreCheck",
         "dcardenasl\\Ci4ApiCore\\Commands\\CoreInstall",
         "dcardenasl\\Ci4ApiCore\\Commands\\EnvCheck",
+        "dcardenasl\\Ci4ApiCore\\Commands\\HousekeepingClean",
         "dcardenasl\\Ci4ApiCore\\Commands\\QueueWork"
       ]
     },
