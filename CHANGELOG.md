@@ -4,6 +4,13 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+### Added
+
+- **`Traits\SparseFieldsetTrait`** — enables controllers to support sparse fieldsets via `?fields=id,name,slug`
+  query parameter. Filters response data (DTOs, arrays, or collections) to include only requested fields, reducing
+  payload size and bandwidth. Includes `SparseFieldsetFilterInterface` contract and `FieldsetValidator` for
+  whitelist-based validation. 24 unit tests, 100% passing. Reusable across all domain APIs (catalog, event, cms).
+
 ## [1.3.0] — 2026-08-06
 
 ### Added
