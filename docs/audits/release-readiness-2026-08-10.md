@@ -163,6 +163,7 @@ commit, push, PR, merge, tag, or GitHub Release is being performed.
 - After corrections: `composer validate --strict --no-check-publish` passed;
   PHPStan level 8 passed with `--debug`; sequential CS-Fixer found zero files;
   PHPUnit still passed with 334 tests and 689 assertions.
+- Final `composer security` rerun passed with no vulnerability advisories.
 
 ## Pending Work
 
@@ -172,9 +173,9 @@ commit, push, PR, merge, tag, or GitHub Release is being performed.
 - Run the repository's quality checks if dependencies and environment permit.
 - Decide whether the next SemVer should be `v1.4.0` (the pending `feat` adds a
   public sparse-fieldset API) or another explicitly chosen version.
-- Commit the intended release files without staging unrelated changes.
-- Repeat the security audit with network access, then push and open the release
-  PR.
+- Create the final one-line release commit for `v1.4.0`.
+- Push `dev`, open the `dev` → `main` release PR, and complete CI/merge/tag
+  verification.
 
 ## Automation Opportunities
 
@@ -186,7 +187,7 @@ commit, push, PR, merge, tag, or GitHub Release is being performed.
 
 ## Final Summary
 
-The repository has a recognizable release branch layout and passing tests and
-security audit, but it is not release-ready: the current candidate lacks a
-versioned release commit, has stale Composer metadata, fails PHPStan and
-CS-Fixer, and has unresolved untracked code that Composer already references.
+The repository is technically ready for the `v1.4.0` release candidate: the
+metadata is prepared, the previously failing local quality gates are clean,
+the housekeeping command is tracked, and the security audit passes. The final
+release commit and GitHub publication remain to be completed.
