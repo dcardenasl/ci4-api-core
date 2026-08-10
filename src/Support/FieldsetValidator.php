@@ -17,7 +17,7 @@ class FieldsetValidator implements FieldsetValidatorInterface
     /**
      * Validate requested fields against an allowlist.
      *
-     * @param list<string> $requestedFields Fields requested by client
+     * @param array<mixed> $requestedFields Fields requested by client
      * @param list<string> $allowedFields Whitelist of valid fields
      * @return list<string> Validated, unique field names
      *

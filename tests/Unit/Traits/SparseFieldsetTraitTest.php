@@ -137,7 +137,9 @@ class SparseFieldsetTraitTest extends TestCase
  */
 class MockDTO implements DataTransferObjectInterface
 {
-    public function __construct(private array $data) {}
+    public function __construct(private array $data)
+    {
+    }
 
     public function toArray(): array
     {
@@ -169,8 +171,10 @@ class SparseFieldsetTestHelper
     public function __get(string $name): mixed
     {
         if ($name === 'request') {
-            return new class($this->fieldsParam) {
-                public function __construct(private ?string $fieldsParam = null) {}
+            return new class ($this->fieldsParam) {
+                public function __construct(private ?string $fieldsParam = null)
+                {
+                }
 
                 public function getGet(?string $key = null, mixed $default = null): mixed
                 {

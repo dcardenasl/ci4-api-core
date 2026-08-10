@@ -15,7 +15,7 @@ interface FieldsetValidatorInterface
     /**
      * Validate requested fields against an allowlist.
      *
-     * @param list<string> $requestedFields Fields requested by client (e.g., from ?fields=)
+     * @param array<mixed> $requestedFields Fields requested by client (e.g., from ?fields=)
      * @param list<string> $allowedFields Whitelist of valid fields for this operation
      * @return list<string> Cleaned, validated list of requested fields
      *

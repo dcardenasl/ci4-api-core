@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace dcardenasl\Ci4ApiCore\Traits;
 
-use dcardenasl\Ci4ApiCore\Support\FieldsetValidator;
 use dcardenasl\Ci4ApiCore\Dto\DataTransferObjectInterface;
+use dcardenasl\Ci4ApiCore\Support\FieldsetValidator;
 
 /**
  * Sparse Fieldset Trait
