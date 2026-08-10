@@ -108,6 +108,7 @@ parameters:
                 - src/Services/HasLocalizedTranslations.php
                 - src/Services/HasPublicSlugs.php
                 - src/Http/Traits/HasCrudActions.php
+                - src/Traits/SparseFieldsetTrait.php
 
         # DtoResponseMapper does defensive instanceof checks on reflection results.
         -
@@ -145,6 +146,7 @@ parameters:
         -
             message: '#Constant WRITEPATH not found#'
             paths:
+                - src/Commands/*
                 - src/Logging/*
                 - src/Monitoring/*
 
