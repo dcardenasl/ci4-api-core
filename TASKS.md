@@ -3,12 +3,13 @@
 > Fuente de verdad para trabajo en este repo.
 > Historial de completadas: ver `TASKS_ARCHIVE.md`.
 > Cross-repo: ver `../TASKS.md` (CORE-007 pendiente — actualizar kickstart tras extracción de scaffolding).
-> Última actualización: 2026-08-06 (CORE-019 a CORE-025 ✅ completados — extracción de infraestructura
-> duplicada de `../teatromuseo/TASKS.md` CORE-02/CORE-05: `JsonCastNormalizer` con strings JSON,
-> `HasCrudActions`, `AbstractHubSignatureFilter`, `AbstractWebAppKeyRequiredFilter`, migraciones de
-> infra vía `core:install`, bypass superadmin opt-in en `AbstractPermissionFilter` + `Language/Auth.php`,
-> `AssertsEntityType`. Sin publicar todavía — pendiente tu aprobación explícita para el release, ver
-> `../teatromuseo/TASKS.md` CORE-02/04/05/06)
+> Última actualización: 2026-08-06 (**v1.3.0 publicada** en Packagist — corrige la nota anterior de
+> "sin publicar todavía". CORE-019 a CORE-025 quedaron consumidos en los 5 apps de teatromuseo el mismo
+> día: `JsonCastNormalizer` con strings JSON, `HasCrudActions`, `AbstractHubSignatureFilter`,
+> `AbstractWebAppKeyRequiredFilter`, bypass superadmin opt-in en `AbstractPermissionFilter` +
+> `Language/Auth.php`. Ver `../teatromuseo/TASKS.md` Fase 3 para el detalle de la migración del lado
+> consumidor — `HasCrudActions` resultó ser código muerto en las 4 apps que lo declaraban, así que se
+> eliminó en vez de migrarse a la versión del paquete.)
 
 ---
 
@@ -21,12 +22,6 @@
 ## 🟡 Próximo
 
 *(vacío — CORE-007 pendiente, vive en el root TASKS.md)*
-
-CORE-019 a CORE-025 (extracción de infraestructura duplicada de teatromuseo, ver sección Completadas)
-quedaron implementados y verificados en `dev`, pero **sin publicar**. Antes de tomar más tareas de esta
-serie, publicar una versión (probablemente v1.3.0 — todo aditivo) requiere tu aprobación explícita:
-afecta a `agua-verde-ci4`, `mononalorca-admin-ci4` y `multi-subscription-ci4` además de los 5 apps de
-teatromuseo. Ver el checklist de verificación pre-release en `../teatromuseo/TASKS.md` (Fase 3).
 
 Explícitamente fuera de alcance (decisión ya tomada): `HealthController` genérico (reabriría CORE-017,
 que lo retiró a propósito), throttling por API-key de `api` (feature genuinamente app-específica, sin
