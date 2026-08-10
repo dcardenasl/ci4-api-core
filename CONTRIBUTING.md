@@ -74,7 +74,7 @@ Changes must respect:
 
 ## Versioning
 
-This project uses [Semantic Versioning](https://semver.org/) — but with one caveat: **until v1.0.0, the public API is unstable**. Minor bumps may include breaking changes to the generator API.
+This project uses [Semantic Versioning](https://semver.org/). The public API is stable from v1.0.0 onward; breaking changes require a major version bump.
 
 - **MAJOR** (post-1.0) — breaking changes to the generator command-line API, generator class signatures, or generated code structure.
 - **MINOR** — new field types, new generators, new validators (additive).
@@ -109,7 +109,7 @@ Releases are cut from `main`. Tags belong on `main` after a merge — never on `
 
 4. **Update downstream consumer projects** by running `composer update dcardenasl/ci4-api-core`.
 
-> **Packagist:** the package is **not yet published** (currently consumed via path/VCS repository). It will be published once v1.0.0 cuts. Until then, downstream projects pin to a specific tag or to `dev-main`.
+> **Packagist:** the package is published and releases are synchronized from tags on `main`. Downstream projects should pin a compatible version constraint and run `composer update dcardenasl/ci4-api-core` when adopting a release.
 
 ## Pull Request Checklist
 

@@ -8,7 +8,7 @@
 
 Production-ready REST API foundation for CodeIgniter 4. Drop it into any CI4 project to get a DTO-first architecture, JWT-ready HTTP layer, audit trail, queue, RBAC-ready filters, and a repository pattern — without writing boilerplate. Pair with [`dcardenasl/ci4-api-scaffolding`](https://github.com/dcardenasl/ci4-api-scaffolding) to scaffold full CRUD modules in one command.
 
-> **Status:** `v1.1.1` — stable, published on Packagist. Semantic versioning applies from this release: `^1.0` is safe for production.
+> **Status:** `v1.4.0` — stable, published on Packagist. Semantic versioning applies from this release: `^1.0` is safe for production.
 
 ## Contents
 
@@ -119,6 +119,7 @@ The engine was being copied between projects manually, leading to drift. Extract
 | **Query layer** | `FilterParser`, `FilterOperatorApplier`, `SearchQueryApplier`, `QueryBuilder` |
 | **Exceptions** | `ApiException` + `NotFoundException`, `ValidationException`, `BadRequestException`, `AuthenticationException`, `AuthorizationException`, `ConflictException`, `ServiceUnavailableException`, `TooManyRequestsException` |
 | **Support** | `OperationResult`, `OperationState` enum, `ApiResult`, `ExceptionFormatter`, `ApiConfigFacade` · `RelationLabelLoader` (batch label loading, no N+1) · `CacheHelper` (cache-aside in one line) · `DateHelper` (null-safe date normalisation) — see [`docs/SUPPORT_UTILITIES.md`](docs/SUPPORT_UTILITIES.md) |
+| **Response shaping** | `Traits\SparseFieldsetTrait`, `Support\FieldsetValidator`, and sparse-fieldset contracts for whitelist-based `?fields=` responses |
 | **Security** | `Security\Hasher`, `Security\Token`, `Security\Mask` |
 | **Queue** | `QueueManager`, `SyncQueueManager`, `Job` base, `WriteAuditLogJob`, `LogRequestJob` |
 | **Logging** | `JsonFormatter`, `MonologHandler` |
