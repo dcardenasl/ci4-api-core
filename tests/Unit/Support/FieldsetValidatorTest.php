@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Support;
 
+use dcardenasl\Ci4ApiCore\Exceptions\ValidationException;
 use dcardenasl\Ci4ApiCore\Support\FieldsetValidator;
 use PHPUnit\Framework\TestCase;
 
@@ -62,13 +63,28 @@ class FieldsetValidatorTest extends TestCase
 
     public function testValidateThrowsOnUnallowedField(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('not allowed');
 
         $this->validator->validate(
             ['id', 'name', 'forbidden_field'],
             ['id', 'name', 'slug']
         );
+    }
+
+    public function testValidateThrowsValidationExceptionWithStructuredErrors(): void
+    {
+        try {
+            $this->validator->validate(
+                ['id', 'forbidden_field'],
+                ['id', 'name', 'slug']
+            );
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertSame(422, $e->getStatusCode());
+            $this->assertSame(['forbidden_field'], $e->getErrors()['fields']);
+            $this->assertSame(['id', 'name', 'slug'], $e->getErrors()['allowed']);
+        }
     }
 
     public function testValidateDeduplicatesFields(): void
@@ -88,7 +104,7 @@ class FieldsetValidatorTest extends TestCase
 
     public function testValidateThrowsOnNonStringField(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('must be strings');
 
         $this->validator->validate(

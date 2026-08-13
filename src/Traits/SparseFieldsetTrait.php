@@ -37,7 +37,7 @@ trait SparseFieldsetTrait
      * @param list<string> $allowedFields Whitelist of allowed field names
      * @return list<string> Validated field names from query param
      *
-     * @throws \InvalidArgumentException If a requested field is not in whitelist
+     * @throws \dcardenasl\Ci4ApiCore\Exceptions\ValidationException If a requested field is not in whitelist
      */
     protected function parseFieldsParam(array $allowedFields): array
     {

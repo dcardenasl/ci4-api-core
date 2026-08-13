@@ -19,7 +19,7 @@ interface FieldsetValidatorInterface
      * @param list<string> $allowedFields Whitelist of valid fields for this operation
      * @return list<string> Cleaned, validated list of requested fields
      *
-     * @throws \InvalidArgumentException If a requested field is not allowed
+     * @throws \dcardenasl\Ci4ApiCore\Exceptions\ValidationException If a requested field is not allowed or not a string
      */
     public function validate(array $requestedFields, array $allowedFields): array;
 

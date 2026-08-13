@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Traits;
 
 use dcardenasl\Ci4ApiCore\Dto\DataTransferObjectInterface;
+use dcardenasl\Ci4ApiCore\Exceptions\ValidationException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -118,7 +119,7 @@ class SparseFieldsetTraitTest extends TestCase
 
     public function testParseFieldsParamThrowsOnUnallowed(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(ValidationException::class);
         $this->helper->setFieldsParam('id,forbidden_field');
         $this->helper->testParseFieldsParam(['id', 'name']);
     }
