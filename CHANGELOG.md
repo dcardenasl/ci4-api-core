@@ -4,6 +4,8 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-08-13
+
 ### Fixed
 
 - **`Support\FieldsetValidator::validate()`** — now throws `Exceptions\ValidationException` (422, with
