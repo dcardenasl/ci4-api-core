@@ -4,6 +4,15 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-08-13
+
+### Fixed
+
+- **`Support\FieldsetValidator::validate()`** — now throws `Exceptions\ValidationException` (422, with
+  structured `errors['fields']`/`errors['allowed']`) instead of a plain `\InvalidArgumentException` for
+  an invalid `?fields=` request. `\InvalidArgumentException` doesn't implement `HasStatusCode`, so
+  `ExceptionFormatter` fell back to a generic 500 for what is a client input-validation error.
+
 ## [1.4.0] — 2026-08-10
 
 ### Added

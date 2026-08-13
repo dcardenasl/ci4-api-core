@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace dcardenasl\Ci4ApiCore\Support;
 
 use dcardenasl\Ci4ApiCore\Contracts\FieldsetValidatorInterface;
+use dcardenasl\Ci4ApiCore\Exceptions\ValidationException;
 
 /**
  * Fieldset Validator
@@ -21,7 +22,7 @@ class FieldsetValidator implements FieldsetValidatorInterface
      * @param list<string> $allowedFields Whitelist of valid fields
      * @return list<string> Validated, unique field names
      *
-     * @throws \InvalidArgumentException If a requested field is not allowed
+     * @throws ValidationException If a requested field is not allowed or not a string
      */
     public function validate(array $requestedFields, array $allowedFields): array
     {
@@ -34,8 +35,9 @@ class FieldsetValidator implements FieldsetValidatorInterface
 
         foreach ($requestedFields as $field) {
             if (! is_string($field)) {
-                throw new \InvalidArgumentException(
-                    'Field names must be strings. Got: ' . gettype($field)
+                throw new ValidationException(
+                    'Field names must be strings. Got: ' . gettype($field),
+                    ['fields' => 'Field names must be strings.']
                 );
             }
 
@@ -45,9 +47,13 @@ class FieldsetValidator implements FieldsetValidatorInterface
             }
 
             if (! isset($allowed[$clean])) {
-                throw new \InvalidArgumentException(
+                throw new ValidationException(
                     "Field '{$clean}' is not allowed. Allowed fields: " .
-                    implode(', ', $allowedFields)
+                    implode(', ', $allowedFields),
+                    [
+                        'fields'  => [$clean],
+                        'allowed' => $allowedFields,
+                    ]
                 );
             }
 

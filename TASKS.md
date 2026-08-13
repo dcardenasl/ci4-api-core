@@ -32,6 +32,31 @@ propósito). `CORE-04` y `CORE-06` de `../teatromuseo/TASKS.md` no requieren cam
 
 ## ✅ Completadas
 
+### CORE-026 — `FieldsetValidator::validate()` lanza `ValidationException` (422) en vez de `\InvalidArgumentException`
+- **Qué**: `FieldsetValidator::validate()` (`src/Support/FieldsetValidator.php`) ahora lanza
+  `dcardenasl\Ci4ApiCore\Exceptions\ValidationException` (ya existente, 422) tanto para un campo no
+  permitido como para un campo no-string, con el detalle estructurado en el array `$errors` del
+  constructor (`['fields' => [...], 'allowed' => [...]]`), no solo embebido en el mensaje. Se
+  actualizaron los docblocks de `FieldsetValidatorInterface::validate()` y
+  `SparseFieldsetTrait::parseFieldsParam()` para reflejar el nuevo `@throws`.
+- **Por qué**: fix de Fase 0 de
+  [`../teatromuseo/docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md`](../teatromuseo/docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md)
+  (hallazgo C). `\InvalidArgumentException` no implementa `HasStatusCode`, así que
+  `ExceptionFormatter::resolveStatusCode()` caía al `500` genérico para lo que es un error de
+  validación de input (`?fields=` inválido) — contradiciendo el propio OpenAPI publicado por
+  catalog-domain/event-domain, que ya documenta `422 — Invalid query` para esta ruta. Como es
+  `"type": "path"` en los `composer.json` consumidores, el fix se refleja de inmediato en los 5 apps
+  de teatromuseo sin publicar release.
+- **Verificado**: tests unitarios de `FieldsetValidatorTest`/`SparseFieldsetTraitTest` actualizados al
+  nuevo tipo de excepción; test nuevo `testValidateThrowsValidationExceptionWithStructuredErrors`
+  (código 422 + `errors['fields']`/`errors['allowed']`); integration test nuevo
+  `tests/Integration/Support/FieldsetValidatorIntegrationTest.php` que ejercita el path completo
+  validator→`ExceptionFormatter::format()` (no existía cobertura de ese path — el propio bug que
+  encontró la auditoría era justamente esa costura sin probar). 329/329 tests, PHPStan 0 errores.
+  Confirmado end-to-end con curl real contra catalog-domain y event-domain corriendo en
+  localhost:8191/8193 (ambos consumen esta librería vía symlink de path repo): 422 con `errors`
+  estructurado en vez de 500 en los dos.
+
 ### CORE-025 — `Models\Traits\AssertsEntityType` (helper de tipado, no `BaseAuditableModel`)
 - **Qué**: Nuevo trait `Models\Traits\AssertsEntityType` con `asEntities(array $rows, string $entityClass): array`
   (throw-based vía `\UnexpectedValueException`, no silent-drop) — narrowing de un resultado
