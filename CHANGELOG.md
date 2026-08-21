@@ -4,6 +4,18 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-08-21
+
+### Fixed
+
+- **`Http\Filters\AbstractPermissionFilter::before()`** — a route argument list containing only a blank
+  entry (e.g. `permission:` or a stray leading comma like `permission:,cms.pages.read`) is now treated the
+  same as no argument at all: deny unconditionally, bypass code included. The v1.5.0 multi-code change
+  regressed this — it only checked whether the *argument list* was empty, not whether every entry in it was
+  blank, so a route with a single blank code plus a superadmin-style bypass permission was incorrectly
+  allowed through. Caught by a consumer's own `PermissionFilterTest::testStillRejectsAnEmptyPermissionRequirement`
+  immediately after upgrading to v1.5.0 — 2 regression tests added here to cover it directly.
+
 ## [1.5.0] — 2026-08-21
 
 ### Added

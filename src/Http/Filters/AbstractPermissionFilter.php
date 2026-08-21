@@ -44,7 +44,13 @@ abstract class AbstractPermissionFilter implements FilterInterface
      */
     public function before(RequestInterface $request, $arguments = null)
     {
-        $requiredCodes = is_array($arguments) ? $arguments : [];
+        // Blank entries (an empty string, e.g. a route declared as `permission:`
+        // or `permission:,cms.pages.read`) never count as a declared code — a
+        // route with nothing but blanks must always deny, bypass included,
+        // exactly like a route with no argument at all.
+        $requiredCodes = is_array($arguments)
+            ? array_values(array_filter($arguments, static fn (string $code): bool => $code !== ''))
+            : [];
         $requiredLabel = implode(',', $requiredCodes);
 
         $context = ContextHolder::get();

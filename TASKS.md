@@ -55,6 +55,18 @@ propósito). `CORE-04` y `CORE-06` de `../teatromuseo/TASKS.md` no requieren cam
   `LocalizationSchemaTest` (harness MySQL no disponible en este entorno — sin dependencia de base de datos
   en el código tocado). Ningún otro consumidor de la librería (~25 en el workspace) se ve afectado: el
   cambio es aditivo y ninguno sube su constraint hasta que lo necesite.
+- **Bug real encontrado post-release, corregido — pendiente `v1.5.1`**: al subir `teatromuseo-cms-domain` a
+  v1.5.0, su propio `tests/Unit/Filters/PermissionFilterTest::testStillRejectsAnEmptyPermissionRequirement`
+  falló. `before()` solo trataba `$requiredCodes === []` (lista de argumentos totalmente vacía) como "sin
+  permiso declarado" — un argumento `['']` (código en blanco, ej. `permission:` o
+  `permission:,cms.pages.read`) pasaba de largo esa comprobación y quedaba rescatado por el bypass de
+  superadmin, cuando el comportamiento viejo (`$required === ''`) denegaba siempre en ese caso, bypass
+  incluido. Corregido filtrando entradas en blanco antes de construir `$requiredCodes`. Verificado: 2 tests
+  de regresión nuevos (`testBlankCodeInTheListStillDeniesEvenWithBypassPresent`,
+  `testBlankLeadingEntryIsIgnoredAndTheRealCodeStillMatches`) — 17/17 verdes; `composer analyse`/`cs-check`
+  limpios; parche verificado en vivo contra el consumidor real (vendor de `teatromuseo-cms-domain` parcheado
+  temporalmente, `PermissionFilterTest` completo 6/6 verde, vendor restaurado a v1.5.0 sin dejar el lockfile
+  inconsistente). Pendiente: publicar `v1.5.1` y subir el constraint de `teatromuseo-cms-domain`.
 
 ### CORE-026 — `FieldsetValidator::validate()` lanza `ValidationException` (422) en vez de `\InvalidArgumentException`
 - **Qué**: `FieldsetValidator::validate()` (`src/Support/FieldsetValidator.php`) ahora lanza

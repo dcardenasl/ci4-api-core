@@ -239,6 +239,37 @@ final class AbstractPermissionFilterTest extends TestCase
         $this->assertNull($filter->denialArgs);
     }
 
+    public function testBlankCodeInTheListStillDeniesEvenWithBypassPresent(): void
+    {
+        // A single blank entry (`permission:` or a stray leading comma like
+        // `permission:,cms.pages.read` producing ['', 'cms.pages.read']) must
+        // never be satisfied by the superadmin bypass alone if it's the only
+        // non-blank... actually here it's the ONLY entry and it's blank, so
+        // no code was meaningfully declared at all — must deny unconditionally,
+        // same as an empty argument list. Regression for a real bug caught by
+        // a consumer's own PermissionFilterTest after this class started
+        // treating $arguments as a list instead of only $arguments[0].
+        $filter = $this->filter(
+            userId: 1,
+            permissions: ['iam.superadmin-access'],
+            bypassCode: 'iam.superadmin-access'
+        );
+
+        $filter->before($this->plainRequest(), ['']);
+
+        $this->assertSame(403, $filter->denialArgs[0]);
+    }
+
+    public function testBlankLeadingEntryIsIgnoredAndTheRealCodeStillMatches(): void
+    {
+        $filter = $this->filter(userId: 1, permissions: ['cms.pages.read']);
+
+        $result = $filter->before($this->plainRequest(), ['', 'cms.pages.read']);
+
+        $this->assertNull($result);
+        $this->assertNull($filter->denialArgs);
+    }
+
     public function testMultiCodeLogsAllCandidateCodesJoinedByCommaOnDenial(): void
     {
         $logger = $this->createMock(SecurityAuditLoggerInterface::class);
