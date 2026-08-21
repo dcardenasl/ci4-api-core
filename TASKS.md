@@ -21,7 +21,7 @@
 
 ## 🟡 Próximo
 
-*(vacío — CORE-007 pendiente, vive en el root TASKS.md)*
+*(CORE-007 pendiente, vive en el root TASKS.md)*
 
 Explícitamente fuera de alcance (decisión ya tomada): `HealthController` genérico (reabriría CORE-017,
 que lo retiró a propósito), throttling por API-key de `api` (feature genuinamente app-específica, sin
@@ -32,6 +32,30 @@ propósito). `CORE-04` y `CORE-06` de `../teatromuseo/TASKS.md` no requieren cam
 
 ## ✅ Completadas
 
+### CMS-ACCESS-01 — `AbstractPermissionFilter` admite lista de códigos alternativos · Released v1.5.0
+- **Qué**: `before()` trata `$arguments` como una lista de códigos alternativos en vez de leer solo
+  `$arguments[0]` — el caller pasa si tiene cualquiera de los códigos listados (o el bypass de superadmin).
+  CI4 ya parte los argumentos del filtro por `,` (`Filters::getCleanName()`); la clase nunca miró más allá
+  del primer elemento hasta ahora. Sintaxis de ruta:
+  `permission:cms.pages.read,cms.pages.scoped-read`. Retrocompatible al 100% — una lista de un elemento se
+  comporta exactamente igual que antes (verificado: los 10 tests preexistentes de la clase siguen pasando
+  sin modificación).
+- **Por qué**: prerrequisito de la autorización editorial por recurso de `teatromuseo-cms-domain`
+  (`docs/plan/2026-08-20-plan-autorizacion-editorial-por-recurso-cms-v2.md` §6.5, en
+  `../teatromuseo/`) — sus rutas necesitan admitir tanto una capacidad global (`cms.pages.read`) como una
+  scoped (`cms.pages.scoped-read`) en el mismo filtro de ruta, sin una segunda capa de enforcement
+  redundante en el controller. Ver
+  [`docs/adr/0003-multi-code-permission-filter.md`](docs/adr/0003-multi-code-permission-filter.md).
+- **Verificado**: 5 tests nuevos en `tests/Unit/Http/Filters/AbstractPermissionFilterTest.php` (permite con
+  el primer código listado; permite con solo el segundo; deniega si ninguno está presente; el bypass de
+  superadmin sigue satisfaciendo cualquier código listado; el log de denegación registra todos los
+  candidatos unidos por coma) — 15/15 verdes en el archivo. `composer analyse` (PHPStan, 147/147 sin
+  errores) y `composer cs-check` limpios en los dos archivos tocados. `composer quality` completo: 342
+  tests / 690 assertions, con 8 fallos preexistentes y no relacionados en `LocalizationRuntimeTest`/
+  `LocalizationSchemaTest` (harness MySQL no disponible en este entorno — sin dependencia de base de datos
+  en el código tocado). Ningún otro consumidor de la librería (~25 en el workspace) se ve afectado: el
+  cambio es aditivo y ninguno sube su constraint hasta que lo necesite.
+
 ### CORE-026 — `FieldsetValidator::validate()` lanza `ValidationException` (422) en vez de `\InvalidArgumentException`
 - **Qué**: `FieldsetValidator::validate()` (`src/Support/FieldsetValidator.php`) ahora lanza
   `dcardenasl\Ci4ApiCore\Exceptions\ValidationException` (ya existente, 422) tanto para un campo no
@@ -40,7 +64,7 @@ propósito). `CORE-04` y `CORE-06` de `../teatromuseo/TASKS.md` no requieren cam
   actualizaron los docblocks de `FieldsetValidatorInterface::validate()` y
   `SparseFieldsetTrait::parseFieldsParam()` para reflejar el nuevo `@throws`.
 - **Por qué**: fix de Fase 0 de
-  [`../teatromuseo/docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md`](../teatromuseo/docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md)
+  [`../../teatromuseo/docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md`](../../teatromuseo/docs/audits/2026-08-13-auditoria-carga-fria-web-domains.md)
   (hallazgo C). `\InvalidArgumentException` no implementa `HasStatusCode`, así que
   `ExceptionFormatter::resolveStatusCode()` caía al `500` genérico para lo que es un error de
   validación de input (`?fields=` inválido) — contradiciendo el propio OpenAPI publicado por

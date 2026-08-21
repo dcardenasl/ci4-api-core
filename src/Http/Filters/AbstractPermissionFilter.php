@@ -20,7 +20,11 @@ use dcardenasl\Ci4ApiCore\Http\ContextHolder;
  * the `scope` claim already populated into ApiRequest / ContextHolder by
  * the JWT auth filter.
  *
- * Argument syntax: `permission:<code>` (e.g. `permission:users.write`).
+ * Argument syntax: `permission:<code>` (e.g. `permission:users.write`), or
+ * a comma-separated list of alternative codes —
+ * `permission:cms.pages.read,cms.pages.scoped-read` — the caller passes if
+ * they have *any* of the listed codes (or the bypass code). A single-code
+ * argument behaves exactly as before; this is purely additive.
  *
  * Note: permission codes use `.` as the resource/action separator (not
  * `:`) because CI4 splits filter strings on `:`; `permission:users:write`
@@ -40,7 +44,8 @@ abstract class AbstractPermissionFilter implements FilterInterface
      */
     public function before(RequestInterface $request, $arguments = null)
     {
-        $required = is_array($arguments) ? (string) ($arguments[0] ?? '') : '';
+        $requiredCodes = is_array($arguments) ? $arguments : [];
+        $requiredLabel = implode(',', $requiredCodes);
 
         $context = ContextHolder::get();
         $actorId = $request instanceof ApiRequest ? $request->getAuthUserId() : null;
@@ -61,7 +66,7 @@ abstract class AbstractPermissionFilter implements FilterInterface
         $isAuthenticated = $context !== null || $actorId !== null;
 
         if (! $isAuthenticated) {
-            $logger?->logAuthorizationDeniedFromRequest($request, $required, null, null);
+            $logger?->logAuthorizationDeniedFromRequest($request, $requiredLabel, null, null);
 
             return $this->deny(ResponseInterface::HTTP_UNAUTHORIZED, $this->unauthenticatedMessage());
         }
@@ -69,8 +74,17 @@ abstract class AbstractPermissionFilter implements FilterInterface
         $bypassCode = $this->superAdminBypassCode();
         $hasBypass  = $bypassCode !== null && in_array($bypassCode, $permissions, true);
 
-        if ($required === '' || (! $hasBypass && ! in_array($required, $permissions, true))) {
-            $logger?->logAuthorizationDeniedFromRequest($request, $required, null, $actorId);
+        $hasAnyRequiredCode = false;
+        foreach ($requiredCodes as $code) {
+            if (in_array($code, $permissions, true)) {
+                $hasAnyRequiredCode = true;
+
+                break;
+            }
+        }
+
+        if ($requiredCodes === [] || (! $hasBypass && ! $hasAnyRequiredCode)) {
+            $logger?->logAuthorizationDeniedFromRequest($request, $requiredLabel, null, $actorId);
 
             return $this->deny(ResponseInterface::HTTP_FORBIDDEN, $this->forbiddenMessage());
         }
