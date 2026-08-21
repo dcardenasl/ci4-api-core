@@ -195,4 +195,59 @@ final class AbstractPermissionFilterTest extends TestCase
 
         $this->assertSame($response, $result);
     }
+
+    public function testMultiCodeAllowsThroughWhenTheFirstListedCodeIsPresent(): void
+    {
+        $filter = $this->filter(userId: 1, permissions: ['cms.pages.read']);
+
+        $result = $filter->before($this->plainRequest(), ['cms.pages.read', 'cms.pages.scoped-read']);
+
+        $this->assertNull($result);
+        $this->assertNull($filter->denialArgs);
+    }
+
+    public function testMultiCodeAllowsThroughWhenOnlyTheSecondListedCodeIsPresent(): void
+    {
+        $filter = $this->filter(userId: 1, permissions: ['cms.pages.scoped-read']);
+
+        $result = $filter->before($this->plainRequest(), ['cms.pages.read', 'cms.pages.scoped-read']);
+
+        $this->assertNull($result);
+        $this->assertNull($filter->denialArgs);
+    }
+
+    public function testMultiCodeDeniesWhenNoneOfTheListedCodesArePresent(): void
+    {
+        $filter = $this->filter(userId: 1, permissions: ['cms.entries.read']);
+
+        $filter->before($this->plainRequest(), ['cms.pages.read', 'cms.pages.scoped-read']);
+
+        $this->assertSame(403, $filter->denialArgs[0]);
+    }
+
+    public function testMultiCodeBypassStillSatisfiesAnyListedCodeRequirement(): void
+    {
+        $filter = $this->filter(
+            userId: 1,
+            permissions: ['iam.superadmin-access'],
+            bypassCode: 'iam.superadmin-access'
+        );
+
+        $result = $filter->before($this->plainRequest(), ['cms.pages.read', 'cms.pages.scoped-read']);
+
+        $this->assertNull($result);
+        $this->assertNull($filter->denialArgs);
+    }
+
+    public function testMultiCodeLogsAllCandidateCodesJoinedByCommaOnDenial(): void
+    {
+        $logger = $this->createMock(SecurityAuditLoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('logAuthorizationDeniedFromRequest')
+            ->with($this->isInstanceOf(RequestInterface::class), 'cms.pages.read,cms.pages.scoped-read', null, 1);
+
+        $filter = $this->filter(userId: 1, permissions: [], logger: $logger);
+
+        $filter->before($this->plainRequest(), ['cms.pages.read', 'cms.pages.scoped-read']);
+    }
 }

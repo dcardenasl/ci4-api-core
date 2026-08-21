@@ -4,6 +4,18 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-08-21
+
+### Added
+
+- **`Http\Filters\AbstractPermissionFilter::before()`** — the `permission:<code>` route filter now accepts a
+  comma-separated list of alternative codes (`permission:cms.pages.read,cms.pages.scoped-read`), passing if
+  the caller has *any* of them. Fully backward compatible: a single-code argument behaves exactly as before.
+  CI4 already splits filter arguments on `,` (`Filters::getCleanName()`); the class simply never looked past
+  the first element until now. Enables consumers to express "global capability OR scoped capability" at the
+  route level without a second enforcement layer. See
+  [`docs/adr/0003-multi-code-permission-filter.md`](docs/adr/0003-multi-code-permission-filter.md).
+
 ## [1.4.1] — 2026-08-13
 
 ### Fixed
