@@ -49,7 +49,9 @@ trait HasLocalizedTranslations
 
         $rows = $this->pendingLocalizedTranslations ?? [];
         if ($rows === []) {
-            $this->translationStore->syncLegacyProjection($this->localizedResourceType, $id, $entity->toArray());
+            if ($this->translationStore->usesLegacyProjection()) {
+                $this->translationStore->syncLegacyProjection($this->localizedResourceType, $id, $entity->toArray());
+            }
 
             return;
         }
@@ -75,12 +77,14 @@ trait HasLocalizedTranslations
 
         // A translations-only update still needs a legal legacy-column
         // projection because CI4 strips protected `id` from update fields.
-        if ($this->localizedTranslationsProvided && array_keys($data) === ['id']) {
+        if ($this->localizedTranslationsProvided && array_keys($data) === ['id'] && $this->translationStore->usesLegacyProjection()) {
             $current = $this->repository->find($id);
             $projectionField = $this->translationStore->fields($this->localizedResourceType)[0] ?? null;
             if ($current !== null && $projectionField !== null) {
                 $data[$projectionField] = $current->{$projectionField};
             }
+        } elseif ($this->localizedTranslationsProvided && array_keys($data) === ['id']) {
+            unset($data['id']);
         }
 
         return $data;
@@ -111,7 +115,7 @@ trait HasLocalizedTranslations
             return;
         }
 
-        if ($this->localizedProjectionDirty) {
+        if ($this->localizedProjectionDirty && $this->translationStore->usesLegacyProjection()) {
             $this->translationStore->syncLegacyProjection($this->localizedResourceType, $id, $entity->toArray());
         }
     }

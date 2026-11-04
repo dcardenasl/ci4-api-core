@@ -47,6 +47,8 @@ abstract class DatabaseTestCase extends TestCase
 
     private function dropLocalizationTables(): void
     {
+        $this->database->query('DROP TABLE IF EXISTS `typed_slugs`');
+        $this->database->query('DROP TABLE IF EXISTS `typed_translations`');
         $this->database->query('DROP TABLE IF EXISTS `public_slugs`');
         $this->database->query('DROP TABLE IF EXISTS `translations`');
         $this->database->query('DROP TABLE IF EXISTS `articles`');

@@ -19,6 +19,8 @@ final class PublicSlugStore
         private SlugGenerator $generator,
         private RequestLocaleResolver $localeResolver,
         ?Localization $config = null,
+        private ?string $resourceTypeColumn = 'resource_type',
+        private string $resourceIdColumn = 'resource_id',
     ) {
         $this->config = $config ?? self::resolveConfig();
     }
@@ -73,9 +75,12 @@ final class PublicSlugStore
     /** @return array<string, string> locale => slug */
     public function slugsForResource(string $resourceType, int $resourceId): array
     {
+        $owner = [$this->resourceIdColumn => $resourceId];
+        if ($this->resourceTypeColumn !== null) {
+            $owner[$this->resourceTypeColumn] = $resourceType;
+        }
         $rows = $this->model
-            ->where('resource_type', $resourceType)
-            ->where('resource_id', $resourceId)
+            ->where($owner)
             ->orderBy('locale', 'ASC')
             ->findAll();
 
@@ -104,10 +109,13 @@ final class PublicSlugStore
             return [];
         }
 
-        $rows = $this->model
-            ->where('resource_type', $resourceType)
-            ->whereIn('resource_id', $resourceIds)
-            ->orderBy('resource_id', 'ASC')
+        $query = $this->model;
+        if ($this->resourceTypeColumn !== null) {
+            $query = $query->where($this->resourceTypeColumn, $resourceType);
+        }
+        $rows = $query
+            ->whereIn($this->resourceIdColumn, $resourceIds)
+            ->orderBy($this->resourceIdColumn, 'ASC')
             ->orderBy('locale', 'ASC')
             ->findAll();
 
@@ -129,8 +137,11 @@ final class PublicSlugStore
             return null;
         }
 
-        $rows = $this->model
-            ->where('resource_type', $resourceType)
+        $query = $this->model;
+        if ($this->resourceTypeColumn !== null) {
+            $query = $query->where($this->resourceTypeColumn, $resourceType);
+        }
+        $rows = $query
             ->where('slug', $slug)
             ->findAll();
         if ($rows === []) {
@@ -179,13 +190,16 @@ final class PublicSlugStore
 
     private function isAvailable(string $resourceType, string $locale, string $slug, int $excludeResourceId): bool
     {
-        $builder = $this->model
-            ->where('resource_type', $resourceType)
+        $builder = $this->model;
+        if ($this->resourceTypeColumn !== null) {
+            $builder = $builder->where($this->resourceTypeColumn, $resourceType);
+        }
+        $builder = $builder
             ->where('locale', $locale)
             ->where('slug', $slug);
 
         if ($excludeResourceId > 0) {
-            $builder->where('resource_id !=', $excludeResourceId);
+            $builder->where($this->resourceIdColumn . ' !=', $excludeResourceId);
         }
 
         return $builder->countAllResults() === 0;
@@ -194,7 +208,7 @@ final class PublicSlugStore
     /** @return array{resource_id: int, locale: string, slug: string}|null */
     private function parseRow(mixed $row): ?array
     {
-        $resourceId = is_array($row) ? ($row['resource_id'] ?? null) : ($row->resource_id ?? null);
+        $resourceId = is_array($row) ? ($row[$this->resourceIdColumn] ?? null) : ($row->{$this->resourceIdColumn} ?? null);
         $locale = is_array($row) ? ($row['locale'] ?? null) : ($row->locale ?? null);
         $slug = is_array($row) ? ($row['slug'] ?? null) : ($row->slug ?? null);
 
@@ -211,9 +225,12 @@ final class PublicSlugStore
 
     private function upsert(string $resourceType, int $resourceId, string $locale, string $slug): void
     {
+        $owner = [$this->resourceIdColumn => $resourceId];
+        if ($this->resourceTypeColumn !== null) {
+            $owner[$this->resourceTypeColumn] = $resourceType;
+        }
         $existing = $this->model
-            ->where('resource_type', $resourceType)
-            ->where('resource_id', $resourceId)
+            ->where($owner)
             ->where('locale', $locale)
             ->first();
 
@@ -225,8 +242,7 @@ final class PublicSlugStore
         }
 
         $this->model->insert([
-            'resource_type' => $resourceType,
-            'resource_id'   => $resourceId,
+            ...$owner,
             'locale'        => $locale,
             'slug'          => $slug,
         ]);

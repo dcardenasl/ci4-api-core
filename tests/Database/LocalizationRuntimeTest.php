@@ -120,6 +120,76 @@ final class LocalizationRuntimeTest extends DatabaseTestCase
         ], $store->forResource('article', 2));
     }
 
+    public function testTypedTranslationStoreUsesOwnerColumnAndDisablesLegacyProjection(): void
+    {
+        $this->createTypedTranslationTable();
+        $model = new TestTypedTranslationModel();
+        $model->setAuditService(new NullAuditService());
+        $store = new LocalizedTranslationStore(
+            $model,
+            new RequestLocaleResolver(),
+            $this->config,
+            resourceTypeColumn: null,
+            resourceIdColumn: 'article_id',
+            legacyProjection: false,
+        );
+
+        $store->sync('article', 1, [
+            ['locale' => 'es', 'title' => 'Hola'],
+            ['locale' => 'en', 'title' => 'Hello'],
+        ]);
+        $store->sync('article', 2, [['locale' => 'es', 'title' => 'Otro']]);
+
+        $rows = $store->forResource('article', 1);
+        $this->assertSame([
+            ['locale' => 'en', 'fields' => ['title' => 'Hello']],
+            ['locale' => 'es', 'fields' => ['title' => 'Hola']],
+        ], $rows);
+        $this->assertSame([1, 2], array_keys($store->forResources('article', [1, 2])));
+        $this->assertSame('', $store->resolve('article', $rows, ['summary' => 'legacy summary'])['summary']);
+
+        $emptyRows = [];
+        $store->appendLegacyRow('article', $emptyRows, ['title' => 'legacy title']);
+        $this->assertSame([], $emptyRows);
+        $this->expectException(\LogicException::class);
+        $store->syncLegacyProjection('article', 1, ['title' => 'legacy title']);
+    }
+
+    public function testTypedStoreSupportsTranslationOnlyCrudUpdatesWithoutWritingBaseColumns(): void
+    {
+        $this->createTypedTranslationTable();
+        $articleModel = new TestArticleModel();
+        $articleModel->setAuditService(new NullAuditService());
+        $articleId = $articleModel->insert(['title' => 'Canonical title', 'slug' => 'canonical-title']);
+        $this->assertIsInt($articleId);
+
+        $model = new TestTypedTranslationModel();
+        $model->setAuditService(new NullAuditService());
+        $store = new LocalizedTranslationStore(
+            $model,
+            new RequestLocaleResolver(),
+            $this->config,
+            resourceTypeColumn: null,
+            resourceIdColumn: 'article_id',
+            legacyProjection: false,
+        );
+        $service = new TestLocalizedCrudService(
+            new TestArticleRepository($articleModel),
+            new TestResponseMapper(),
+            $store,
+        );
+
+        $response = $service->update((int) $articleId, new TestUpdateRequest([
+            'translations' => [['locale' => 'es', 'title' => 'Título']],
+        ]));
+
+        $this->assertSame((int) $articleId, (int) ($response->toArray()['id'] ?? 0));
+        $this->assertSame('Canonical title', $articleModel->find($articleId)->title);
+        $this->assertSame([
+            ['locale' => 'es', 'fields' => ['title' => 'Título']],
+        ], $store->forResource('article', (int) $articleId));
+    }
+
     public function testPublicSlugStorePreservesBaseSlugAndUniquifiesCaseInsensitiveCollision(): void
     {
         $store = new PublicSlugStore(
@@ -183,6 +253,60 @@ final class LocalizationRuntimeTest extends DatabaseTestCase
         $this->assertSame(['es' => 'Mi Hola'], $manualSlugs);
         $this->assertSame(['fields' => ['title' => 'Hola']], $data['translations']['es']);
     }
+
+    public function testTypedPublicSlugStoreUsesOwnerColumnForLookupAndUniqueness(): void
+    {
+        $this->createTypedSlugTable();
+        $model = new TestTypedPublicSlugModel();
+        $model->setAuditService(new NullAuditService());
+        $store = new PublicSlugStore(
+            $model,
+            new SlugGenerator(),
+            new RequestLocaleResolver(),
+            $this->config,
+            resourceTypeColumn: null,
+            resourceIdColumn: 'article_id',
+        );
+
+        $store->syncForResource('article', 1, ['es' => 'Hola']);
+        $store->syncForResource('article', 2, ['es' => 'hola']);
+
+        $this->assertSame(['es' => 'hola'], $store->slugsForResource('article', 1));
+        $this->assertSame([1 => ['es' => 'hola'], 2 => ['es' => 'hola-2']], $store->slugsForResources('article', [1, 2]));
+        $this->assertSame(1, $store->resolveResourceId('article', 'hola'));
+    }
+
+    private function createTypedTranslationTable(): void
+    {
+        $forge = \Config\Database::forge();
+        $forge->addField([
+            'id' => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
+            'article_id' => ['type' => 'INT', 'unsigned' => true],
+            'locale' => ['type' => 'VARCHAR', 'constraint' => 35],
+            'field' => ['type' => 'VARCHAR', 'constraint' => 80],
+            'value' => ['type' => 'TEXT'],
+            'created_at' => ['type' => 'DATETIME', 'null' => true],
+            'updated_at' => ['type' => 'DATETIME', 'null' => true],
+        ]);
+        $forge->addKey('id', true);
+        $forge->addUniqueKey(['article_id', 'locale', 'field']);
+        $forge->createTable('typed_translations', true);
+    }
+
+    private function createTypedSlugTable(): void
+    {
+        $forge = \Config\Database::forge();
+        $forge->addField([
+            'id' => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
+            'article_id' => ['type' => 'INT', 'unsigned' => true],
+            'locale' => ['type' => 'VARCHAR', 'constraint' => 35],
+            'slug' => ['type' => 'VARCHAR', 'constraint' => 191],
+        ]);
+        $forge->addKey('id', true);
+        $forge->addUniqueKey(['article_id', 'locale']);
+        $forge->addUniqueKey(['locale', 'slug']);
+        $forge->createTable('typed_slugs', true);
+    }
 }
 
 final class TestTranslationModel extends BaseTranslationModel
@@ -193,6 +317,19 @@ final class TestTranslationModel extends BaseTranslationModel
 final class TestPublicSlugModel extends BasePublicSlugModel
 {
     protected $table = 'public_slugs';
+}
+
+final class TestTypedTranslationModel extends BaseTranslationModel
+{
+    protected $table = 'typed_translations';
+    protected $allowedFields = ['article_id', 'locale', 'field', 'value', 'created_at', 'updated_at'];
+}
+
+final class TestTypedPublicSlugModel extends BasePublicSlugModel
+{
+    protected $table = 'typed_slugs';
+    protected $allowedFields = ['article_id', 'locale', 'slug'];
+    protected $useTimestamps = false;
 }
 
 final class TestArticleEntity extends Entity

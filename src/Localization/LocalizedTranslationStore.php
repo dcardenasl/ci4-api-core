@@ -11,9 +11,9 @@ use dcardenasl\Ci4ApiCore\Exceptions\BadRequestException;
 /**
  * Persistence and locale-resolution boundary for localized content.
  *
- * Translation rows are stored in an EAV sidecar so the domain's resource
- * tables remain stable while the CMS can add or reorder languages. The model
- * is injected because each consumer may keep a legacy table prefix.
+ * Translation persistence and locale resolution for polymorphic or typed
+ * owner tables. The model and owner columns are injected so consumers can
+ * migrate from shared EAV tables without replacing the lifecycle abstraction.
  */
 final class LocalizedTranslationStore
 {
@@ -21,6 +21,9 @@ final class LocalizedTranslationStore
         private Model $model,
         private RequestLocaleResolver $localeResolver,
         ?Localization $config = null,
+        private ?string $resourceTypeColumn = 'translatable_type',
+        private string $resourceIdColumn = 'translatable_id',
+        private bool $legacyProjection = true,
     ) {
         $this->config = $config ?? self::resolveConfig();
     }
@@ -33,6 +36,11 @@ final class LocalizedTranslationStore
     public function fields(string $resourceType): array
     {
         return $this->config->fields($resourceType);
+    }
+
+    public function usesLegacyProjection(): bool
+    {
+        return $this->legacyProjection;
     }
 
     /**
@@ -58,7 +66,7 @@ final class LocalizedTranslationStore
      */
     public function appendLegacyRow(string $resourceType, array &$rows, array $resource): void
     {
-        if ($rows !== []) {
+        if ($rows !== [] || ! $this->legacyProjection) {
             return;
         }
 
@@ -154,18 +162,20 @@ final class LocalizedTranslationStore
         $rows = $this->normalize($resourceType, $rawRows);
         $builder = $this->model->builder();
         $now = date('Y-m-d H:i:s');
+        $owner = [$this->resourceIdColumn => $resourceId];
+        if ($this->resourceTypeColumn !== null) {
+            $owner[$this->resourceTypeColumn] = $resourceType;
+        }
 
         foreach ($rows as $row) {
             $builder->where([
-                'translatable_type' => $resourceType,
-                'translatable_id'   => $resourceId,
+                ...$owner,
                 'locale'            => $row['locale'],
             ])->delete();
 
             foreach ($row['fields'] as $field => $value) {
                 $this->model->insert([
-                    'translatable_type' => $resourceType,
-                    'translatable_id'   => $resourceId,
+                    ...$owner,
                     'locale'            => $row['locale'],
                     'field'             => $field,
                     'value'             => $value,
@@ -178,10 +188,12 @@ final class LocalizedTranslationStore
 
     public function clear(string $resourceType, int $resourceId): void
     {
-        $this->model->builder()->where([
-            'translatable_type' => $resourceType,
-            'translatable_id'   => $resourceId,
-        ])->delete();
+        $owner = [$this->resourceIdColumn => $resourceId];
+        if ($this->resourceTypeColumn !== null) {
+            $owner[$this->resourceTypeColumn] = $resourceType;
+        }
+
+        $this->model->builder()->where($owner)->delete();
     }
 
     /**
@@ -191,6 +203,10 @@ final class LocalizedTranslationStore
      */
     public function syncLegacyProjection(string $resourceType, int $resourceId, array $resource): void
     {
+        if (! $this->legacyProjection) {
+            throw new \LogicException('Legacy translation projection is disabled for this owner-specific store.');
+        }
+
         $legacy = [];
         foreach ($this->fields($resourceType) as $field) {
             $value = $resource[$field] ?? null;
@@ -210,9 +226,13 @@ final class LocalizedTranslationStore
      */
     public function forResource(string $resourceType, int $resourceId): array
     {
+        $owner = [$this->resourceIdColumn => $resourceId];
+        if ($this->resourceTypeColumn !== null) {
+            $owner[$this->resourceTypeColumn] = $resourceType;
+        }
+
         return $this->groupRows($this->model
-            ->where('translatable_type', $resourceType)
-            ->where('translatable_id', $resourceId)
+            ->where($owner)
             ->orderBy('locale', 'ASC')
             ->orderBy('field', 'ASC')
             ->findAll());
@@ -232,17 +252,20 @@ final class LocalizedTranslationStore
             return [];
         }
 
-        $rows = $this->model
-            ->where('translatable_type', $resourceType)
-            ->whereIn('translatable_id', $resourceIds)
-            ->orderBy('translatable_id', 'ASC')
+        $query = $this->model;
+        if ($this->resourceTypeColumn !== null) {
+            $query = $query->where($this->resourceTypeColumn, $resourceType);
+        }
+        $rows = $query
+            ->whereIn($this->resourceIdColumn, $resourceIds)
+            ->orderBy($this->resourceIdColumn, 'ASC')
             ->orderBy('locale', 'ASC')
             ->orderBy('field', 'ASC')
             ->findAll();
 
         $grouped = [];
         foreach ($rows as $row) {
-            $id = (int) (is_array($row) ? ($row['translatable_id'] ?? 0) : ($row->translatable_id ?? 0));
+            $id = (int) (is_array($row) ? ($row[$this->resourceIdColumn] ?? 0) : ($row->{$this->resourceIdColumn} ?? 0));
             if ($id > 0) {
                 $grouped[$id][] = $row;
             }
@@ -288,7 +311,7 @@ final class LocalizedTranslationStore
             }
 
             if (! array_key_exists($field, $resolved)) {
-                $legacyValue = $legacyResource[$field] ?? null;
+                $legacyValue = $this->legacyProjection ? ($legacyResource[$field] ?? null) : null;
                 $resolved[$field] = is_scalar($legacyValue) ? (string) $legacyValue : '';
             }
         }
