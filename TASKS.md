@@ -2,7 +2,7 @@
 
 > Fuente de verdad para trabajo en este repo.
 > Historial de completadas: ver `TASKS_ARCHIVE.md`.
-> Cross-repo: ver `../TASKS.md` (CORE-007 pendiente — actualizar kickstart tras extracción de scaffolding).
+> Cross-repo: CORE-007 cerrado (2026-11-17). El root `../TASKS.md` que citaba no existe; su alcance, actualizar kickstart tras la extracción del scaffolding, está hecho: el kickstart documenta el modelo de dos paquetes desde su entrada de 2026-05-10 en CHANGELOG (`ci4-api-core` como `require`, `ci4-api-scaffolding` como `require-dev`).
 > Última actualización: 2026-08-06 (**v1.3.0 publicada** en Packagist — corrige la nota anterior de
 > "sin publicar todavía". CORE-019 a CORE-025 quedaron consumidos en los 5 apps de teatromuseo el mismo
 > día: `JsonCastNormalizer` con strings JSON, `HasCrudActions`, `AbstractHubSignatureFilter`,
@@ -21,7 +21,7 @@
 
 ## 🟡 Próximo
 
-*(CORE-007 pendiente, vive en el root TASKS.md)*
+*(sin tareas abiertas: CORE-007 cerrado el 2026-11-17, ver nota de arriba)*
 
 Explícitamente fuera de alcance (decisión ya tomada): `HealthController` genérico (reabriría CORE-017,
 que lo retiró a propósito), throttling por API-key de `api` (feature genuinamente app-específica, sin
