@@ -1,6 +1,8 @@
 # ADR-0003 — `permission:` filter accepts alternative codes
 
-**Status:** Accepted
+## Status
+
+Accepted
 
 **Date:** 2026-08-20
 **Audit ref:** CORE-023 (planned, triggered by teatromuseo-cms-domain's editorial-scope authorization work)

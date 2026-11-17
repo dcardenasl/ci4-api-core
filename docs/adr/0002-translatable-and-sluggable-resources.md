@@ -1,6 +1,8 @@
 # ADR-0002 — Translatable and sluggable resources
 
-**Status:** Accepted
+## Status
+
+Accepted
 
 **Date:** 2026-08-05
 **Audit ref:** CORE-01
