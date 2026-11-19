@@ -2,11 +2,11 @@
 
 > Fuente de verdad del trabajo pendiente. Convenciones y contexto: [`CLAUDE.md`](CLAUDE.md). Secuencia de versiones: [`ROADMAP.md`](ROADMAP.md). Evidencia de lo publicado: [`ARCHIVES.md`](ARCHIVES.md). Historial de completadas: [`TASKS_ARCHIVE.md`](TASKS_ARCHIVE.md).
 
-**Estado al 2026-11-17:** v1.6.1 publicada. Sin tareas abiertas.
+**Estado al 2026-11-19:** v1.7.0 publicada. Sin tareas abiertas.
 
 ## Siguiente paso
 
-Ninguno abierto. La próxima entrega la decide David en `ROADMAP.md`. Antes de cualquier versión menor, actualizar las herramientas de desarrollo con avisos de Symfony (`composer audit`, ver `SNAPSHOT.md`).
+Ninguno abierto. La próxima entrega la decide David en `ROADMAP.md`.
 
 ## Cola de trabajo
 
