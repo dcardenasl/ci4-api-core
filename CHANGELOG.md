@@ -4,6 +4,19 @@ All notable changes to `dcardenasl/ci4-api-core` will be documented here. Format
 
 ## [Unreleased]
 
+## [1.7.0] — 2026-11-19
+
+### Added
+
+- **`Localization\LocalizedTranslationStore` and `Localization\PublicSlugStore`** — configurable owner ID and optional type
+  discriminator columns allow the existing persistence lifecycle to back owner-specific translation and slug tables.
+- **`Services\HasLocalizedTranslations`** — translation-only CRUD updates can run without writing legacy base-column projections
+  when the translation store is configured for typed ownership.
+
+### Security
+
+- Development tooling only: `symfony/*` updated to 7.4.23, which clears every `composer audit` advisory (YAML parser, serializer, filesystem). The package's runtime dependencies are unchanged.
+
 ## [1.6.1] — 2026-09-07
 
 ### Fixed

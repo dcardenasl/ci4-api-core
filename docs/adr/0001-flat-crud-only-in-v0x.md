@@ -1,6 +1,8 @@
 # ADR-0001 — Flat CRUD only in v0.x
 
-**Status:** Accepted
+## Status
+
+Accepted
 **Date:** 2026-05-06
 **Audit ref:** B6.4
 
