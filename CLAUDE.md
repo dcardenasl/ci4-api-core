@@ -132,3 +132,7 @@ composer require --dev dcardenasl/ci4-api-scaffolding:^0.7
 ```
 
 See that package's README for field syntax, scaffolding contract, customization, and troubleshooting.
+
+## Presupuesto de GitHub Actions
+
+Aplica el protocolo de [`docs/protocols/protocolo-minutos-actions.md`](docs/protocols/protocolo-minutos-actions.md): registra el consumo mensual, conserva la reserva de publicación, dirige Dependabot rutinario a `dev` y, si faltan minutos, continúa localmente con trabajo aprobado de versiones siguientes. No publiques sin los gates completos ni amplíes una versión congelada.
